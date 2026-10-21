@@ -11,11 +11,11 @@ Build an evidence-backed reference specification for CS 1.6 movement, gunplay, g
 - No art, sound, or asset creation.
 - No networking library selection (deferred to Phase 1).
 
-## Decisions required before starting
-1. **CS 1.6 acquisition method** — Steam purchase is the cleanest legal path. Confirm owner has or will purchase.
-2. **Reference server configuration** — stock defaults vs. competitive community config (e.g., 100 tick, sv_airaccelerate 10). Recommendation: document stock first, note competitive deviations.
-3. **Test environment** — local dedicated server on LAN, or a VM? Local LAN with controlled latency is simplest.
-4. **Recording tools** — demo recording (built-in), screen capture, and `cl_showpos 1` / `net_graph 3` for telemetry. Confirm no external tools are needed initially.
+## Decisions — resolved
+1. **CS 1.6 acquisition** — Owner owns CS 1.6 on Steam. Legal path clear.
+2. **Reference server configuration** — Document stock defaults as canonical reference first. Note competitive deviations (100 tick, etc.) as secondary data. The game will choose what feels best informed by both.
+3. **Test environment** — Dedicated server hosted on existing homelab infrastructure. Assess CS 1.6 server resource requirements and select an appropriate host.
+4. **Recording tools** — Built-in tools only for now: demo recording, `cl_showpos 1`, `net_graph 3`. External capture deferred unless needed.
 
 ## File structure
 ```
