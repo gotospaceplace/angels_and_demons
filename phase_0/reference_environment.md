@@ -11,7 +11,7 @@ CS 1.6 HLDS is extremely lightweight:
 
 Any homelab machine with Linux and network access from your gaming PC will work. Pick a host that's convenient and stable — this isn't a production workload.
 
-**Chosen host:** TBD — fill in after selecting.
+**Chosen host:** vm-prime (192.168.30.11) — Ubuntu 24.04, 4 cores, 3.8 GB RAM.
 
 ---
 
@@ -187,12 +187,15 @@ Once verified, fill in these values in this document:
 
 - **CS 1.6 Steam App ID:** 10
 - **HLDS App ID (SteamCMD):** 90
-- **Client build/version:** (from main menu or `version` command)
-- **Server build/version:** (from `version` in server console)
-- **Server binary hash:** `sha256sum ~/hlds/hlds_linux`
-- **Host machine:** (hostname, OS, CPU, RAM)
-- **Server actual FPS:** (from `stats` in server console)
-- **Date documented:**
+- **Client build/version:** TBD (record from client `version` command)
+- **Server build/version:** Protocol 48, Exe version 1.1.2.7/Stdio (cstrike), build 01:34:04 Oct 8 2024 (10211)
+- **Server binary hash:** `00740520c04a9bd76c2eaa3f6d6744ab74da93577a919018741045c7665e0497`
+- **Host machine:** vm-prime, Ubuntu 24.04.4 LTS, 4 cores, 3.8 GB RAM, 192.168.30.11
+- **Server actual FPS:** ~90.87 (from `stats`)
+- **Server listen address:** 0.0.0.0:27015 (UDP)
+- **Verified connected player:** spaced (STEAM_0:1:6017110), 12ms ping, 0% loss
+- **Date documented:** 2026-10-21
+- **Steam SDK workaround:** symlink `~/.steam/sdk32/steamclient.so` → `~/steamcmd/linux32/steamclient.so`
 
 ---
 
