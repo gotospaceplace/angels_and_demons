@@ -163,19 +163,20 @@ Reattach with `screen -r cs16`.
 3. Connect: `connect <server_ip>:27015; password research`
 4. Enable telemetry:
    ```
-   cl_showpos 1
    net_graph 3
    developer 1
    ```
+   The Research HUD plugin (AMX Mod X) automatically displays speed (horizontal/vertical/3D) and position on screen. `cl_showpos` does not exist in GoldSrc.
 
 ## Step 7 — Verify research readiness
 
 Run through this checklist once connected:
 
 - [ ] Server is running and client connects successfully
-- [ ] `cl_showpos 1` shows position and velocity in the HUD
+- [ ] Research HUD shows speed (horizontal/vertical/3D) and position on screen
 - [ ] `net_graph 3` shows fps, ping, cmdrate, updaterate, interp
 - [ ] `sv_cheats 1` is active (test with `noclip` command)
+- [ ] AMX Mod X loaded (type `amxx plugins` in server console to verify)
 - [ ] `status` in server console shows correct server settings
 - [ ] `cvarlist` output saved for baseline documentation
 - [ ] Demo recording works: `record test_demo` / `stop`
