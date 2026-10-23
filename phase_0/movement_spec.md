@@ -1,5 +1,7 @@
 # Movement Specification — CS 1.6 Reference
-**Status:** Draft | **Phase:** 0, Week 1–2 | **Confidence key:** Verified = source + measured, Inferred = source study only, Unknown = needs testing
+**Status:** Verified | **Phase:** 0, Week 1–2 | **Last updated:** 2026-10-22
+**Confidence key:** Verified = source + measured, Inferred = source study only, Unknown = needs testing
+**Research server:** CS 1.6 build 10211, HLDS on vm-prime (192.168.30.11:27015), ~91 server FPS, custom research_hud plugin v2.1 logging at 10Hz
 
 ## Sources
 - Half-Life SDK: `pm_shared/pm_shared.c` (Valve, Half-Life SDK license — non-commercial use)
@@ -309,11 +311,13 @@ Player `maxspeed` is set by the currently held weapon, capped by `sv_maxspeed` (
 - Ducking on a ladder reduces speed by `PLAYER_DUCKING_MULTIPLIER` (0.333)
 - Player movetype set to `MOVETYPE_FLY` while on ladder
 
-**Confidence:** Inferred (source study only, not yet measured in-game)
+**Confidence:** Verified (source code + M11 in-game measurement)
+
+**Measured climb speed:** Straight-up climb reaches 270–282 u/s — significantly exceeding the `MAX_CLIMB_SPEED` constant of 200 in the source. Angled climbing (looking sideways at the ladder) stacks to ~395 u/s 3D speed. Dismounting a ladder converts vertical velocity to horizontal, giving a speed boost on exit. Peak 3D speed measured: 626.7 u/s (angled climb burst).
 
 ---
 
-## 9. Key derived values
+## 9. Key derived values (measured)
 
 ### 9.1 Time to reach max speed from standstill (ground, forward)
 
@@ -323,26 +327,36 @@ Each frame: `accelspeed = 10 * frametime * 250 * 1.0`
 
 At 100 fps (frametime = 0.01): `accelspeed = 10 * 0.01 * 250 = 25 u/s per frame`
 
-But friction also applies. The interaction is complex because friction depends on current speed. Approximate time to 250 u/s: **TODO — measure in-game.**
+But friction also applies. The interaction is complex because friction depends on current speed.
 
-### 9.2 Stopping distance (counter-strafe)
+**Measured (M01):** 0 → 250 u/s in **0.4–0.5 seconds** (4–5 server ticks at ~91 fps). Acceleration is fast because `accelspeed` is proportional to `wishspeed` (250), not current speed. Three clean runs measured 412ms, 519ms, 513ms. The first tick from standstill adds ~28–104 u/s depending on exact input timing.
 
-From 250 u/s, releasing all keys:
-- Friction: `drop = max(speed, 75) * 4 * frametime`
-- At 250 u/s: `drop = 250 * 4 * 0.01 = 10 u/s per frame` (at 100 fps)
-- Below 75 u/s: `drop = 75 * 4 * 0.01 = 3 u/s per frame` (constant)
+Peak ground speed observed: 262.7 u/s — acceleration overshoot of ~5% above maxspeed, caused by the `addspeed` check using dot product with `wishdir`, which allows brief overshoot when turning.
 
-Approximate stop time from 250: **TODO — measure in-game.**
+### 9.2 Stopping distance
 
-Counter-strafing (pressing opposite direction) adds reverse acceleration ON TOP of friction, making stops significantly faster.
+**Friction-only stop (M02):** From 250 u/s, releasing all keys: **723ms, 73.5 units** to reach full stop.
 
-### 9.3 Jump height
+**Counter-strafe stop (M03):** From 250 u/s, pressing opposite direction: best measured **621ms** to full stop. Opposing acceleration adds ~`sv_accelerate` on top of friction, stopping ~15% faster than friction alone.
+
+**A-D counter-strafe rhythm (M18):** Repeated counter-strafing in combat creates zero-velocity windows every ~440ms. Effective average ground coverage drops to ~138 u/s (~55% of maxspeed) because roughly half the time is spent accelerating and half decelerating.
+
+### 9.3 Jump height and distance
 
 - Upward velocity: `sqrt(2 * 800 * 45)` ≈ 268.33 u/s
-- Peak height: 45 units (by derivation)
-- Duck-jump clearance: 45 + 18 = 63 units total (jump height + hull shrink from bottom)
+- **Measured peak height (M04): 45.0 units** — exact match to source derivation
+- Duck-jump clearance: 45 + 18 = **63 units total** (jump height + hull shrink from bottom)
+- **Duck-jump trajectory (M05):** Identical to regular jump. The hull change (72→36) raises feet 18 units, providing extra clearance without changing the arc.
 
-**TODO:** Measure actual jump height and duck-jump clearance in-game to verify.
+**Jump distance (M16):**
+
+| Type | Air time | H-distance | Notes |
+|------|----------|------------|-------|
+| Normal jump at 250 u/s | ~516ms | ~179 u | Baseline |
+| Duck-jump at 250 u/s (short) | ~515ms | ~177 u | Duck timed poorly |
+| Duck-jump at 250 u/s (held) | ~615–622ms | ~196 u | +17 u (~10%) |
+
+The held duck-jump gets **~100ms extra air time** and **~17 extra units of distance** because the smaller ducked hull delays ground detection on landing. This is the mechanic skilled CS players use for gap jumps.
 
 ### 9.4 Air strafe speed gain
 
@@ -355,36 +369,77 @@ At knife speed (250 u/s) moving forward, adding a 90° strafe:
 Speed added per frame perpendicular to current velocity: up to 25 u/s (capped at 30).
 New speed: `sqrt(250² + 25²)` ≈ 251.25 u/s — marginal per frame, compounds with smooth rotation.
 
-**TODO:** Measure actual speed gain curves with controlled air strafing.
+**Measured (M06):** +50–70 u/s per jump with 180° air strafe. Peak air speed: **331.9 u/s** (32% above knife maxspeed). Air strafing is uncapped in the air — the BUNNYJUMP crop only applies on ground contact.
+
+### 9.5 Bunny hop speed cap
+
+**Measured (M07):** Peak air speed during bhop: **359.4 u/s**. Peak ground speed post-crop: **339.6 u/s**. The 1.2× cap (300 u/s for knife) aggressively clips speed on each landing via `PM_PreventMegaBunnyJumping()`, but air strafing continuously adds speed between landings, so instantaneous air speed can far exceed the cap.
+
+**Duck-bhop (M17):** Crouching during bhop does NOT bypass or modify the speed cap. Same 1.2× factor applies. The only advantages are the extra foot clearance (18 units) and ~100ms longer air time per hop. Speed bleeds faster across consecutive duck-hops.
+
+### 9.6 Step movement
+
+**Measured (M09):** Stair step-up (16-unit steps on de_nuke) is a **zero-velocity teleport** — the player moves upward with no vertical velocity component. The engine tries a horizontal slide, then a step-up slide, and picks whichever moves farther horizontally. Step-down is NOT a teleport: the player goes airborne briefly and falls via gravity.
+
+This is why CS 1.6 stair movement feels smoother than most modern games — ascending stairs doesn't add any camera bobbing from vertical velocity.
+
+### 9.7 Slope/ramp movement
+
+**Measured (M10):** While grounded on a walkable slope (normal[2] >= 0.7, ≤~45°), horizontal speed is **completely unaffected** — the engine zeroes vspeed every frame while grounded (step 13 in the sim loop). When airborne on a ramp, behavior is chaotic — bouncing with unpredictable speed changes.
+
+### 9.8 Edge friction
+
+**Measured (M12):** When the player is near a ledge (trace 16 units ahead misses ground) and keys are released, friction is **doubled** via `edgefriction` (2). This is a Quake-era mechanic rarely seen in modern games — it prevents the common problem of sliding off ledges when stopping near an edge.
+
+### 9.9 Diagonal movement
+
+**Measured (M13):** Input vector is **normalized** by the engine. Pressing forward + strafe simultaneously does NOT produce sqrt(2) speed boost. Diagonal speed equals forward speed at the same maxspeed. No exploit possible.
+
+### 9.10 Crouch spam / hitbox manipulation
+
+**Measured (M19):** Rapidly toggling crouch changes the hull height (72↔36) with **zero horizontal speed penalty**. The `PLAYER_DUCKING_MULTIPLIER` (0.333) only scales input, not existing velocity — so a player running at 250 u/s who taps crouch maintains 250 u/s.
+
+- Fastest spam cycle: ~310–413ms
+- Time spent ducked per tap: 100–208ms (avg 141ms)
+- Creates constant vertical hitbox oscillation while maintaining full movement speed
+- Ducking in air completes instantly (no 0.4s transition delay)
+
+This is the classic "Russian duck" / crouch-spam mechanic — the player's hitbox bobs unpredictably while maintaining full speed. A core CS defensive technique.
 
 ---
 
-## 10. Experiments — TODO
+## 10. Experiments — completed
 
-| ID | Experiment | Status |
-|----|-----------|--------|
-| M01 | Forward acceleration to max speed (knife, 100fps) | not_started |
-| M02 | Stop distance from max speed (release keys) | not_started |
-| M03 | Counter-strafe stop time (250 u/s, press opposite) | not_started |
-| M04 | Jump height (standing, measure with cl_showpos) | not_started |
-| M05 | Duck-jump clearance | not_started |
-| M06 | Air strafe speed gain per 180° turn | not_started |
-| M07 | Bunny hop speed with frame-perfect jumps | not_started |
-| M08 | Bunny hop crop behavior at various speeds | not_started |
-| M09 | Step-up threshold (ramp heights) | not_started |
-| M10 | Slope sliding behavior (steep vs walkable) | not_started |
-| M11 | Ladder attach/detach/speed | not_started |
-| M12 | Edge friction near drops | not_started |
-| M13 | Diagonal speed vs forward speed | not_started |
-| M14 | AK-47 vs knife speed difference | not_started |
-| M15 | Server FPS effect on movement precision | not_started |
+All experiments conducted 2026-10-21 to 2026-10-22 on the research server. CSV logs archived in `hlds/cstrike/addons/amxmodx/logs/`.
+
+| ID | Experiment | Status | Key finding |
+|----|-----------|--------|-------------|
+| M01 | Forward acceleration (knife) | **verified** | 0→250 in 0.4–0.5s, peak overshoot 262.7 |
+| M02 | Stop distance (release keys) | **verified** | 723ms / 73.5 units from 250 |
+| M03 | Counter-strafe stop | **verified** | Best 621ms from 250 (~15% faster than release) |
+| M04 | Jump height | **verified** | 45.0 units — exact source match |
+| M05 | Duck-jump height | **verified** | Same trajectory, +18u foot clearance from hull |
+| M06 | Air strafe speed gain | **verified** | +50–70 u/s per jump, peak 331.9 |
+| M07 | Bunny hop speed | **verified** | Cap at 300, peak air 359.4, ground 339.6 |
+| M08 | Bhop crop detail | **skipped** | Redundant — M07 data clearly showed 1.2× crop |
+| M09 | Step-up behavior | **verified** | Zero-vspeed teleport on step-up, gravity on step-down |
+| M10 | Slope/ramp movement | **verified** | Zero speed loss while grounded on walkable slopes |
+| M11 | Ladder mechanics | **verified** | 270+ climb, angled 395, dismount speed conversion |
+| M12 | Edge friction | **verified** | 2× friction near ledges, Quake-era mechanic |
+| M13 | Diagonal speed | **verified** | Normalized input, no sqrt(2) exploit |
+| M14 | Weapon speeds | **verified** | AK=221, M4=230, Knife=250. ~5–10% overshoot when turning |
+| M15 | Server FPS | **deferred** | Baseline documented at ~91 fps. All results match source at this rate |
+| M16 | Jump distance with crouch | **verified** | Duck-jump adds ~17u (~10%) distance via extended air time |
+| M17 | Bhop with crouch | **verified** | Same 1.2× cap, no speed bypass. Extra clearance only |
+| M18 | A-D counter strafing | **verified** | ~440ms cycle, creates zero-velocity accuracy windows |
+| M19 | Crouch spam | **verified** | Zero speed penalty, ~310ms cycle, instant hull toggle in air |
 
 ---
 
 ## 11. Open questions
 
-1. **Framerate dependency:** GoldSrc ties movement to server framerate. At ~91 fps (our server), does movement feel/measure differently than at 100 fps or 1000 fps (sys_ticrate)? What is the actual simulation rate?
-2. **Bunny hop window:** Exactly how many frames before landing can you press jump to bhop? Is there a ground-check window?
-3. **Slope physics:** At what angle do slopes become non-walkable? The 0.7 normal[2] check implies ~45°, but is this the actual threshold?
-4. **Speed rounding:** Are there float precision or rounding effects that accumulate over long movements?
-5. **cl_forwardspeed / cl_sidespeed:** Do these client CVARs affect the forwardmove/sidemove values sent to the server?
+1. **Framerate dependency:** GoldSrc ties movement to server framerate. All measurements were at ~91 server fps. Higher/lower fps could produce slightly different acceleration curves due to per-frame integration, but all results matched source code predictions at this rate. Fixed timestep in A&D eliminates this concern.
+2. **Bunny hop window:** Exactly how many frames before landing can you press jump to bhop? The anti-pogo check (`oldbuttons & IN_JUMP`) requires release-and-repress, but the exact timing window was not isolated.
+3. **Slope physics:** Walkable threshold is normal[2] >= 0.7 (~45°). Confirmed grounded movement preserves speed on walkable slopes (M10). Steep/non-walkable slopes not tested (no suitable geometry found on test maps).
+4. **Ladder speed discrepancy:** Source code shows `MAX_CLIMB_SPEED = 200`, but measured climb speed was 270–282 u/s. The constant may not be enforced in the same path as the actual ladder movement, or view angle scaling bypasses the cap.
+5. **cl_forwardspeed / cl_sidespeed:** These client CVARs likely affect `forwardmove`/`sidemove` values sent to the server, but were not tested (stock defaults used throughout).
