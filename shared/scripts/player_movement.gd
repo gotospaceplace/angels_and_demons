@@ -86,7 +86,6 @@ func _ground_move(delta: float) -> void:
 	if jump_pressed and not jump_was_pressed and on_ground:
 		velocity.y = MC.JUMP_SPEED
 		on_ground = false
-		_air_move(delta)
 		return
 
 	# Friction
