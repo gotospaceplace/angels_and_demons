@@ -28,7 +28,7 @@ Establish the Godot 4 project structure, build pipeline, networking library sele
 ## Decisions required
 
 ### D1: Godot version
-**Recommendation:** Godot 4.3 stable (latest stable at time of writing).
+**Decision:** Godot 4.7 stable (installed on laptop).
 Use the standard build, not .NET — GDScript is the primary language. C# or GDExtension (C++) can be introduced later for performance-critical paths (physics, netcode) if needed.
 
 ### D2: Networking library
@@ -88,7 +88,7 @@ angels_and_demons/
 Phase 1 target (minimal):
 
   [Windows Client]                    [Linux Headless Server]
-   Godot 4.3                           Godot 4.3 --headless
+   Godot 4.7                           Godot 4.7 --headless
    ┌──────────────┐                    ┌──────────────────┐
    │ MainScene    │                    │ ServerScene      │
    │  └ FPCamera  │  ── ENet UDP ──>  │  └ ConnectionMgr │
@@ -198,8 +198,8 @@ Phase 1 benchmarks are minimal — just proving the pipeline works:
 ---
 
 ## Dependencies
-- Godot 4.3 stable installed on laptop (Windows) — **done**
-- Godot 4.3 headless export templates for Linux on vm-prime
+- Godot 4.7 stable installed on laptop (Windows) — **done**
+- Godot 4.7 headless export templates for Linux on vm-prime
 - Docker on vm-prime — likely already installed
 - GitHub repo `gotospaceplace/angels_and_demons` — **exists**
 - GitHub Actions enabled on the repo

@@ -1,0 +1,71 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  validate:
+    name: Validate GDScript
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot
+        run: |
+          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" -O /tmp/godot.zip
+          sudo unzip /tmp/godot.zip -d /usr/local/bin/
+          sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Import project
+        run: godot --headless --import
+
+      - name: Validate scripts
+        run: godot --headless --check-only --script res://client/scripts/player_controller.gd
+
+  export-server:
+    name: Export Linux Server
+    runs-on: ubuntu-24.04
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot
+        run: |
+          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" -O /tmp/godot.zip
+          sudo unzip /tmp/godot.zip -d /usr/local/bin/
+          sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Install export templates
+        run: |
+          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=export_templates.tpz&platform=templates" -O /tmp/templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          unzip /tmp/templates.tpz -d /tmp/tpl
+          cp /tmp/tpl/templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
+
+      - name: Import project
+        run: godot --headless --import
+
+      - name: Export server
+        run: |
+          mkdir -p build/server
+          godot --headless --export-release "Linux Server" build/server/angels_and_demons_server.x86_64
+
+      - name: Smoke test server
+        run: |
+          chmod +x build/server/angels_and_demons_server.x86_64
+          timeout 5 ./build/server/angels_and_demons_server.x86_64 --headless --verbose 2>&1 || test $? -eq 124
+
+      - name: Upload server artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-linux-x86_64
+          path: build/server/angels_and_demons_server.x86_64
+          retention-days: 14
