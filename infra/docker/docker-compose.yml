@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  game-server:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+    ports:
+      - "27015:27015/udp"
+    volumes:
+      - server-config:/opt/angels-and-demons/config
+      - server-logs:/opt/angels-and-demons/logs
+      - server-maps:/opt/angels-and-demons/maps
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+volumes:
+  server-config:
+  server-logs:
+  server-maps:

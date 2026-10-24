@@ -1,1 +1,43 @@
-research/
+# Godot 4 .gitignore
+
+# Godot-specific ignores
+.godot/
+*.translation
+
+# Imported resources
+.import/
+
+# Editor settings (user-specific)
+*.cfg
+!project.godot
+!export_presets.cfg
+
+# Mono/.NET
+.mono/
+data_*/
+mono_crash.*.json
+
+# Builds / exports
+/build/
+/export/
+*.exe
+*.x86_64
+*.pck
+
+# OS-generated
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+infra/docker/.env
+
+# Test artifacts
+tests/results/
