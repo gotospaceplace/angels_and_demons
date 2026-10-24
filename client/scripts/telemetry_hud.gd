@@ -35,8 +35,7 @@ func _physics_process(_delta: float) -> void:
 
 	var ground_str := "GROUND" if player.on_ground else "AIR"
 	var jump_str := "J" if player.jump_pressed else "-"
-	var mc = preload("res://shared/scripts/movement_constants.gd")
-	var h_speed_gsrc := h_speed * mc.UNITS_PER_METER
+	var h_speed_gsrc: float = h_speed * MovementConstants.UNITS_PER_METER
 
 	var text := ""
 	text += "Speed: %.2f m/s  (%.0f u/s)\n" % [h_speed, h_speed_gsrc]

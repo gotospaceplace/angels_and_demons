@@ -81,14 +81,14 @@ func _categorize_position() -> void:
 	var params := PhysicsRayQueryParameters3D.create(from, to)
 	params.exclude = [get_rid()]
 
-	var result := space_state.intersect_ray(params)
-	if result and result.normal.y >= MC.FLOOR_NORMAL_MIN:
+	var result: Dictionary = space_state.intersect_ray(params)
+	if not result.is_empty() and Vector3(result.normal).y >= MC.FLOOR_NORMAL_MIN:
 		on_ground = true
 		# Snap to ground to prevent floating
 		if not was_on_ground and velocity.y <= 0.0:
-			var snap_dist := from.y - result.position.y
+			var snap_dist: float = from.y - Vector3(result.position).y
 			if snap_dist > 0.0 and snap_dist < 0.15:
-				global_position.y = result.position.y
+				global_position.y = Vector3(result.position).y
 	else:
 		on_ground = false
 
