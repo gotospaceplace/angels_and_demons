@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://bvx1a2main"]
 
-[ext_resource type="Script" path="res://client/scripts/player_controller.gd" id="1_player"]
+[ext_resource type="Script" path="res://shared/scripts/player_movement.gd" id="1_player"]
 [ext_resource type="PackedScene" path="res://shared/scenes/test_room.tscn" id="2_room"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
@@ -19,7 +19,7 @@ script = ExtResource("1_player")
 shape = SubResource("CapsuleShape3D_player")
 
 [node name="Head" type="Node3D" parent="Player"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.711, 0)
 
 [node name="Camera3D" type="Camera3D" parent="Player/Head"]
 fov = 90.0

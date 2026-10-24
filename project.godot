@@ -64,5 +64,5 @@ jump={
 
 [physics]
 
-common/physics_ticks_per_second=64
-3d/default_gravity=20.0
+common/physics_ticks_per_second=128
+3d/default_gravity=20.32
