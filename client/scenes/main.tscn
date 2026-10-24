@@ -1,63 +1,25 @@
-[gd_scene format=3 uid="uid://bvx1a2main"]
+[gd_scene load_steps=3 format=3 uid="uid://bvx1a2main"]
 
-[ext_resource type="Script" uid="uid://6fek2j6jgvsw" path="res://client/scripts/player_controller.gd" id="1_player"]
-
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
-sky_top_color = Color(0.18, 0.22, 0.35, 1)
-sky_horizon_color = Color(0.45, 0.45, 0.55, 1)
-ground_bottom_color = Color(0.12, 0.12, 0.15, 1)
-ground_horizon_color = Color(0.45, 0.45, 0.55, 1)
-
-[sub_resource type="Sky" id="Sky_main"]
-sky_material = SubResource("ProceduralSkyMaterial_sky")
-
-[sub_resource type="Environment" id="Environment_main"]
-background_mode = 2
-sky = SubResource("Sky_main")
-ambient_light_source = 2
-ambient_light_color = Color(0.3, 0.3, 0.35, 1)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
-size = Vector3(40, 0.2, 40)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
-albedo_color = Color(0.3, 0.3, 0.32, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh3D_floor"]
-size = Vector3(40, 0.2, 40)
+[ext_resource type="Script" path="res://client/scripts/player_controller.gd" id="1_player"]
+[ext_resource type="PackedScene" path="res://shared/scenes/test_room.tscn" id="2_room"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.35
 height = 1.8
 
-[node name="Main" type="Node3D" unique_id=2033727046]
+[node name="Main" type="Node3D"]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=492842319]
-environment = SubResource("Environment_main")
+[node name="TestRoom" parent="." instance=ExtResource("2_room")]
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=31839004]
-transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 10, 0)
-shadow_enabled = true
-
-[node name="Floor" type="StaticBody3D" parent="." unique_id=1647068733]
-
-[node name="FloorCollision" type="CollisionShape3D" parent="Floor" unique_id=135455125]
-shape = SubResource("BoxShape3D_floor")
-
-[node name="FloorMesh" type="MeshInstance3D" parent="Floor" unique_id=1790878106]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.005185604, 0, -0.007365465)
-material_override = SubResource("StandardMaterial3D_floor")
-mesh = SubResource("BoxMesh3D_floor")
-
-[node name="Player" type="CharacterBody3D" parent="." unique_id=1045188534]
+[node name="Player" type="CharacterBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("1_player")
 
-[node name="PlayerCollision" type="CollisionShape3D" parent="Player" unique_id=285057382]
+[node name="PlayerCollision" type="CollisionShape3D" parent="Player"]
 shape = SubResource("CapsuleShape3D_player")
 
-[node name="Head" type="Node3D" parent="Player" unique_id=13467417]
+[node name="Head" type="Node3D" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
 
-[node name="Camera3D" type="Camera3D" parent="Player/Head" unique_id=2035780909]
+[node name="Camera3D" type="Camera3D" parent="Player/Head"]
 fov = 90.0
