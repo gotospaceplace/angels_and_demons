@@ -76,19 +76,24 @@ func _categorize_position() -> void:
 		return
 
 	var space_state := get_world_3d().direct_space_state
+	# Ray from player origin down to just below feet
+	# Capsule height 1.8m, origin at center, so feet are 0.9m below origin
+	var half_height: float = MC.HULL_STANDING_HEIGHT * 0.5
 	var from := global_position
-	var to := from + Vector3(0, -0.1, 0)
+	var to := from + Vector3(0, -(half_height + 0.05), 0)
 	var params := PhysicsRayQueryParameters3D.create(from, to)
 	params.exclude = [get_rid()]
 
 	var result: Dictionary = space_state.intersect_ray(params)
 	if not result.is_empty() and Vector3(result.normal).y >= MC.FLOOR_NORMAL_MIN:
 		on_ground = true
-		# Snap to ground to prevent floating
-		if not was_on_ground and velocity.y <= 0.0:
-			var snap_dist: float = from.y - Vector3(result.position).y
-			if snap_dist > 0.0 and snap_dist < 0.15:
-				global_position.y = Vector3(result.position).y
+		# Snap to ground when landing
+		if velocity.y <= 0.0:
+			var foot_y: float = from.y - half_height
+			var ground_y: float = Vector3(result.position).y
+			var snap_dist: float = foot_y - ground_y
+			if snap_dist > -0.01 and snap_dist < 0.1:
+				global_position.y = ground_y + half_height
 	else:
 		on_ground = false
 
