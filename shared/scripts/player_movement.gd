@@ -17,6 +17,7 @@ var jump_was_pressed := false
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	add_to_group("player")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
@@ -68,12 +69,26 @@ func _read_input() -> void:
 func _categorize_position() -> void:
 	was_on_ground = on_ground
 
-	# Trace downward to check for ground
-	var test_motion := Vector3(0, -MC.GROUND_TRACE_DIST, 0)
-	var collision := move_and_collide(test_motion, true)
+	# Use is_on_floor() after a zero-length move to let Godot's internal
+	# floor detection work, plus a raycast as backup
+	if velocity.y > 0.0:
+		on_ground = false
+		return
 
-	if collision and collision.get_normal().y >= MC.FLOOR_NORMAL_MIN:
+	var space_state := get_world_3d().direct_space_state
+	var from := global_position
+	var to := from + Vector3(0, -0.1, 0)
+	var params := PhysicsRayQueryParameters3D.create(from, to)
+	params.exclude = [get_rid()]
+
+	var result := space_state.intersect_ray(params)
+	if result and result.normal.y >= MC.FLOOR_NORMAL_MIN:
 		on_ground = true
+		# Snap to ground to prevent floating
+		if not was_on_ground and velocity.y <= 0.0:
+			var snap_dist := from.y - result.position.y
+			if snap_dist > 0.0 and snap_dist < 0.15:
+				global_position.y = result.position.y
 	else:
 		on_ground = false
 
