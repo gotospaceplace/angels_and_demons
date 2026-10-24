@@ -1,16 +1,36 @@
 extends CanvasLayer
 
+const MC := preload("res://shared/scripts/movement_constants.gd")
+
 var label: Label
 var visible_hud := true
+
+# Display refresh throttle
+var update_timer := 0.0
+const UPDATE_INTERVAL := 0.1  # 10 Hz display update
+
+# Peak trackers (reset on ground contact)
+var peak_height := 0.0
+var jump_start_y := 0.0
+var tracking_jump := false
+var peak_air_speed := 0.0
+
+# Landing readout (holds values for 1.5s after landing)
+var landing_display_timer := 0.0
+var last_jump_height := 0.0
+var last_air_speed_peak := 0.0
+
+# Cached display values
+var display_text := ""
 
 func _ready() -> void:
 	label = Label.new()
 	label.position = Vector2(16, 16)
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", 20)
 	label.add_theme_color_override("font_color", Color.WHITE)
 	label.add_theme_color_override("font_shadow_color", Color.BLACK)
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 2)
 	add_child(label)
 
 func _input(event: InputEvent) -> void:
@@ -18,7 +38,7 @@ func _input(event: InputEvent) -> void:
 		visible_hud = not visible_hud
 		label.visible = visible_hud
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not visible_hud:
 		return
 
@@ -29,30 +49,58 @@ func _physics_process(_delta: float) -> void:
 
 	var hvel := Vector3(player.velocity.x, 0, player.velocity.z)
 	var h_speed := hvel.length()
-	var v_speed := player.velocity.y
-	var total_speed := player.velocity.length()
 	var pos := player.global_position
 
+	# Track jump peaks
+	if not player.on_ground:
+		if not tracking_jump:
+			tracking_jump = true
+			jump_start_y = pos.y
+			peak_height = pos.y
+			peak_air_speed = h_speed
+		else:
+			peak_height = maxf(peak_height, pos.y)
+			peak_air_speed = maxf(peak_air_speed, h_speed)
+	elif tracking_jump:
+		# Just landed
+		last_jump_height = peak_height - jump_start_y
+		last_air_speed_peak = peak_air_speed
+		landing_display_timer = 1.5
+		tracking_jump = false
+
+	if landing_display_timer > 0.0:
+		landing_display_timer -= delta
+
+	# Throttle display updates
+	update_timer += delta
+	if update_timer < UPDATE_INTERVAL:
+		label.text = display_text
+		return
+	update_timer = 0.0
+
+	var h_speed_gsrc := h_speed * MC.UNITS_PER_METER
 	var ground_str := "GROUND" if player.on_ground else "AIR"
-	var jump_str := "J" if player.jump_pressed else "-"
-	var h_speed_gsrc: float = h_speed * MovementConstants.UNITS_PER_METER
 
 	var text := ""
-	text += "Speed: %.2f m/s  (%.0f u/s)\n" % [h_speed, h_speed_gsrc]
-	text += "VSpeed: %.2f m/s\n" % v_speed
-	text += "Pos: %.2f, %.2f, %.2f\n" % [pos.x, pos.y, pos.z]
-	text += "State: %s  Jump: %s\n" % [ground_str, jump_str]
-	text += "MaxSpeed: %.2f m/s\n" % player.max_speed
-	text += "Tick: %d fps  (%.1f ms)\n" % [Engine.physics_ticks_per_second, 1000.0 / Engine.physics_ticks_per_second]
+	text += "Speed: %6.1f u/s  (%4.2f m/s)\n" % [h_speed_gsrc, h_speed]
+	text += "VSpeed: %+.2f m/s\n" % player.velocity.y
+	text += "State: %s\n" % ground_str
+	text += "Pos: %.1f, %.1f, %.1f\n" % [pos.x, pos.y, pos.z]
 
-	label.text = text
+	if tracking_jump:
+		var cur_height := pos.y - jump_start_y
+		var peak := peak_height - jump_start_y
+		text += "Jump: %.3fm (peak %.3fm)\n" % [cur_height, peak]
+		text += "Air peak: %.0f u/s\n" % (peak_air_speed * MC.UNITS_PER_METER)
+	elif landing_display_timer > 0.0:
+		text += "Last jump: %.3fm\n" % last_jump_height
+		text += "Last air peak: %.0f u/s\n" % (last_air_speed_peak * MC.UNITS_PER_METER)
+
+	display_text = text
+	label.text = display_text
 
 func _find_player() -> CharacterBody3D:
 	var players := get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		return players[0] as CharacterBody3D
-	# Fallback: find by script
-	for node in get_tree().get_nodes_in_group(""):
-		if node.has_method("_apply_friction"):
-			return node as CharacterBody3D
 	return null
