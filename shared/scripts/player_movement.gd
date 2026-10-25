@@ -182,10 +182,12 @@ func _categorize_position() -> void:
 		ground_normal = Vector3.UP
 		return
 
-	# test_only probe with max_collisions=4: at a steep-slope junction the
-	# capsule hemisphere can clip both the floor and the ramp.  Returning all
-	# contacts lets us pick the walkable one, eliminating ground/air oscillation.
-	var probe := move_and_collide(Vector3(0, -0.1, 0), true, 0.001, false, 4)
+	# Capsule probe with max_collisions=4: at a steep-slope junction the
+	# hemisphere can clip both the floor and the ramp.  Returning all contacts
+	# lets us pick the walkable one (floor), eliminating ground/air oscillation.
+	# Non-test_only so the capsule snaps to the ground surface.
+	var saved_pos := global_position
+	var probe := move_and_collide(Vector3(0, -0.1, 0), false, 0.001, false, 4)
 	if probe:
 		for i in probe.get_collision_count():
 			if probe.get_normal(i).y >= MC.FLOOR_NORMAL_MIN:
@@ -193,6 +195,7 @@ func _categorize_position() -> void:
 				ground_normal = probe.get_normal(i)
 				return
 
+	global_position = saved_pos
 	on_ground = false
 	ground_normal = Vector3.UP
 
@@ -337,7 +340,10 @@ func _walk_move(delta: float) -> void:
 		var remainder := flat_collision.get_remainder()
 		var normal := flat_collision.get_normal()
 
-		if not on_slope and (normal.y < MC.FLOOR_NORMAL_MIN or remainder.length() > move.length() * 0.5):
+		# Step-up only for near-vertical walls, not steep slopes — the
+		# up/forward/down sequence at a slope junction causes spurious
+		# collision resolution that traps the capsule.
+		if not on_slope and normal.y < 0.3:
 			var pre_step_pos := global_position
 
 			var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
@@ -359,16 +365,34 @@ func _walk_move(delta: float) -> void:
 
 		if not did_step:
 			var slide := remainder.slide(normal)
-			if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN and slide.y > 0.0:
+			if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
+				slide.y = 0.0
+				# Strip into-slope component so the slide doesn't push the
+				# capsule into the ramp-floor junction
+				var horiz_n := Vector3(normal.x, 0, normal.z)
+				if horiz_n.length() > 0.001:
+					horiz_n = horiz_n.normalized()
+					var into_slide := slide.dot(horiz_n)
+					if into_slide < 0.0:
+						slide -= into_slide * horiz_n
+			elif slide.y > 0.0:
 				slide.y = 0.0
 			if slide.length() > 0.001:
 				move_and_collide(slide)
 
-	# Ground snap: trace down to maintain slope and stair contact
+	# Ground snap: trace down to maintain slope and stair contact.
+	# max_collisions=4 so the snap finds the walkable floor even when the
+	# capsule hemisphere also clips a nearby steep surface.
 	if not did_step:
 		var pre_snap := global_position
-		var snap_col := move_and_collide(Vector3(0, -(MC.STEP_SIZE + 0.1), 0))
-		if not snap_col or snap_col.get_normal().y < MC.FLOOR_NORMAL_MIN:
+		var snap_col := move_and_collide(Vector3(0, -(MC.STEP_SIZE + 0.1), 0), false, 0.001, false, 4)
+		var snap_ok := false
+		if snap_col:
+			for i in snap_col.get_collision_count():
+				if snap_col.get_normal(i).y >= MC.FLOOR_NORMAL_MIN:
+					snap_ok = true
+					break
+		if not snap_ok:
 			global_position = pre_snap
 
 func _fly_move(delta: float) -> void:
