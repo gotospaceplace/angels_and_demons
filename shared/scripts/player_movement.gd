@@ -351,10 +351,13 @@ func _walk_move(delta: float) -> void:
 	var remainder := flat_collision.get_remainder()
 	var normal := flat_collision.get_normal()
 
-	# Step-up: only when the collision blocked significant movement (>50% of move)
-	# Grazing ramp collisions pass most of the movement through and skip this
+	# Step-up: only on flat ground (slopes use velocity clipping instead)
+	# Also requires either a wall-like normal or blocked movement (capsule edge hits)
+	var on_flat := ground_normal.y > 0.99
 	var blocked := remainder.length() > move.length() * 0.5
-	if normal.y < MC.FLOOR_NORMAL_MIN or blocked:
+	if on_flat and (normal.y < MC.FLOOR_NORMAL_MIN or blocked):
+		var pre_step_pos := global_position
+
 		var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
 		var step_up_height := MC.STEP_SIZE
 		if step_up_col:
@@ -369,7 +372,7 @@ func _walk_move(delta: float) -> void:
 			if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
 				return
 
-		move_and_collide(Vector3(0, -step_up_height, 0))
+		global_position = pre_step_pos
 
 	var slide := remainder.slide(normal)
 	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN and slide.y > 0.0:
