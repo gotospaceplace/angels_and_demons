@@ -337,10 +337,10 @@ func _walk_move(delta: float) -> void:
 		var remainder := flat_collision.get_remainder()
 		var normal := flat_collision.get_normal()
 
-		# Step-up only for near-vertical walls, not steep slopes — the
-		# up/forward/down sequence at a slope junction causes spurious
-		# collision resolution that traps the capsule.
-		if not on_slope and normal.y < 0.3:
+		# Step-up only for near-vertical walls (|normal.y| < 0.3).
+		# Steep slopes, ramp undersides and base faces all have larger
+		# |normal.y| and the up/forward/down sequence traps the capsule.
+		if not on_slope and absf(normal.y) < 0.3:
 			var pre_step_pos := global_position
 
 			var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
@@ -362,9 +362,11 @@ func _walk_move(delta: float) -> void:
 
 		if not did_step:
 			var slide: Vector3
-			var steep_slide := false
-			if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
-				steep_slide = true
+			if normal.y < MC.FLOOR_NORMAL_MIN:
+				# Any non-walkable surface (steep slopes, ramp base faces,
+				# undersides): project normal to horizontal and treat as a
+				# vertical wall.  Direct position offset avoids re-collision
+				# from capsule hemisphere proximity.
 				var wall_n := Vector3(normal.x, 0, normal.z)
 				if wall_n.length() > 0.001:
 					wall_n = wall_n.normalized()
@@ -372,17 +374,13 @@ func _walk_move(delta: float) -> void:
 				else:
 					slide = remainder
 				slide.y = 0.0
+				if slide.length() > 0.001:
+					global_position += slide
 			else:
 				slide = remainder.slide(normal)
 				if slide.y > 0.0:
 					slide.y = 0.0
-			if slide.length() > 0.001:
-				if steep_slide:
-					# Direct offset — move_and_collide would re-collide with
-					# the same steep surface (capsule hemisphere is still in
-					# contact). One tick is ~0.05m, safe from clipping.
-					global_position += slide
-				else:
+				if slide.length() > 0.001:
 					move_and_collide(slide)
 
 	# Ground snap: trace down to maintain slope and stair contact.
