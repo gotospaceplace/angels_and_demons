@@ -343,35 +343,34 @@ func _walk_move(delta: float) -> void:
 		var backoff := clipped.dot(ground_normal)
 		clipped = clipped - ground_normal * backoff
 	var move := clipped * delta
-	var original_pos := global_position
 
 	var flat_collision := move_and_collide(move)
 	if not flat_collision:
 		return
 
-	var normal := flat_collision.get_normal()
-	var flat_end_pos := global_position
-
-	# Try step-up when hitting a wall (non-floor surface)
-	if normal.y < MC.FLOOR_NORMAL_MIN:
-		global_position = original_pos
-
-		var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
-		var step_up_height := MC.STEP_SIZE
-		if step_up_col:
-			step_up_height -= step_up_col.get_remainder().length()
-
-		if step_up_height > 0.001:
-			# Retry full move from elevated position
-			move_and_collide(move)
-			var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
-			if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
-				return
-
-		# Step-up failed, restore to flat collision position
-		global_position = flat_end_pos
-
 	var remainder := flat_collision.get_remainder()
+	var normal := flat_collision.get_normal()
+
+	# Try step-up from collision point on any blocking collision
+	# (capsule hemisphere makes normal.y unreliable for step detection)
+	var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
+	var step_up_height := MC.STEP_SIZE
+	if step_up_col:
+		step_up_height -= step_up_col.get_remainder().length()
+
+	if step_up_height > 0.001:
+		# Move forward enough to clear the step edge (at least capsule width)
+		var fwd_dir := move.normalized()
+		var fwd_dist := maxf(remainder.length(), 0.4)
+		move_and_collide(fwd_dir * fwd_dist)
+
+		# Step down to find the step surface
+		var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
+		if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
+			return
+
+	# Step-up failed or not applicable — step back down and slide
+	move_and_collide(Vector3(0, -step_up_height, 0))
 	var slide := remainder.slide(normal)
 	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN and slide.y > 0.0:
 		slide.y = 0.0
