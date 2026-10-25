@@ -366,15 +366,15 @@ size = Vector3(4, 0.4, 3)
 material = SubResource("mat_platform")
 
 [node name="GapDuckB" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.57, 16)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.8, 16)
 use_collision = true
-size = Vector3(4, 1.14, 3)
+size = Vector3(4, 1.6, 3)
 material = SubResource("mat_platform")
 
 [node name="GapDuckLabel" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 2, 16)
 billboard = 1
-text = "4.0m gap + 1.14m lip\nduck-jump required"
+text = "4.0m gap + 1.2m lip\nduck-jump required"
 font_size = 28
 outline_size = 4
 modulate = Color(1, 0.9, 0.3, 1)
