@@ -334,17 +334,18 @@ func _apply_air_acceleration(delta: float) -> void:
 
 func _walk_move(delta: float) -> void:
 	var move := Vector3(velocity.x, 0, velocity.z) * delta
+	var original_pos := global_position
 
 	var flat_collision := move_and_collide(move)
 	if not flat_collision:
 		return
 
-	var remainder := flat_collision.get_remainder()
 	var normal := flat_collision.get_normal()
+	var flat_end_pos := global_position
 
 	# Try step-up when hitting a wall (non-floor surface)
-	if normal.y < MC.FLOOR_NORMAL_MIN and remainder.length() > 0.001:
-		var saved_pos := global_position
+	if normal.y < MC.FLOOR_NORMAL_MIN:
+		global_position = original_pos
 
 		var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
 		var step_up_height := MC.STEP_SIZE
@@ -352,15 +353,17 @@ func _walk_move(delta: float) -> void:
 			step_up_height -= step_up_col.get_remainder().length()
 
 		if step_up_height > 0.001:
-			move_and_collide(remainder)
+			# Retry full move from elevated position
+			move_and_collide(move)
 			var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
 			if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
 				return
 
-		global_position = saved_pos
+		# Step-up failed, restore to flat collision position
+		global_position = flat_end_pos
 
+	var remainder := flat_collision.get_remainder()
 	var slide := remainder.slide(normal)
-	# Prevent climbing non-walkable slopes — strip upward slide component
 	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN and slide.y > 0.0:
 		slide.y = 0.0
 	if slide.length() > 0.001:
@@ -378,12 +381,10 @@ func _fly_move(delta: float) -> void:
 	var slide := remainder.slide(normal)
 
 	velocity = velocity.slide(normal)
-	# Prevent climbing non-walkable slopes while airborne
-	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
-		if slide.y > 0.0:
-			slide.y = 0.0
-		if velocity.y > 0.0:
-			velocity.y = 0.0
+	# Airborne: strip upward slide from any collision to prevent capsule
+	# hemisphere from climbing over wall edges or steep slopes
+	if slide.y > 0.0:
+		slide.y = 0.0
 
 	if slide.length() > 0.001:
 		var collision2 := move_and_collide(slide)

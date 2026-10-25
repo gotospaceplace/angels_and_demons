@@ -65,7 +65,7 @@ const BHOP_WINDOW := 0.1            # seconds to land-and-jump to count as bhop
 
 # --- Ground speed clamp (A&D tuning) ---
 # Hard cap on ground strafe speed to prevent pure-strafe exceeding design intent
-const GROUND_SPEED_CLAMP := 275.0 * METERS_PER_UNIT  # 6.985 m/s
+const GROUND_SPEED_CLAMP := 250.0 * METERS_PER_UNIT  # 6.35 m/s
 
 # --- Ladder ---
 # GoldSrc: MAX_CLIMB_SPEED = 200 u/s
