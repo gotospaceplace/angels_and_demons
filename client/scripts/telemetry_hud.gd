@@ -20,6 +20,11 @@ var landing_display_timer := 0.0
 var last_jump_height := 0.0
 var last_air_speed_peak := 0.0
 
+# Ground/air frame tracking (last 128 ticks = 1 second)
+var ground_frames := 0
+var air_frames := 0
+var frame_timer := 0.0
+
 # Cached display values
 var display_text := ""
 
@@ -51,6 +56,17 @@ func _physics_process(delta: float) -> void:
 	var h_speed := hvel.length()
 	var full_speed := player.velocity.length()
 	var pos := player.global_position
+
+	# Track ground/air frame ratio
+	if player.on_ground:
+		ground_frames += 1
+	else:
+		air_frames += 1
+	frame_timer += delta
+	if frame_timer >= 1.0:
+		frame_timer = 0.0
+		ground_frames = 0
+		air_frames = 0
 
 	# Track jump peaks
 	if not player.on_ground:
@@ -98,6 +114,7 @@ func _physics_process(delta: float) -> void:
 		text += "Speed: %6.1f u/s  (%4.2f m/s)\n" % [h_speed_gsrc, h_speed]
 	text += "VSpeed: %+.2f m/s\n" % player.velocity.y
 	text += "State: %s\n" % ground_str
+	text += "GNorm: %.3f  G/A: %d/%d\n" % [player.ground_normal.y, ground_frames, air_frames]
 	if player.hop_count > 0:
 		text += "Bhop: %d hops\n" % player.hop_count
 	text += "Pos: %.1f, %.1f, %.1f\n" % [pos.x, pos.y, pos.z]
