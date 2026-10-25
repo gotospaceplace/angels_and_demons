@@ -26,6 +26,9 @@ var duck_eye_progress := 0.0
 var hop_count := 0
 var ground_time := 0.0
 
+# Ground surface
+var ground_normal := Vector3.UP
+
 # Ladder
 var on_ladder := false
 var ladder_normal := Vector3.FORWARD
@@ -194,7 +197,7 @@ func _categorize_position() -> void:
 	var result: Dictionary = space_state.intersect_ray(params)
 	if not result.is_empty() and Vector3(result.normal).y >= MC.FLOOR_NORMAL_MIN:
 		on_ground = true
-		# Snap to ground when landing
+		ground_normal = Vector3(result.normal)
 		if velocity.y <= 0.0:
 			var foot_y: float = from.y - half_height
 			var ground_y: float = Vector3(result.position).y
@@ -203,6 +206,7 @@ func _categorize_position() -> void:
 				global_position.y = ground_y + half_height
 	else:
 		on_ground = false
+		ground_normal = Vector3.UP
 
 func _ground_move(delta: float) -> void:
 	# Pre-move half gravity
@@ -333,7 +337,12 @@ func _apply_air_acceleration(delta: float) -> void:
 	velocity.z += accel_speed * wish_dir.z
 
 func _walk_move(delta: float) -> void:
-	var move := Vector3(velocity.x, 0, velocity.z) * delta
+	# Clip velocity along ground plane (PM_ClipVelocity) so slopes get full speed
+	var clipped := Vector3(velocity.x, 0, velocity.z)
+	if ground_normal.y < 1.0 and ground_normal.y >= MC.FLOOR_NORMAL_MIN:
+		var backoff := clipped.dot(ground_normal)
+		clipped = clipped - ground_normal * backoff
+	var move := clipped * delta
 	var original_pos := global_position
 
 	var flat_collision := move_and_collide(move)
