@@ -22,6 +22,10 @@ var is_ducked := false
 var wants_duck := false
 var duck_eye_progress := 0.0
 
+# Bhop tracking
+var hop_count := 0
+var ground_time := 0.0
+
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_to_group("player")
@@ -49,6 +53,11 @@ func _physics_process(delta: float) -> void:
 		wish_speed *= MC.DUCKING_MULTIPLIER
 
 	_categorize_position()
+
+	if on_ground:
+		ground_time += delta
+	else:
+		ground_time = 0.0
 
 	if on_ground:
 		_ground_move(delta)
@@ -189,6 +198,20 @@ func _ground_move(delta: float) -> void:
 
 	var keyboard_jump := jump_pressed and not jump_was_pressed
 	if (keyboard_jump or scroll_jump_queued) and on_ground:
+		if ground_time < MC.BHOP_WINDOW:
+			hop_count += 1
+		else:
+			hop_count = 0
+
+		if hop_count > MC.BHOP_FREE_HOPS:
+			var speed_factor := maxf(1.0 - float(hop_count - MC.BHOP_FREE_HOPS) * MC.BHOP_DEGRADATION_RATE, MC.BHOP_MIN_SPEED_FACTOR)
+			var speed_cap := max_speed * speed_factor
+			var h_speed := Vector3(velocity.x, 0, velocity.z).length()
+			if h_speed > speed_cap:
+				var scale_f := speed_cap / h_speed
+				velocity.x *= scale_f
+				velocity.z *= scale_f
+
 		velocity.y = MC.JUMP_SPEED
 		on_ground = false
 		scroll_jump_queued = false

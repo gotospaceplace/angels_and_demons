@@ -87,6 +87,8 @@ func _physics_process(delta: float) -> void:
 	text += "Speed: %6.1f u/s  (%4.2f m/s)\n" % [h_speed_gsrc, h_speed]
 	text += "VSpeed: %+.2f m/s\n" % player.velocity.y
 	text += "State: %s\n" % ground_str
+	if player.hop_count > 0:
+		text += "Bhop: %d hops\n" % player.hop_count
 	text += "Pos: %.1f, %.1f, %.1f\n" % [pos.x, pos.y, pos.z]
 
 	if tracking_jump:
