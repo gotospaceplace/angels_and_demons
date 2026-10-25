@@ -337,48 +337,55 @@ func _apply_air_acceleration(delta: float) -> void:
 	velocity.z += accel_speed * wish_dir.z
 
 func _walk_move(delta: float) -> void:
-	# Clip velocity along ground plane (PM_ClipVelocity) so slopes get full speed
 	var clipped := Vector3(velocity.x, 0, velocity.z)
 	if ground_normal.y < 1.0 and ground_normal.y >= MC.FLOOR_NORMAL_MIN:
 		var backoff := clipped.dot(ground_normal)
 		clipped = clipped - ground_normal * backoff
 	var move := clipped * delta
 
+	var did_step := false
 	var flat_collision := move_and_collide(move)
-	if not flat_collision:
-		return
+	if flat_collision:
+		var remainder := flat_collision.get_remainder()
+		var normal := flat_collision.get_normal()
 
-	var remainder := flat_collision.get_remainder()
-	var normal := flat_collision.get_normal()
+		var on_flat := ground_normal.y > 0.99
+		var blocked := remainder.length() > move.length() * 0.5
+		if on_flat and (normal.y < MC.FLOOR_NORMAL_MIN or blocked):
+			var pre_step_pos := global_position
 
-	# Step-up: only on flat ground (slopes use velocity clipping instead)
-	# Also requires either a wall-like normal or blocked movement (capsule edge hits)
-	var on_flat := ground_normal.y > 0.99
-	var blocked := remainder.length() > move.length() * 0.5
-	if on_flat and (normal.y < MC.FLOOR_NORMAL_MIN or blocked):
-		var pre_step_pos := global_position
+			var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
+			var step_up_height := MC.STEP_SIZE
+			if step_up_col:
+				step_up_height -= step_up_col.get_remainder().length()
 
-		var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
-		var step_up_height := MC.STEP_SIZE
-		if step_up_col:
-			step_up_height -= step_up_col.get_remainder().length()
+			if step_up_height > 0.001:
+				var fwd_dir := move.normalized()
+				var fwd_dist := maxf(remainder.length(), 0.4)
+				move_and_collide(fwd_dir * fwd_dist)
 
-		if step_up_height > 0.001:
-			var fwd_dir := move.normalized()
-			var fwd_dist := maxf(remainder.length(), 0.4)
-			move_and_collide(fwd_dir * fwd_dist)
+				var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
+				if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
+					did_step = true
 
-			var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
-			if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
-				return
+			if not did_step:
+				global_position = pre_step_pos
 
-		global_position = pre_step_pos
+		if not did_step:
+			var slide := remainder.slide(normal)
+			if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN and slide.y > 0.0:
+				slide.y = 0.0
+			if slide.length() > 0.001:
+				move_and_collide(slide)
 
-	var slide := remainder.slide(normal)
-	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN and slide.y > 0.0:
-		slide.y = 0.0
-	if slide.length() > 0.001:
-		move_and_collide(slide)
+	# Ground snap: trace down after moving to maintain slope/stair contact.
+	# Without this, slope movement causes ground/air oscillation that bleeds speed
+	# via _fly_move velocity slides, and gravity accumulates causing downhill drift.
+	if not did_step:
+		var pre_snap := global_position
+		var snap_col := move_and_collide(Vector3(0, -(MC.STEP_SIZE + 0.02), 0))
+		if not snap_col or snap_col.get_normal().y < MC.FLOOR_NORMAL_MIN:
+			global_position = pre_snap
 
 func _fly_move(delta: float) -> void:
 	var move := velocity * delta
