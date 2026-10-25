@@ -329,7 +329,7 @@ func _apply_air_acceleration(delta: float) -> void:
 	velocity.z += accel_speed * wish_dir.z
 
 func _walk_move(delta: float) -> void:
-	var on_slope := ground_normal.y < 0.99 and ground_normal.y >= MC.FLOOR_NORMAL_MIN
+	var on_slope := ground_normal.y < 0.93 and ground_normal.y >= MC.FLOOR_NORMAL_MIN
 
 	# Lift capsule above ground before horizontal move.
 	# Direct position offset — move_and_collide's collision recovery
@@ -345,11 +345,11 @@ func _walk_move(delta: float) -> void:
 		var remainder := flat_collision.get_remainder()
 		var normal := flat_collision.get_normal()
 
-		# Always attempt step-up on flat ground. The step-down validation
-		# ensures we only complete it when there's a walkable surface to
-		# land on. This must be unconditional on normal.y because the
-		# ducked capsule (mostly hemisphere) produces high-Y normals even
-		# against vertical stair faces.
+		# Attempt step-up on any collision while on flat ground.
+		# Unconditional on normal.y because the ducked capsule (mostly
+		# hemisphere) produces high-Y normals even against vertical stair
+		# faces. The height-gain and step-down checks prevent false
+		# positives against walls and slopes.
 		if not on_slope:
 			var pre_step_pos := global_position
 
@@ -365,7 +365,9 @@ func _walk_move(delta: float) -> void:
 
 				var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
 				if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
-					did_step = true
+					var net_height := global_position.y - pre_step_pos.y
+					if net_height > 0.02:
+						did_step = true
 
 			if not did_step:
 				global_position = pre_step_pos
