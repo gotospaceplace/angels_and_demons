@@ -15,9 +15,17 @@ var was_on_ground := false
 var jump_pressed := false
 var jump_was_pressed := false
 
+# Ducking
+var is_ducked := false
+var wants_duck := false
+var duck_eye_progress := 0.0
+
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_to_group("player")
+	standing_collision.shape = standing_collision.shape.duplicate()
+	var capsule: CapsuleShape3D = standing_collision.shape
+	capsule.height = MC.HULL_STANDING_HEIGHT
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
@@ -30,6 +38,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_read_input()
+	_handle_ducking(delta)
+
+	if is_ducked:
+		wish_speed *= MC.DUCKING_MULTIPLIER
+
 	_categorize_position()
 
 	if on_ground:
@@ -65,6 +78,69 @@ func _read_input() -> void:
 
 	jump_was_pressed = jump_pressed
 	jump_pressed = Input.is_action_pressed("jump")
+	wants_duck = Input.is_action_pressed("duck")
+
+func _handle_ducking(delta: float) -> void:
+	if wants_duck and not is_ducked:
+		_do_duck()
+	elif not wants_duck and is_ducked:
+		_try_unduck()
+
+	var target := 1.0 if is_ducked else 0.0
+	if on_ground:
+		if duck_eye_progress < target:
+			duck_eye_progress = minf(duck_eye_progress + delta / MC.DUCK_TIME, target)
+		elif duck_eye_progress > target:
+			duck_eye_progress = maxf(duck_eye_progress - delta / MC.DUCK_TIME, target)
+	else:
+		duck_eye_progress = target
+
+	head.position.y = lerpf(MC.VIEW_OFFSET_STANDING, MC.VIEW_OFFSET_DUCKING, duck_eye_progress)
+
+func _do_duck() -> void:
+	is_ducked = true
+	var half_standing := MC.HULL_STANDING_HEIGHT * 0.5
+	var half_ducked := MC.HULL_DUCKING_HEIGHT * 0.5
+	var height_diff := half_standing - half_ducked
+
+	var capsule: CapsuleShape3D = standing_collision.shape
+	capsule.height = MC.HULL_DUCKING_HEIGHT
+
+	if on_ground:
+		global_position.y -= height_diff
+	else:
+		global_position.y += height_diff
+
+func _try_unduck() -> void:
+	if not _can_unduck():
+		return
+
+	is_ducked = false
+	var half_standing := MC.HULL_STANDING_HEIGHT * 0.5
+	var half_ducked := MC.HULL_DUCKING_HEIGHT * 0.5
+	var height_diff := half_standing - half_ducked
+
+	var capsule: CapsuleShape3D = standing_collision.shape
+	capsule.height = MC.HULL_STANDING_HEIGHT
+
+	if on_ground:
+		global_position.y += height_diff
+	else:
+		global_position.y -= height_diff
+
+func _can_unduck() -> bool:
+	if not on_ground:
+		return true
+
+	var half_ducked := MC.HULL_DUCKING_HEIGHT * 0.5
+	var extra := MC.HULL_STANDING_HEIGHT - MC.HULL_DUCKING_HEIGHT
+
+	var space_state := get_world_3d().direct_space_state
+	var top := global_position + Vector3(0, half_ducked, 0)
+	var params := PhysicsRayQueryParameters3D.create(top, top + Vector3(0, extra, 0))
+	params.exclude = [get_rid()]
+	var result: Dictionary = space_state.intersect_ray(params)
+	return result.is_empty()
 
 func _categorize_position() -> void:
 	was_on_ground = on_ground
@@ -76,9 +152,11 @@ func _categorize_position() -> void:
 		return
 
 	var space_state := get_world_3d().direct_space_state
-	# Ray from player origin down to just below feet
-	# Capsule height 1.8m, origin at center, so feet are 0.9m below origin
-	var half_height: float = MC.HULL_STANDING_HEIGHT * 0.5
+	var half_height: float
+	if is_ducked:
+		half_height = MC.HULL_DUCKING_HEIGHT * 0.5
+	else:
+		half_height = MC.HULL_STANDING_HEIGHT * 0.5
 	var from := global_position
 	var to := from + Vector3(0, -(half_height + 0.05), 0)
 	var params := PhysicsRayQueryParameters3D.create(from, to)
@@ -160,7 +238,7 @@ func _check_edge_friction() -> bool:
 	# Cast downward from that point
 	var params := PhysicsRayQueryParameters3D.create(
 		start,
-		start + Vector3(0, -MC.HULL_STANDING_HEIGHT * 0.5 - MC.GROUND_TRACE_DIST, 0)
+		start + Vector3(0, -(MC.HULL_DUCKING_HEIGHT if is_ducked else MC.HULL_STANDING_HEIGHT) * 0.5 - MC.GROUND_TRACE_DIST, 0)
 	)
 	params.exclude = [get_rid()]
 

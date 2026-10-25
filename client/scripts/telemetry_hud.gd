@@ -80,6 +80,8 @@ func _physics_process(delta: float) -> void:
 
 	var h_speed_gsrc := h_speed * MC.UNITS_PER_METER
 	var ground_str := "GROUND" if player.on_ground else "AIR"
+	if player.is_ducked:
+		ground_str += " DUCK"
 
 	var text := ""
 	text += "Speed: %6.1f u/s  (%4.2f m/s)\n" % [h_speed_gsrc, h_speed]
