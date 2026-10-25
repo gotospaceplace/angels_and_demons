@@ -372,7 +372,9 @@ func _walk_move(delta: float) -> void:
 			global_position = pre_snap
 
 func _fly_move(delta: float) -> void:
+	var start_y := global_position.y
 	var move := velocity * delta
+	var hit_steep := false
 
 	var collision := move_and_collide(move)
 	if not collision:
@@ -383,8 +385,10 @@ func _fly_move(delta: float) -> void:
 	var slide := remainder.slide(normal)
 
 	velocity = velocity.slide(normal)
-	# Airborne: strip upward slide from any collision to prevent capsule
-	# hemisphere from climbing over wall edges or steep slopes
+	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
+		hit_steep = true
+		if velocity.y > 0.0:
+			velocity.y = 0.0
 	if slide.y > 0.0:
 		slide.y = 0.0
 
@@ -392,6 +396,13 @@ func _fly_move(delta: float) -> void:
 		var collision2 := move_and_collide(slide)
 		if collision2:
 			velocity = velocity.slide(collision2.get_normal())
+			if collision2.get_normal().y > 0.0 and collision2.get_normal().y < MC.FLOOR_NORMAL_MIN:
+				hit_steep = true
+				if velocity.y > 0.0:
+					velocity.y = 0.0
+
+	if hit_steep and global_position.y > start_y:
+		global_position.y = start_y
 
 func _ladder_move(delta: float) -> void:
 	var keyboard_jump := jump_pressed and not jump_was_pressed
