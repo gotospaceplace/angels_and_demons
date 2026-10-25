@@ -361,19 +361,21 @@ func _walk_move(delta: float) -> void:
 				global_position = pre_step_pos
 
 		if not did_step:
-			var slide := remainder.slide(normal)
+			var slide: Vector3
 			if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
+				# Treat steep slope as a vertical wall: slide against the
+				# horizontal normal so movement stays on the floor plane.
+				var wall_n := Vector3(normal.x, 0, normal.z)
+				if wall_n.length() > 0.001:
+					wall_n = wall_n.normalized()
+					slide = remainder.slide(wall_n)
+				else:
+					slide = remainder
 				slide.y = 0.0
-				# Strip into-slope component so the slide doesn't push the
-				# capsule into the ramp-floor junction
-				var horiz_n := Vector3(normal.x, 0, normal.z)
-				if horiz_n.length() > 0.001:
-					horiz_n = horiz_n.normalized()
-					var into_slide := slide.dot(horiz_n)
-					if into_slide < 0.0:
-						slide -= into_slide * horiz_n
-			elif slide.y > 0.0:
-				slide.y = 0.0
+			else:
+				slide = remainder.slide(normal)
+				if slide.y > 0.0:
+					slide.y = 0.0
 			if slide.length() > 0.001:
 				move_and_collide(slide)
 
