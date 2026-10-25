@@ -182,14 +182,16 @@ func _categorize_position() -> void:
 		ground_normal = Vector3.UP
 		return
 
-	# test_only probe: detect ground without moving the player. Avoids position
-	# oscillation at steep-slope junctions where the capsule hemisphere clips
-	# both the floor and the ramp on alternating frames.
-	var probe := move_and_collide(Vector3(0, -0.1, 0), true)
-	if probe and probe.get_normal().y >= MC.FLOOR_NORMAL_MIN:
-		on_ground = true
-		ground_normal = probe.get_normal()
-		return
+	# test_only probe with max_collisions=4: at a steep-slope junction the
+	# capsule hemisphere can clip both the floor and the ramp.  Returning all
+	# contacts lets us pick the walkable one, eliminating ground/air oscillation.
+	var probe := move_and_collide(Vector3(0, -0.1, 0), true, 0.001, false, 4)
+	if probe:
+		for i in probe.get_collision_count():
+			if probe.get_normal(i).y >= MC.FLOOR_NORMAL_MIN:
+				on_ground = true
+				ground_normal = probe.get_normal(i)
+				return
 
 	on_ground = false
 	ground_normal = Vector3.UP
@@ -403,16 +405,17 @@ func _fly_move(delta: float) -> void:
 					velocity.y = 0.0
 
 	if hit_steep:
-		if global_position.y > start_y:
-			global_position.y = start_y
 		velocity.y = minf(velocity.y, 0.0)
-		var horiz_n := Vector3(steep_normal.x, 0, steep_normal.z)
-		if horiz_n.length() > 0.001:
-			horiz_n = horiz_n.normalized()
-			var into := velocity.x * horiz_n.x + velocity.z * horiz_n.z
-			if into < 0.0:
-				velocity.x -= into * horiz_n.x
-				velocity.z -= into * horiz_n.z
+		# Only clamp Y when the player is actively pressing into the slope.
+		# Without this condition the clamp traps the player inside the ramp:
+		# collision recovery pushes up+away, clamp undoes the "up", leaving
+		# the capsule embedded, and every subsequent move_and_collide re-collides.
+		if global_position.y > start_y:
+			var horiz_n := Vector3(steep_normal.x, 0, steep_normal.z)
+			if horiz_n.length() > 0.001:
+				horiz_n = horiz_n.normalized()
+				if wish_dir.dot(-horiz_n) > 0.3:
+					global_position.y = start_y
 
 func _ladder_move(delta: float) -> void:
 	var keyboard_jump := jump_pressed and not jump_was_pressed
