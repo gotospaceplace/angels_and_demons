@@ -182,17 +182,15 @@ func _categorize_position() -> void:
 		ground_normal = Vector3.UP
 		return
 
-	# Probe ground using move_and_collide instead of raycast — raycasts pass
-	# through thin CSG collision shapes (like rotated ramp boxes) but capsule
-	# shape collision detects them reliably.
-	var saved_pos := global_position
-	var probe := move_and_collide(Vector3(0, -0.1, 0))
+	# test_only probe: detect ground without moving the player. Avoids position
+	# oscillation at steep-slope junctions where the capsule hemisphere clips
+	# both the floor and the ramp on alternating frames.
+	var probe := move_and_collide(Vector3(0, -0.1, 0), true)
 	if probe and probe.get_normal().y >= MC.FLOOR_NORMAL_MIN:
 		on_ground = true
 		ground_normal = probe.get_normal()
 		return
 
-	global_position = saved_pos
 	on_ground = false
 	ground_normal = Vector3.UP
 
@@ -375,6 +373,7 @@ func _fly_move(delta: float) -> void:
 	var start_y := global_position.y
 	var move := velocity * delta
 	var hit_steep := false
+	var steep_normal := Vector3.ZERO
 
 	var collision := move_and_collide(move)
 	if not collision:
@@ -387,6 +386,7 @@ func _fly_move(delta: float) -> void:
 	velocity = velocity.slide(normal)
 	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
 		hit_steep = true
+		steep_normal = normal
 		if velocity.y > 0.0:
 			velocity.y = 0.0
 	if slide.y > 0.0:
@@ -398,11 +398,21 @@ func _fly_move(delta: float) -> void:
 			velocity = velocity.slide(collision2.get_normal())
 			if collision2.get_normal().y > 0.0 and collision2.get_normal().y < MC.FLOOR_NORMAL_MIN:
 				hit_steep = true
+				steep_normal = collision2.get_normal()
 				if velocity.y > 0.0:
 					velocity.y = 0.0
 
-	if hit_steep and global_position.y > start_y:
-		global_position.y = start_y
+	if hit_steep:
+		if global_position.y > start_y:
+			global_position.y = start_y
+		velocity.y = minf(velocity.y, 0.0)
+		var horiz_n := Vector3(steep_normal.x, 0, steep_normal.z)
+		if horiz_n.length() > 0.001:
+			horiz_n = horiz_n.normalized()
+			var into := velocity.x * horiz_n.x + velocity.z * horiz_n.z
+			if into < 0.0:
+				velocity.x -= into * horiz_n.x
+				velocity.z -= into * horiz_n.z
 
 func _ladder_move(delta: float) -> void:
 	var keyboard_jump := jump_pressed and not jump_was_pressed
