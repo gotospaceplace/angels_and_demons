@@ -337,11 +337,11 @@ func _apply_air_acceleration(delta: float) -> void:
 	velocity.z += accel_speed * wish_dir.z
 
 func _walk_move(delta: float) -> void:
-	var clipped := Vector3(velocity.x, 0, velocity.z)
-	if ground_normal.y < 1.0 and ground_normal.y >= MC.FLOOR_NORMAL_MIN:
-		var backoff := clipped.dot(ground_normal)
-		clipped = clipped - ground_normal * backoff
-	var move := clipped * delta
+	var on_slope := ground_normal.y < 0.99 and ground_normal.y >= MC.FLOOR_NORMAL_MIN
+	if on_slope:
+		move_and_collide(Vector3(0, 0.08, 0))
+
+	var move := Vector3(velocity.x, 0, velocity.z) * delta
 
 	var did_step := false
 	var flat_collision := move_and_collide(move)
@@ -349,9 +349,7 @@ func _walk_move(delta: float) -> void:
 		var remainder := flat_collision.get_remainder()
 		var normal := flat_collision.get_normal()
 
-		var on_flat := ground_normal.y > 0.99
-		var blocked := remainder.length() > move.length() * 0.5
-		if on_flat and (normal.y < MC.FLOOR_NORMAL_MIN or blocked):
+		if not on_slope and (normal.y < MC.FLOOR_NORMAL_MIN or remainder.length() > move.length() * 0.5):
 			var pre_step_pos := global_position
 
 			var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
@@ -378,12 +376,10 @@ func _walk_move(delta: float) -> void:
 			if slide.length() > 0.001:
 				move_and_collide(slide)
 
-	# Ground snap: trace down after moving to maintain slope/stair contact.
-	# Without this, slope movement causes ground/air oscillation that bleeds speed
-	# via _fly_move velocity slides, and gravity accumulates causing downhill drift.
+	# Ground snap: trace down to maintain slope and stair contact
 	if not did_step:
 		var pre_snap := global_position
-		var snap_col := move_and_collide(Vector3(0, -(MC.STEP_SIZE + 0.02), 0))
+		var snap_col := move_and_collide(Vector3(0, -(MC.STEP_SIZE + 0.1), 0))
 		if not snap_col or snap_col.get_normal().y < MC.FLOOR_NORMAL_MIN:
 			global_position = pre_snap
 
