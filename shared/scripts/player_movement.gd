@@ -345,8 +345,8 @@ func _walk_move(delta: float) -> void:
 		var remainder := flat_collision.get_remainder()
 		var normal := flat_collision.get_normal()
 
-		# Step-up only for near-vertical walls (|normal.y| < 0.3).
-		if not on_slope and absf(normal.y) < 0.3:
+		# Step-up for surfaces steeper than walkable (normal.y below floor threshold).
+		if not on_slope and normal.y < MC.FLOOR_NORMAL_MIN:
 			var pre_step_pos := global_position
 
 			var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
