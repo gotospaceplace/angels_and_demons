@@ -177,36 +177,24 @@ func _can_unduck() -> bool:
 func _categorize_position() -> void:
 	was_on_ground = on_ground
 
-	# Use is_on_floor() after a zero-length move to let Godot's internal
-	# floor detection work, plus a raycast as backup
 	if velocity.y > 0.0:
 		on_ground = false
+		ground_normal = Vector3.UP
 		return
 
-	var space_state := get_world_3d().direct_space_state
-	var half_height: float
-	if is_ducked:
-		half_height = MC.HULL_DUCKING_HEIGHT * 0.5
-	else:
-		half_height = MC.HULL_STANDING_HEIGHT * 0.5
-	var from := global_position
-	var to := from + Vector3(0, -(half_height + 0.05), 0)
-	var params := PhysicsRayQueryParameters3D.create(from, to)
-	params.exclude = [get_rid()]
-
-	var result: Dictionary = space_state.intersect_ray(params)
-	if not result.is_empty() and Vector3(result.normal).y >= MC.FLOOR_NORMAL_MIN:
+	# Probe ground using move_and_collide instead of raycast — raycasts pass
+	# through thin CSG collision shapes (like rotated ramp boxes) but capsule
+	# shape collision detects them reliably.
+	var saved_pos := global_position
+	var probe := move_and_collide(Vector3(0, -0.1, 0))
+	if probe and probe.get_normal().y >= MC.FLOOR_NORMAL_MIN:
 		on_ground = true
-		ground_normal = Vector3(result.normal)
-		if velocity.y <= 0.0:
-			var foot_y: float = from.y - half_height
-			var ground_y: float = Vector3(result.position).y
-			var snap_dist: float = foot_y - ground_y
-			if snap_dist > -0.01 and snap_dist < 0.1:
-				global_position.y = ground_y + half_height
-	else:
-		on_ground = false
-		ground_normal = Vector3.UP
+		ground_normal = probe.get_normal()
+		return
+
+	global_position = saved_pos
+	on_ground = false
+	ground_normal = Vector3.UP
 
 func _ground_move(delta: float) -> void:
 	# Pre-move half gravity
