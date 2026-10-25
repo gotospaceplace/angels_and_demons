@@ -29,11 +29,6 @@ var ground_time := 0.0
 # Ground surface
 var ground_normal := Vector3.UP
 
-# Debug
-var debug_walk_col := ""
-var debug_move_info := ""
-var _debug_last_pos := Vector3.ZERO
-
 # Ladder
 var on_ladder := false
 var ladder_normal := Vector3.FORWARD
@@ -72,7 +67,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		scroll_jump_queued = true
 
 func _physics_process(delta: float) -> void:
-	var frame_start := global_position
 	_read_input()
 	_handle_ducking(delta)
 
@@ -91,7 +85,6 @@ func _physics_process(delta: float) -> void:
 	else:
 		ground_time = 0.0
 
-	var mode := "G" if on_ground else "A"
 	if on_ground:
 		_ground_move(delta)
 	else:
@@ -104,10 +97,6 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= MC.GRAVITY * delta * 0.5
 	else:
 		velocity.y = 0.0
-
-	var dx := global_position - frame_start
-	var hdist := Vector3(dx.x, 0, dx.z).length() * MC.UNITS_PER_METER
-	debug_move_info = "%s dH:%.1f dY:%.4f" % [mode, hdist, dx.y]
 
 	scroll_jump_queued = false
 
@@ -348,12 +337,9 @@ func _walk_move(delta: float) -> void:
 	var did_step := false
 	var pre_move := global_position
 	var flat_collision := move_and_collide(move)
-	if not flat_collision:
-		debug_walk_col = ""
-	else:
+	if flat_collision:
 		var remainder := flat_collision.get_remainder()
 		var normal := flat_collision.get_normal()
-		debug_walk_col = "N:(%.2f,%.2f,%.2f) T:%.4f R:%.4f" % [normal.x, normal.y, normal.z, flat_collision.get_travel().length(), remainder.length()]
 
 		# Step-up only for near-vertical walls (|normal.y| < 0.3).
 		if not on_slope and absf(normal.y) < 0.3:
@@ -411,7 +397,6 @@ func _walk_move(delta: float) -> void:
 		if not snapped:
 			# No walkable ground below — undo the lift
 			global_position.y -= 0.1
-			debug_walk_col += " SNAP_FAIL"
 
 func _fly_move(delta: float) -> void:
 	var start_y := global_position.y
