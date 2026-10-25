@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://c8testroom001"]
+[gd_scene load_steps=8 format=3 uid="uid://c8testroom001"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
 albedo_color = Color(0.25, 0.25, 0.28, 1)
@@ -16,6 +16,15 @@ ambient_light_energy = 0.5
 tonemap_mode = 2
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributes_room"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_obstacle"]
+albedo_color = Color(0.7, 0.3, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_marker"]
+albedo_color = Color(0.8, 0.7, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_platform"]
+albedo_color = Color(0.2, 0.45, 0.65, 1)
 
 [node name="TestRoom" type="Node3D"]
 
@@ -69,3 +78,90 @@ material = SubResource("StandardMaterial3D_ceiling")
 
 [node name="SpawnPoint" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="JumpWall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, -4)
+use_collision = true
+size = Vector3(8, 1.1, 0.3)
+material = SubResource("StandardMaterial3D_obstacle")
+
+[node name="JumpWallLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, -3.7)
+billboard = 1
+text = "JUMP 1.1m"
+font_size = 48
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="DuckJumpWall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, -7)
+use_collision = true
+size = Vector3(8, 1.5, 0.3)
+material = SubResource("StandardMaterial3D_obstacle")
+
+[node name="DuckJumpWallLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1, -6.7)
+billboard = 1
+text = "DUCK-JUMP 1.5m"
+font_size = 48
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="BhopMarkerStart" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.125, 4)
+size = Vector3(0.15, 0.05, 4)
+material = SubResource("StandardMaterial3D_marker")
+
+[node name="BhopMarkerMid" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.125, 4)
+size = Vector3(0.15, 0.05, 4)
+material = SubResource("StandardMaterial3D_marker")
+
+[node name="BhopMarkerEnd" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.125, 4)
+size = Vector3(0.15, 0.05, 4)
+material = SubResource("StandardMaterial3D_marker")
+
+[node name="BhopLabelStart" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1.5, 4)
+billboard = 1
+text = "BHOP CORRIDOR  0m"
+font_size = 40
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="BhopLabel8m" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 4)
+billboard = 1
+text = "8m"
+font_size = 40
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="BhopLabel16m" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.5, 4)
+billboard = 1
+text = "16m"
+font_size = 40
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="GapPlatformLeft" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.75, 0.3, 8)
+use_collision = true
+size = Vector3(5, 0.4, 2.5)
+material = SubResource("StandardMaterial3D_platform")
+
+[node name="GapPlatformRight" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.75, 0.3, 8)
+use_collision = true
+size = Vector3(5, 0.4, 2.5)
+material = SubResource("StandardMaterial3D_platform")
+
+[node name="GapLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 8)
+billboard = 1
+text = "GAP 4.5m"
+font_size = 48
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)

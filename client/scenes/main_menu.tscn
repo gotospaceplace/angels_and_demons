@@ -54,7 +54,7 @@ text = "Server Address:"
 [node name="IPInput" type="LineEdit" parent="CenterContainer/VBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(300, 0)
-text = "127.0.0.1"
+text = "192.168.30.11"
 placeholder_text = "IP address"
 alignment = 1
 
