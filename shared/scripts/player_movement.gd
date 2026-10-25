@@ -362,9 +362,9 @@ func _walk_move(delta: float) -> void:
 
 		if not did_step:
 			var slide: Vector3
+			var steep_slide := false
 			if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
-				# Treat steep slope as a vertical wall: slide against the
-				# horizontal normal so movement stays on the floor plane.
+				steep_slide = true
 				var wall_n := Vector3(normal.x, 0, normal.z)
 				if wall_n.length() > 0.001:
 					wall_n = wall_n.normalized()
@@ -377,7 +377,13 @@ func _walk_move(delta: float) -> void:
 				if slide.y > 0.0:
 					slide.y = 0.0
 			if slide.length() > 0.001:
-				move_and_collide(slide)
+				if steep_slide:
+					# Direct offset — move_and_collide would re-collide with
+					# the same steep surface (capsule hemisphere is still in
+					# contact). One tick is ~0.05m, safe from clipping.
+					global_position += slide
+				else:
+					move_and_collide(slide)
 
 	# Ground snap: trace down to maintain slope and stair contact.
 	# max_collisions=4 so the snap finds the walkable floor even when the
