@@ -118,6 +118,7 @@ func _physics_process(delta: float) -> void:
 	if player.hop_count > 0:
 		text += "Bhop: %d hops\n" % player.hop_count
 	text += "Pos: %.1f, %.1f, %.1f\n" % [pos.x, pos.y, pos.z]
+	text += "Dbg: %s\n" % player.debug_move_info
 	if player.debug_walk_col != "":
 		text += "WCol: %s\n" % player.debug_walk_col
 
