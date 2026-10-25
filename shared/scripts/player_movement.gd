@@ -353,6 +353,9 @@ func _walk_move(delta: float) -> void:
 		global_position = saved_pos
 
 	var slide := remainder.slide(normal)
+	# Prevent climbing non-walkable slopes — strip upward slide component
+	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN and slide.y > 0.0:
+		slide.y = 0.0
 	if slide.length() > 0.001:
 		move_and_collide(slide)
 
@@ -363,13 +366,17 @@ func _fly_move(delta: float) -> void:
 	if not collision:
 		return
 
-	# Slide along collision surface
 	var remainder := collision.get_remainder()
 	var normal := collision.get_normal()
 	var slide := remainder.slide(normal)
 
-	# Adjust velocity to slide along wall
 	velocity = velocity.slide(normal)
+	# Prevent climbing non-walkable slopes while airborne
+	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
+		if slide.y > 0.0:
+			slide.y = 0.0
+		if velocity.y > 0.0:
+			velocity.y = 0.0
 
 	if slide.length() > 0.001:
 		var collision2 := move_and_collide(slide)
