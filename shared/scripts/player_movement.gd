@@ -328,34 +328,31 @@ func _apply_air_acceleration(delta: float) -> void:
 func _walk_move(delta: float) -> void:
 	var move := Vector3(velocity.x, 0, velocity.z) * delta
 
-	# Try flat move
 	var flat_collision := move_and_collide(move)
 	if not flat_collision:
 		return
 
-	# Slide along the collision surface
 	var remainder := flat_collision.get_remainder()
 	var normal := flat_collision.get_normal()
-	var slide := remainder.slide(normal)
 
-	if slide.length() > 0.001:
-		# Try step-up: move up, slide, move down
-		var step_up := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
+	# Try step-up when hitting a wall (non-floor surface)
+	if normal.y < MC.FLOOR_NORMAL_MIN and remainder.length() > 0.001:
+		var saved_pos := global_position
+
+		var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
 		var step_up_height := MC.STEP_SIZE
-		if step_up:
-			step_up_height = MC.STEP_SIZE - step_up.get_remainder().length()
+		if step_up_col:
+			step_up_height -= step_up_col.get_remainder().length()
 
-		var step_slide := move_and_collide(slide)
+		if step_up_height > 0.001:
+			move_and_collide(remainder)
+			var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
+			if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
+				return
 
-		# Step back down
-		var step_down := move_and_collide(Vector3(0, -step_up_height, 0))
-		if step_down and step_down.get_normal().y >= MC.FLOOR_NORMAL_MIN:
-			return  # successful step-up
+		global_position = saved_pos
 
-		# Step-up failed, just do the flat slide
-		move_and_collide(Vector3(0, -step_up_height, 0))
-
-	# Final flat slide attempt
+	var slide := remainder.slide(normal)
 	if slide.length() > 0.001:
 		move_and_collide(slide)
 
