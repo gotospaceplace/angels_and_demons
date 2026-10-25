@@ -399,14 +399,16 @@ func _ladder_move(delta: float) -> void:
 
 	var wish_vel := cam_forward * (-input_dir.y) + right * input_dir.x
 
-	# Project out the ladder normal so no velocity is wasted pushing into the wall
-	wish_vel = wish_vel - ladder_normal * wish_vel.dot(ladder_normal)
+	# Dismount if pushing away from ladder face (pressing S while facing wall)
+	if wish_vel.dot(ladder_normal) > 0.5:
+		on_ladder = false
+		velocity = ladder_normal * MC.MAX_CLIMB_SPEED * 0.5
+		return
 
-	if wish_vel.length() > 1.0:
+	# Project out the ladder normal, then re-normalize to preserve full climb speed
+	wish_vel = wish_vel - ladder_normal * wish_vel.dot(ladder_normal)
+	if wish_vel.length() > 0.001:
 		wish_vel = wish_vel.normalized()
-	elif wish_vel.length() > 0.001:
-		var mag := wish_vel.length()
-		wish_vel = wish_vel.normalized() * mag
 	else:
 		wish_vel = Vector3.ZERO
 
