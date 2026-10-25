@@ -365,11 +365,14 @@ func _walk_move(delta: float) -> void:
 				var fwd_dist := maxf(remainder.length(), 0.4)
 				move_and_collide(fwd_dir * fwd_dist)
 
-				var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
-				if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
-					var net_height := global_position.y - pre_step_pos.y
-					if net_height > 0.02:
-						did_step = true
+				var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0), false, 0.001, false, 4)
+				if step_down_col:
+					for i in step_down_col.get_collision_count():
+						if step_down_col.get_normal(i).y >= MC.FLOOR_NORMAL_MIN:
+							var net_height := global_position.y - pre_step_pos.y
+							if net_height > 0.02:
+								did_step = true
+							break
 
 			if not did_step:
 				global_position = pre_step_pos
