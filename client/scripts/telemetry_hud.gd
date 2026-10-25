@@ -79,7 +79,13 @@ func _physics_process(delta: float) -> void:
 	update_timer = 0.0
 
 	var h_speed_gsrc := h_speed * MC.UNITS_PER_METER
-	var ground_str := "GROUND" if player.on_ground else "AIR"
+	var ground_str: String
+	if player.on_ladder:
+		ground_str = "LADDER"
+	elif player.on_ground:
+		ground_str = "GROUND"
+	else:
+		ground_str = "AIR"
 	if player.is_ducked:
 		ground_str += " DUCK"
 
