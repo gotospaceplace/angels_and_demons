@@ -337,8 +337,10 @@ func _apply_air_acceleration(delta: float) -> void:
 
 func _walk_move(delta: float) -> void:
 	var on_slope := ground_normal.y < 0.99 and ground_normal.y >= MC.FLOOR_NORMAL_MIN
-	if on_slope:
-		move_and_collide(Vector3(0, 0.08, 0))
+	# Lift capsule before horizontal move: clears the hemisphere from
+	# the ground surface so the horizontal move_and_collide doesn't
+	# scrape the floor (ground snap pulls it back down afterward).
+	move_and_collide(Vector3(0, 0.08, 0))
 
 	var move := Vector3(velocity.x, 0, velocity.z) * delta
 
