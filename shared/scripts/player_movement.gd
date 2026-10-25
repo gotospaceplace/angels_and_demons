@@ -380,7 +380,6 @@ func _fly_move(delta: float) -> void:
 			velocity = velocity.slide(collision2.get_normal())
 
 func _ladder_move(delta: float) -> void:
-	# Jump to dismount: push player away from ladder face
 	var keyboard_jump := jump_pressed and not jump_was_pressed
 	if keyboard_jump or scroll_jump_queued:
 		on_ladder = false
@@ -390,29 +389,20 @@ func _ladder_move(delta: float) -> void:
 		scroll_jump_queued = false
 		return
 
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	var cam_forward := -camera.global_transform.basis.z
-	var right := global_transform.basis.x
-
-	# Forward/backward uses camera pitch to climb up/down
-	var wish_vel := cam_forward * (-input_dir.y) + right * input_dir.x
-
-	# Project out the ladder normal component so player stays on the ladder
-	wish_vel = wish_vel - ladder_normal * wish_vel.dot(ladder_normal)
-
-	var speed := wish_vel.length()
-	if speed > 0.001:
-		wish_vel = wish_vel.normalized()
-	else:
-		wish_vel = Vector3.ZERO
-
 	var climb_speed := MC.MAX_CLIMB_SPEED
 	if is_ducked:
 		climb_speed *= MC.DUCKING_MULTIPLIER
 
-	velocity = wish_vel * minf(speed, 1.0) * climb_speed
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	var cam_forward := -camera.global_transform.basis.z
+	var right := global_transform.basis.x
 
-	# Hard cap on full 3D velocity vector
+	var wish_vel := cam_forward * (-input_dir.y) + right * input_dir.x
+	if wish_vel.length() > 1.0:
+		wish_vel = wish_vel.normalized()
+
+	velocity = wish_vel * climb_speed
+
 	if velocity.length() > climb_speed:
 		velocity = velocity.normalized() * climb_speed
 
