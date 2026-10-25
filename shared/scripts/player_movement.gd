@@ -182,12 +182,10 @@ func _categorize_position() -> void:
 		ground_normal = Vector3.UP
 		return
 
-	# Capsule probe with max_collisions=4: at a steep-slope junction the
-	# hemisphere can clip both the floor and the ramp.  Returning all contacts
-	# lets us pick the walkable one (floor), eliminating ground/air oscillation.
-	# Non-test_only so the capsule snaps to the ground surface.
-	var saved_pos := global_position
-	var probe := move_and_collide(Vector3(0, -0.1, 0), false, 0.001, false, 4)
+	# test_only probe: detect ground without moving the capsule.
+	# max_collisions=4 so we find the walkable floor even when the
+	# hemisphere also clips a nearby steep surface.
+	var probe := move_and_collide(Vector3(0, -0.1, 0), true, 0.001, false, 4)
 	if probe:
 		for i in probe.get_collision_count():
 			if probe.get_normal(i).y >= MC.FLOOR_NORMAL_MIN:
@@ -195,7 +193,6 @@ func _categorize_position() -> void:
 				ground_normal = probe.get_normal(i)
 				return
 
-	global_position = saved_pos
 	on_ground = false
 	ground_normal = Vector3.UP
 
