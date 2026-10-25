@@ -337,10 +337,11 @@ func _apply_air_acceleration(delta: float) -> void:
 
 func _walk_move(delta: float) -> void:
 	var on_slope := ground_normal.y < 0.99 and ground_normal.y >= MC.FLOOR_NORMAL_MIN
-	# Lift capsule before horizontal move: clears the hemisphere from
-	# the ground surface so the horizontal move_and_collide doesn't
-	# scrape the floor (ground snap pulls it back down afterward).
-	move_and_collide(Vector3(0, 0.08, 0))
+
+	# Lift capsule above ground before horizontal move.
+	# Direct position offset — move_and_collide's collision recovery
+	# causes vertical oscillation that produces visible jitter.
+	global_position.y += 0.1
 
 	var move := Vector3(velocity.x, 0, velocity.z) * delta
 
@@ -355,8 +356,6 @@ func _walk_move(delta: float) -> void:
 		debug_walk_col = "N:(%.2f,%.2f,%.2f) T:%.4f R:%.4f" % [normal.x, normal.y, normal.z, flat_collision.get_travel().length(), remainder.length()]
 
 		# Step-up only for near-vertical walls (|normal.y| < 0.3).
-		# Steep slopes, ramp undersides and base faces all have larger
-		# |normal.y| and the up/forward/down sequence traps the capsule.
 		if not on_slope and absf(normal.y) < 0.3:
 			var pre_step_pos := global_position
 
@@ -380,10 +379,6 @@ func _walk_move(delta: float) -> void:
 		if not did_step:
 			var slide: Vector3
 			if normal.y < MC.FLOOR_NORMAL_MIN:
-				# Any non-walkable surface (steep slopes, ramp base faces,
-				# undersides): project normal to horizontal and treat as a
-				# vertical wall.  Direct position offset avoids re-collision
-				# from capsule hemisphere proximity.
 				var wall_n := Vector3(normal.x, 0, normal.z)
 				if wall_n.length() > 0.001:
 					wall_n = wall_n.normalized()
@@ -400,20 +395,22 @@ func _walk_move(delta: float) -> void:
 				if slide.length() > 0.001:
 					move_and_collide(slide)
 
-	# Ground snap: trace down to maintain slope and stair contact.
-	# max_collisions=4 so the snap finds the walkable floor even when the
-	# capsule hemisphere also clips a nearby steep surface.
+	# Ground snap: test_only probe to find walkable surface, then set
+	# position directly.  Non-test_only snap caused collision recovery
+	# oscillation (recovery pushes up, snap pulls down = visible jitter).
 	if not did_step:
-		var pre_snap := global_position
-		var snap_col := move_and_collide(Vector3(0, -(MC.STEP_SIZE + 0.1), 0), false, 0.001, false, 4)
-		var snap_ok := false
-		if snap_col:
-			for i in snap_col.get_collision_count():
-				if snap_col.get_normal(i).y >= MC.FLOOR_NORMAL_MIN:
-					snap_ok = true
+		var snap_dist := MC.STEP_SIZE + 0.2
+		var snap_test := move_and_collide(Vector3(0, -snap_dist, 0), true, 0.001, false, 4)
+		var snapped := false
+		if snap_test:
+			for i in snap_test.get_collision_count():
+				if snap_test.get_normal(i).y >= MC.FLOOR_NORMAL_MIN:
+					global_position += snap_test.get_travel()
+					snapped = true
 					break
-		if not snap_ok:
-			global_position = pre_snap
+		if not snapped:
+			# No walkable ground below — undo the lift
+			global_position.y -= 0.1
 			debug_walk_col += " SNAP_FAIL"
 
 func _fly_move(delta: float) -> void:
