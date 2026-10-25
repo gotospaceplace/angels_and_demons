@@ -115,34 +115,24 @@ func _handle_ducking(delta: float) -> void:
 
 func _do_duck() -> void:
 	is_ducked = true
-	var half_standing := MC.HULL_STANDING_HEIGHT * 0.5
-	var half_ducked := MC.HULL_DUCKING_HEIGHT * 0.5
-	var height_diff := half_standing - half_ducked
-
 	var capsule: CapsuleShape3D = standing_collision.shape
 	capsule.height = MC.HULL_DUCKING_HEIGHT
 
 	if on_ground:
+		var height_diff := MC.HULL_STANDING_HEIGHT * 0.5 - MC.HULL_DUCKING_HEIGHT * 0.5
 		global_position.y -= height_diff
-	else:
-		global_position.y += height_diff
 
 func _try_unduck() -> void:
 	if not _can_unduck():
 		return
 
 	is_ducked = false
-	var half_standing := MC.HULL_STANDING_HEIGHT * 0.5
-	var half_ducked := MC.HULL_DUCKING_HEIGHT * 0.5
-	var height_diff := half_standing - half_ducked
-
 	var capsule: CapsuleShape3D = standing_collision.shape
 	capsule.height = MC.HULL_STANDING_HEIGHT
 
 	if on_ground:
+		var height_diff := MC.HULL_STANDING_HEIGHT * 0.5 - MC.HULL_DUCKING_HEIGHT * 0.5
 		global_position.y += height_diff
-	else:
-		global_position.y -= height_diff
 
 func _can_unduck() -> bool:
 	if not on_ground:
