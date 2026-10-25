@@ -29,6 +29,9 @@ var ground_time := 0.0
 # Ground surface
 var ground_normal := Vector3.UP
 
+# Debug: last walk_move collision info
+var debug_walk_col := ""
+
 # Ladder
 var on_ladder := false
 var ladder_normal := Vector3.FORWARD
@@ -332,10 +335,14 @@ func _walk_move(delta: float) -> void:
 	var move := Vector3(velocity.x, 0, velocity.z) * delta
 
 	var did_step := false
+	var pre_move := global_position
 	var flat_collision := move_and_collide(move)
 	if flat_collision:
 		var remainder := flat_collision.get_remainder()
 		var normal := flat_collision.get_normal()
+		debug_walk_col = "N:(%.2f,%.2f,%.2f) T:%.4f R:%.4f" % [normal.x, normal.y, normal.z, flat_collision.get_travel().length(), remainder.length()]
+	else:
+		debug_walk_col = ""
 
 		# Step-up only for near-vertical walls (|normal.y| < 0.3).
 		# Steep slopes, ramp undersides and base faces all have larger
