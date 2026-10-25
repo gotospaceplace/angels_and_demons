@@ -15,6 +15,8 @@ var was_on_ground := false
 var jump_pressed := false
 var jump_was_pressed := false
 
+var scroll_jump_queued := false
+
 # Ducking
 var is_ducked := false
 var wants_duck := false
@@ -35,6 +37,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event.is_action_pressed("ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+	if event is InputEventMouseButton and event.is_action_pressed("jump"):
+		scroll_jump_queued = true
 
 func _physics_process(delta: float) -> void:
 	_read_input()
@@ -57,6 +62,8 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= MC.GRAVITY * delta * 0.5
 	else:
 		velocity.y = 0.0
+
+	scroll_jump_queued = false
 
 func _read_input() -> void:
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
@@ -180,10 +187,11 @@ func _ground_move(delta: float) -> void:
 	velocity.y -= MC.GRAVITY * delta * 0.5
 	velocity.y = 0.0
 
-	# Jump check: must release and re-press (anti-pogo)
-	if jump_pressed and not jump_was_pressed and on_ground:
+	var keyboard_jump := jump_pressed and not jump_was_pressed
+	if (keyboard_jump or scroll_jump_queued) and on_ground:
 		velocity.y = MC.JUMP_SPEED
 		on_ground = false
+		scroll_jump_queued = false
 		return
 
 	# Friction
