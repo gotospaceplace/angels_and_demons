@@ -329,14 +329,16 @@ func _apply_air_acceleration(delta: float) -> void:
 	velocity.z += accel_speed * wish_dir.z
 
 func _walk_move(delta: float) -> void:
-	var on_slope := ground_normal.y < 0.93 and ground_normal.y >= MC.FLOOR_NORMAL_MIN
-
-	# Lift capsule above ground before horizontal move.
-	# Direct position offset — move_and_collide's collision recovery
-	# causes vertical oscillation that produces visible jitter.
-	global_position.y += 0.1
-
 	var move := Vector3(velocity.x, 0, velocity.z) * delta
+
+	# Skip the lift-move-snap cycle when not moving. At geometry edges
+	# (stair lips, CSG seams) the snap probe returns subtly different
+	# travel each frame, producing visible micro-jitter when idle.
+	if move.length_squared() < 0.000001:
+		return
+
+	var on_slope := ground_normal.y < 0.93 and ground_normal.y >= MC.FLOOR_NORMAL_MIN
+	global_position.y += 0.1
 
 	var did_step := false
 	var pre_move := global_position
