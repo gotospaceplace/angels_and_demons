@@ -351,26 +351,26 @@ func _walk_move(delta: float) -> void:
 	var remainder := flat_collision.get_remainder()
 	var normal := flat_collision.get_normal()
 
-	# Try step-up from collision point on any blocking collision
-	# (capsule hemisphere makes normal.y unreliable for step detection)
-	var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
-	var step_up_height := MC.STEP_SIZE
-	if step_up_col:
-		step_up_height -= step_up_col.get_remainder().length()
+	# Step-up: only when the collision blocked significant movement (>50% of move)
+	# Grazing ramp collisions pass most of the movement through and skip this
+	var blocked := remainder.length() > move.length() * 0.5
+	if normal.y < MC.FLOOR_NORMAL_MIN or blocked:
+		var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
+		var step_up_height := MC.STEP_SIZE
+		if step_up_col:
+			step_up_height -= step_up_col.get_remainder().length()
 
-	if step_up_height > 0.001:
-		# Move forward enough to clear the step edge (at least capsule width)
-		var fwd_dir := move.normalized()
-		var fwd_dist := maxf(remainder.length(), 0.4)
-		move_and_collide(fwd_dir * fwd_dist)
+		if step_up_height > 0.001:
+			var fwd_dir := move.normalized()
+			var fwd_dist := maxf(remainder.length(), 0.4)
+			move_and_collide(fwd_dir * fwd_dist)
 
-		# Step down to find the step surface
-		var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
-		if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
-			return
+			var step_down_col := move_and_collide(Vector3(0, -step_up_height, 0))
+			if step_down_col and step_down_col.get_normal().y >= MC.FLOOR_NORMAL_MIN:
+				return
 
-	# Step-up failed or not applicable — step back down and slide
-	move_and_collide(Vector3(0, -step_up_height, 0))
+		move_and_collide(Vector3(0, -step_up_height, 0))
+
 	var slide := remainder.slide(normal)
 	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN and slide.y > 0.0:
 		slide.y = 0.0
