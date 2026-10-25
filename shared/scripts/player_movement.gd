@@ -345,8 +345,12 @@ func _walk_move(delta: float) -> void:
 		var remainder := flat_collision.get_remainder()
 		var normal := flat_collision.get_normal()
 
-		# Step-up for surfaces steeper than walkable (normal.y below floor threshold).
-		if not on_slope and normal.y < MC.FLOOR_NORMAL_MIN:
+		# Always attempt step-up on flat ground. The step-down validation
+		# ensures we only complete it when there's a walkable surface to
+		# land on. This must be unconditional on normal.y because the
+		# ducked capsule (mostly hemisphere) produces high-Y normals even
+		# against vertical stair faces.
+		if not on_slope:
 			var pre_step_pos := global_position
 
 			var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
