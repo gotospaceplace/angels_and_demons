@@ -1,0 +1,44 @@
+[gd_scene load_steps=6 format=3 uid="uid://c8testscene01"]
+
+[ext_resource type="Script" path="res://shared/scripts/player_movement.gd" id="1_player"]
+[ext_resource type="PackedScene" path="res://shared/scenes/test_room.tscn" id="2_room"]
+[ext_resource type="Script" path="res://tests/movement_tests.gd" id="3_tests"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.35
+height = 1.8
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_step"]
+size = Vector3(0.3, 0.4, 4.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(40, 0.2, 40)
+
+[node name="TestScene" type="Node3D"]
+
+[node name="TestRoom" parent="." instance=ExtResource("2_room")]
+
+[node name="TestFloor" type="StaticBody3D" parent="."]
+[node name="TestFloorShape" type="CollisionShape3D" parent="TestFloor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="StepObstacle" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.3, 0)
+[node name="StepShape" type="CollisionShape3D" parent="StepObstacle"]
+shape = SubResource("BoxShape3D_step")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("1_player")
+
+[node name="PlayerCollision" type="CollisionShape3D" parent="Player"]
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Head" type="Node3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.711, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Player/Head"]
+fov = 90.0
+
+[node name="TestRunner" type="Node" parent="."]
+script = ExtResource("3_tests")

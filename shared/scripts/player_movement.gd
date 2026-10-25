@@ -16,6 +16,7 @@ var jump_pressed := false
 var jump_was_pressed := false
 
 var scroll_jump_queued := false
+var test_driven := false
 
 # Ducking
 var is_ducked := false
@@ -101,6 +102,9 @@ func _physics_process(delta: float) -> void:
 	scroll_jump_queued = false
 
 func _read_input() -> void:
+	if test_driven:
+		return
+
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var forward := -global_transform.basis.z
 	var right := global_transform.basis.x
