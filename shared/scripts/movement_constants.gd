@@ -63,6 +63,10 @@ const BHOP_DEGRADATION_RATE := 0.12 # speed factor lost per hop after free hops
 const BHOP_MIN_SPEED_FACTOR := 0.8  # floor on degradation (never below 80% of maxspeed)
 const BHOP_WINDOW := 0.1            # seconds to land-and-jump to count as bhop
 
+# --- Ground speed clamp (A&D tuning) ---
+# Hard cap on ground strafe speed to prevent pure-strafe exceeding design intent
+const GROUND_SPEED_CLAMP := 275.0 * METERS_PER_UNIT  # 6.985 m/s
+
 # --- Ladder ---
 # GoldSrc: MAX_CLIMB_SPEED = 200 u/s
 # A&D: enforce this cap (unlike CS 1.6 which allows exploits above it)

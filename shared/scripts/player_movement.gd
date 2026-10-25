@@ -236,6 +236,13 @@ func _ground_move(delta: float) -> void:
 	# Ground acceleration
 	_apply_ground_acceleration(delta)
 
+	# Clamp horizontal ground speed
+	var h_speed := Vector3(velocity.x, 0, velocity.z).length()
+	if h_speed > MC.GROUND_SPEED_CLAMP:
+		var scale_f := MC.GROUND_SPEED_CLAMP / h_speed
+		velocity.x *= scale_f
+		velocity.z *= scale_f
+
 	# Walk move with stair stepping
 	_walk_move(delta)
 
