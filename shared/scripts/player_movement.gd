@@ -398,18 +398,28 @@ func _ladder_move(delta: float) -> void:
 	var right := global_transform.basis.x
 
 	var wish_vel := cam_forward * (-input_dir.y) + right * input_dir.x
+
+	# Project out the ladder normal so no velocity is wasted pushing into the wall
+	wish_vel = wish_vel - ladder_normal * wish_vel.dot(ladder_normal)
+
 	if wish_vel.length() > 1.0:
 		wish_vel = wish_vel.normalized()
+	elif wish_vel.length() > 0.001:
+		var mag := wish_vel.length()
+		wish_vel = wish_vel.normalized() * mag
+	else:
+		wish_vel = Vector3.ZERO
 
 	velocity = wish_vel * climb_speed
-
-	if velocity.length() > climb_speed:
-		velocity = velocity.normalized() * climb_speed
 
 	var move := velocity * delta
 	var collision := move_and_collide(move)
 	if collision:
+		var remainder := collision.get_remainder()
+		var slide := remainder.slide(collision.get_normal())
 		velocity = velocity.slide(collision.get_normal())
+		if slide.length() > 0.001:
+			move_and_collide(slide)
 
 func _on_ladder_entered(area: Area3D) -> void:
 	if area is LadderVolume:

@@ -49,6 +49,7 @@ func _physics_process(delta: float) -> void:
 
 	var hvel := Vector3(player.velocity.x, 0, player.velocity.z)
 	var h_speed := hvel.length()
+	var full_speed := player.velocity.length()
 	var pos := player.global_position
 
 	# Track jump peaks
@@ -90,7 +91,11 @@ func _physics_process(delta: float) -> void:
 		ground_str += " DUCK"
 
 	var text := ""
-	text += "Speed: %6.1f u/s  (%4.2f m/s)\n" % [h_speed_gsrc, h_speed]
+	if player.on_ladder:
+		var full_speed_gsrc := full_speed * MC.UNITS_PER_METER
+		text += "Speed: %6.1f u/s  (%4.2f m/s) [3D]\n" % [full_speed_gsrc, full_speed]
+	else:
+		text += "Speed: %6.1f u/s  (%4.2f m/s)\n" % [h_speed_gsrc, h_speed]
 	text += "VSpeed: %+.2f m/s\n" % player.velocity.y
 	text += "State: %s\n" % ground_str
 	if player.hop_count > 0:
