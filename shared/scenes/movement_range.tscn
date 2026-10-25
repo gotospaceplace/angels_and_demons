@@ -1,0 +1,639 @@
+[gd_scene load_steps=17 format=3 uid="uid://c8mvrange001"]
+
+[ext_resource type="Script" path="res://shared/scripts/ladder_volume.gd" id="ladder_script"]
+
+[sub_resource type="StandardMaterial3D" id="mat_ground"]
+albedo_color = Color(0.22, 0.22, 0.25, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_corridor"]
+albedo_color = Color(0.2, 0.25, 0.32, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_stairs"]
+albedo_color = Color(0.38, 0.3, 0.22, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_ramp_safe"]
+albedo_color = Color(0.25, 0.38, 0.25, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_ramp_steep"]
+albedo_color = Color(0.5, 0.2, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_obstacle"]
+albedo_color = Color(0.7, 0.3, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_platform"]
+albedo_color = Color(0.22, 0.38, 0.55, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_tunnel"]
+albedo_color = Color(0.35, 0.22, 0.4, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_bhop"]
+albedo_color = Color(0.2, 0.3, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_ladder"]
+albedo_color = Color(0.55, 0.45, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_marker"]
+albedo_color = Color(0.8, 0.7, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.35, 0.35, 0.38, 1)
+
+[sub_resource type="Environment" id="env"]
+ambient_light_source = 2
+ambient_light_color = Color(0.3, 0.3, 0.35, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+
+[sub_resource type="CameraAttributesPractical" id="cam_attr"]
+
+[sub_resource type="BoxShape3D" id="ladder_trigger_small"]
+size = Vector3(1.0, 5.0, 1.0)
+
+[sub_resource type="BoxShape3D" id="ladder_trigger_tall"]
+size = Vector3(1.0, 7.0, 1.0)
+
+[node name="MovementRange" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+camera_attributes = SubResource("cam_attr")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 20, 0)
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="."]
+use_collision = true
+size = Vector3(200, 0.2, 200)
+material = SubResource("mat_ground")
+
+[node name="SpawnPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="SpawnSign" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 2)
+billboard = 1
+text = "MOVEMENT TEST RANGE
+N: Flat Corridor  S: Bhop Corridor
+E: Stairs/Ramps/Ledge/Ladders
+W: Height Walls/Gaps/Crouch Tunnel"
+font_size = 40
+outline_size = 6
+modulate = Color(1, 1, 1, 1)
+
+[node name="FlatCorridorFloor" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -20)
+size = Vector3(5, 0.04, 30)
+material = SubResource("mat_corridor")
+
+[node name="FlatCorridorLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -5)
+billboard = 1
+text = "FLAT CORRIDOR 30m"
+font_size = 48
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="FC_Mark0" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -5)
+size = Vector3(5, 0.02, 0.1)
+material = SubResource("mat_marker")
+
+[node name="FC_Label0" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, -5)
+billboard = 1
+text = "0m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="FC_Mark5" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -10)
+size = Vector3(5, 0.02, 0.1)
+material = SubResource("mat_marker")
+
+[node name="FC_Label5" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, -10)
+billboard = 1
+text = "5m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="FC_Mark10" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -15)
+size = Vector3(5, 0.02, 0.1)
+material = SubResource("mat_marker")
+
+[node name="FC_Label10" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, -15)
+billboard = 1
+text = "10m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="FC_Mark15" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -20)
+size = Vector3(5, 0.02, 0.1)
+material = SubResource("mat_marker")
+
+[node name="FC_Label15" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, -20)
+billboard = 1
+text = "15m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="FC_Mark20" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -25)
+size = Vector3(5, 0.02, 0.1)
+material = SubResource("mat_marker")
+
+[node name="FC_Label20" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, -25)
+billboard = 1
+text = "20m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="FC_Mark25" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -30)
+size = Vector3(5, 0.02, 0.1)
+material = SubResource("mat_marker")
+
+[node name="FC_Label25" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, -30)
+billboard = 1
+text = "25m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="FC_Mark30" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -35)
+size = Vector3(5, 0.02, 0.1)
+material = SubResource("mat_marker")
+
+[node name="FC_Label30" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, -35)
+billboard = 1
+text = "30m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="StairsLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.5, 3.5, -1)
+billboard = 1
+text = "STAIRCASES"
+font_size = 48
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="StairsLabelL" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 3, -1.5)
+billboard = 1
+text = "16u (0.41m)\nauto-step"
+font_size = 28
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="StairsLabelR" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 3, -1.5)
+billboard = 1
+text = "18u (0.46m)\nstep limit"
+font_size = 28
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="StairL1" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0.203, -2.4)
+use_collision = true
+size = Vector3(3, 0.406, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairL2" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0.406, -3.2)
+use_collision = true
+size = Vector3(3, 0.812, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairL3" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0.609, -4.0)
+use_collision = true
+size = Vector3(3, 1.218, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairL4" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0.812, -4.8)
+use_collision = true
+size = Vector3(3, 1.624, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairL5" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 1.015, -5.6)
+use_collision = true
+size = Vector3(3, 2.03, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairL6" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 1.218, -6.4)
+use_collision = true
+size = Vector3(3, 2.436, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairR1" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.229, -2.4)
+use_collision = true
+size = Vector3(3, 0.457, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairR2" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.457, -3.2)
+use_collision = true
+size = Vector3(3, 0.914, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairR3" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.686, -4.0)
+use_collision = true
+size = Vector3(3, 1.371, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairR4" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.914, -4.8)
+use_collision = true
+size = Vector3(3, 1.828, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairR5" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 1.143, -5.6)
+use_collision = true
+size = Vector3(3, 2.285, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="StairR6" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 1.371, -6.4)
+use_collision = true
+size = Vector3(3, 2.742, 0.8)
+material = SubResource("mat_stairs")
+
+[node name="RampsLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.5, 3.5, -9)
+billboard = 1
+text = "RAMPS"
+font_size = 48
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="RampSafe" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.866, 0.5, 0, -0.5, 0.866, 9.5, 0.9, -13)
+use_collision = true
+size = Vector3(3.5, 0.25, 4.0)
+material = SubResource("mat_ramp_safe")
+
+[node name="RampSafeLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 2.5, -10)
+billboard = 1
+text = "30° walkable"
+font_size = 28
+outline_size = 4
+modulate = Color(0.4, 1, 0.4, 1)
+
+[node name="RampSteep" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.643, 0.766, 0, -0.766, 0.643, 14, 1.72, -13)
+use_collision = true
+size = Vector3(3.5, 0.25, 4.5)
+material = SubResource("mat_ramp_steep")
+
+[node name="RampSteepLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 3.5, -10)
+billboard = 1
+text = "50° too steep"
+font_size = 28
+outline_size = 4
+modulate = Color(1, 0.4, 0.4, 1)
+
+[node name="EdgePlatform" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 1.5, -5)
+use_collision = true
+size = Vector3(6, 3, 6)
+material = SubResource("mat_platform")
+
+[node name="EdgeLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 4, -5)
+billboard = 1
+text = "EDGE/LEDGE\n3m drop"
+font_size = 40
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="GapLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 2.5, 8)
+billboard = 1
+text = "GAP JUMPS"
+font_size = 48
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="GapRegA" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0.2, 10)
+use_collision = true
+size = Vector3(4, 0.4, 3)
+material = SubResource("mat_platform")
+
+[node name="GapRegB" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.2, 0.2, 10)
+use_collision = true
+size = Vector3(4, 0.4, 3)
+material = SubResource("mat_platform")
+
+[node name="GapRegLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.6, 1.5, 10)
+billboard = 1
+text = "2.8m gap\nrunning jump"
+font_size = 28
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="GapDuckA" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0.2, 16)
+use_collision = true
+size = Vector3(4, 0.4, 3)
+material = SubResource("mat_platform")
+
+[node name="GapDuckB" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.57, 16)
+use_collision = true
+size = Vector3(4, 1.14, 3)
+material = SubResource("mat_platform")
+
+[node name="GapDuckLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 2, 16)
+billboard = 1
+text = "4.0m gap + 1.14m lip\nduck-jump required"
+font_size = 28
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="HeightWallsLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 3, -3)
+billboard = 1
+text = "HEIGHT WALLS"
+font_size = 48
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="HW_1m" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.5, -5)
+use_collision = true
+size = Vector3(6, 1.0, 0.3)
+material = SubResource("mat_obstacle")
+
+[node name="HW_1m_Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1.5, -4.7)
+billboard = 1
+text = "1.0m — regular jump"
+font_size = 28
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="HW_1_3m" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.65, -8)
+use_collision = true
+size = Vector3(6, 1.3, 0.3)
+material = SubResource("mat_obstacle")
+
+[node name="HW_1_3m_Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1.8, -7.7)
+billboard = 1
+text = "1.3m — duck-jump only"
+font_size = 28
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="HW_1_7m" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.85, -11)
+use_collision = true
+size = Vector3(6, 1.7, 0.3)
+material = SubResource("mat_obstacle")
+
+[node name="HW_1_7m_Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 2.2, -10.7)
+billboard = 1
+text = "1.7m — impassable"
+font_size = 28
+outline_size = 4
+modulate = Color(1, 0.4, 0.4, 1)
+
+[node name="CrouchTunnelLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, -14)
+billboard = 1
+text = "CROUCH TUNNEL\n1.0m ceiling"
+font_size = 40
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="CT_Ceiling" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1.1, -17.5)
+use_collision = true
+size = Vector3(3, 0.2, 5)
+material = SubResource("mat_tunnel")
+
+[node name="CT_WallL" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.65, 0.55, -17.5)
+use_collision = true
+size = Vector3(0.3, 1.1, 5)
+material = SubResource("mat_tunnel")
+
+[node name="CT_WallR" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.35, 0.55, -17.5)
+use_collision = true
+size = Vector3(0.3, 1.1, 5)
+material = SubResource("mat_tunnel")
+
+[node name="CT_Back" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0.55, -20.15)
+use_collision = true
+size = Vector3(3.6, 1.1, 0.3)
+material = SubResource("mat_tunnel")
+
+[node name="BhopFloor" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 30)
+size = Vector3(6, 0.04, 50)
+material = SubResource("mat_bhop")
+
+[node name="BhopWallL" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.15, 1.0, 30)
+use_collision = true
+size = Vector3(0.3, 2, 50)
+material = SubResource("mat_wall")
+
+[node name="BhopWallR" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.15, 1.0, 30)
+use_collision = true
+size = Vector3(0.3, 2, 50)
+material = SubResource("mat_wall")
+
+[node name="BhopLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 5)
+billboard = 1
+text = "BHOP CORRIDOR 50m"
+font_size = 48
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="BC_Mark0" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 5)
+size = Vector3(6, 0.02, 0.15)
+material = SubResource("mat_marker")
+
+[node name="BC_Label0" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0.5, 5)
+billboard = 1
+text = "0m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="BC_Mark10" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 15)
+size = Vector3(6, 0.02, 0.15)
+material = SubResource("mat_marker")
+
+[node name="BC_Label10" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0.5, 15)
+billboard = 1
+text = "10m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="BC_Mark20" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 25)
+size = Vector3(6, 0.02, 0.15)
+material = SubResource("mat_marker")
+
+[node name="BC_Label20" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0.5, 25)
+billboard = 1
+text = "20m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="BC_Mark30" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 35)
+size = Vector3(6, 0.02, 0.15)
+material = SubResource("mat_marker")
+
+[node name="BC_Label30" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0.5, 35)
+billboard = 1
+text = "30m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="BC_Mark40" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 45)
+size = Vector3(6, 0.02, 0.15)
+material = SubResource("mat_marker")
+
+[node name="BC_Label40" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0.5, 45)
+billboard = 1
+text = "40m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="BC_Mark50" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 55)
+size = Vector3(6, 0.02, 0.15)
+material = SubResource("mat_marker")
+
+[node name="BC_Label50" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0.5, 55)
+billboard = 1
+text = "50m"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="LadderWallSmall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 2.6, -2)
+use_collision = true
+size = Vector3(0.3, 5, 3)
+material = SubResource("mat_wall")
+
+[node name="LadderSmall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.85, 2.35, -2)
+use_collision = true
+size = Vector3(0.15, 4.5, 1.0)
+material = SubResource("mat_ladder")
+
+[node name="LadderSmallVolume" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.4, 2.6, -2)
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("ladder_script")
+face_normal = Vector3(-1, 0, 0)
+
+[node name="LadderSmallTrigger" type="CollisionShape3D" parent="LadderSmallVolume"]
+shape = SubResource("ladder_trigger_small")
+
+[node name="LadderSmallLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 3.5, -2)
+billboard = 1
+text = "LADDER 5m"
+font_size = 40
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="LadderWallTall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 3.6, -8)
+use_collision = true
+size = Vector3(0.3, 7, 3)
+material = SubResource("mat_wall")
+
+[node name="LadderTall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.85, 3.6, -8)
+use_collision = true
+size = Vector3(0.15, 7, 1.0)
+material = SubResource("mat_ladder")
+
+[node name="LadderTallVolume" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.4, 3.6, -8)
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("ladder_script")
+face_normal = Vector3(-1, 0, 0)
+
+[node name="LadderTallTrigger" type="CollisionShape3D" parent="LadderTallVolume"]
+shape = SubResource("ladder_trigger_tall")
+
+[node name="LadderTallLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 5, -8)
+billboard = 1
+text = "LADDER 7m"
+font_size = 40
+outline_size = 6
+modulate = Color(1, 0.9, 0.3, 1)
+
+[node name="LadderPlatform" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 7.0, -8)
+use_collision = true
+size = Vector3(5, 0.3, 3)
+material = SubResource("mat_platform")
+
+[node name="LadderPlatformLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 7.8, -8)
+billboard = 1
+text = "DISMOUNT\nPLATFORM"
+font_size = 28
+outline_size = 4
+modulate = Color(1, 0.9, 0.3, 1)

@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bvx1a2main"]
 
 [ext_resource type="Script" path="res://shared/scripts/player_movement.gd" id="1_player"]
-[ext_resource type="PackedScene" path="res://shared/scenes/test_room.tscn" id="2_room"]
+[ext_resource type="PackedScene" path="res://shared/scenes/movement_range.tscn" id="2_room"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.35
