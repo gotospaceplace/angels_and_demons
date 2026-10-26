@@ -6,6 +6,10 @@ func _ready() -> void:
 		print("EntryPoint: launching test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/test_scene.tscn")
 		return
+	if "--play" in args:
+		print("EntryPoint: launching play test")
+		get_tree().change_scene_to_file.call_deferred("res://shared/scenes/play_test.tscn")
+		return
 
 	var is_server := OS.has_feature("dedicated_server")
 	print("EntryPoint: dedicated_server=%s" % is_server)

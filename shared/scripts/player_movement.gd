@@ -55,6 +55,12 @@ func _ready() -> void:
 	_ladder_area.area_entered.connect(_on_ladder_entered)
 	_ladder_area.area_exited.connect(_on_ladder_exited)
 
+	# Weapon system (child node)
+	var ws := Node.new()
+	ws.name = "WeaponSystem"
+	ws.set_script(preload("res://shared/scripts/weapon_system.gd"))
+	add_child(ws)
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
