@@ -1,5 +1,5 @@
 # PHASE 3 — Gunplay and Grenades Laboratory
-**Status:** Not started | **Version:** 1.0 | **Date:** 2026-10-25
+**Status:** Not started | **Version:** 1.1 | **Date:** 2026-10-25
 
 ## Scope
 Implement representative firearms with authoritative hitscan damage, GoldSrc-faithful recoil and accuracy systems, armor interaction, wall penetration, all three grenade types (HE, flashbang, smoke), weapon switching, and A&D modifications — in a gray-box combat test range with telemetry for validation against Phase 0 reference measurements.
@@ -31,6 +31,7 @@ Implement representative firearms with authoritative hitscan damage, GoldSrc-fai
 - Automated regression tests for damage, accuracy, recoil
 - CI integration: GitHub Actions running `godot --headless --path . -- --test`
 - Weapon/combat telemetry on debug HUD
+- Crosshair: configurable, aligned to actual bullet trajectory (not CS 1.6's misleading gap)
 
 ### Not in scope
 - Networked multiplayer hit registration or lag compensation (Phase 4)
@@ -86,7 +87,19 @@ Holster time is separate and shorter (0.3s for all weapons). Total switch = hols
 ### Decision 5: A&D grenade cooking
 CS 1.6 fuse starts on throw (1.5s). A&D starts fuse on pin pull with a longer timer (3.5s default, tunable). This creates skill expression: precise air-burst flashes, pop-HE grenades, and risk/reward for holding too long.
 
-### Decision 6: A&D smoke redesign
+### Decision 6: Crosshair design
+CS 1.6's crosshair gap does NOT align with where bullets land — shots hit at the top of the gap, not dead center (Phase 0 design note W-11.1). A&D fixes this: the crosshair center is exactly where the first bullet goes at zero spread. Crosshair is drawn as a simple CanvasLayer overlay (no 3D world-space element). Phase 3 provides a functional crosshair with basic customization; full cosmetic options (style, color, outline, dot, thickness) are Phase 6 polish.
+
+| Property | Phase 3 scope | Phase 6 scope |
+|----------|--------------|---------------|
+| Center alignment | Exact bullet POI | Same |
+| Dynamic spread | Gap expands with current spread value | Same |
+| Static style | Fixed lines + dot | Multiple styles (cross, dot, circle) |
+| Color | White with black outline (readable on any surface) | User-configurable RGBA |
+| Size/gap/thickness | Configurable in code | In-game settings menu |
+| Scope overlay | Simple lines (AWP zoom) | Proper scope art |
+
+### Decision 7: A&D smoke redesign
 CS 1.6 smoke is 204u diameter, thin, see-through. A&D uses ~300u diameter, fully opaque via screen-space post-process fog (similar to CS2). This is the single largest tactical upgrade from CS 1.6 and makes smoke worth buying. Implementation via a shader applied in a spherical region.
 
 ---
@@ -386,7 +399,22 @@ Node3D (SmokeCloud)
 - [ ] Teleport points between sections
 - **Owner:** laptop
 
-### WB16: Combat telemetry HUD (laptop)
+### WB16: Crosshair (laptop)
+- [ ] Create `client/scripts/crosshair.gd` as a CanvasLayer overlay (drawn every frame)
+- [ ] Center point aligns exactly with hitscan ray origin (camera forward, no gap offset)
+- [ ] Dynamic spread visualization: crosshair lines expand/contract with current weapon spread value
+  - Standing still → tight crosshair
+  - Moving above 140 u/s → crosshair expands
+  - Airborne → maximum expansion
+  - Sustained fire → crosshair grows with accuracy degradation
+- [ ] Default style: four lines + center dot, white with 1px black outline
+- [ ] Configurable properties (code-level, not UI yet): line length, gap, thickness, dot size, color
+- [ ] AWP scoped: replace crosshair with simple scope lines (cross pattern)
+- [ ] Crosshair hidden during weapon switch animation
+- [ ] Crosshair hidden when dead
+- **Owner:** laptop
+
+### WB17: Combat telemetry HUD (laptop)
 - [ ] Extend existing telemetry HUD with weapon data:
   - Current weapon name, fire mode
   - Ammo: magazine / reserve
@@ -398,7 +426,7 @@ Node3D (SmokeCloud)
   - Grenade: cook timer remaining
 - **Owner:** laptop
 
-### WB17: Regression tests (laptop + vm-prime)
+### WB18: Regression tests (laptop + vm-prime)
 - [ ] Extend `tests/movement_tests.gd` or create `tests/combat_tests.gd`:
   - test_ak_headshot_damage: 36 × 4.0 = 144 raw
   - test_ak_headshot_kills_through_armor: 100 HP → 0 with vest+helmet
@@ -418,7 +446,7 @@ Node3D (SmokeCloud)
 - [ ] All tests runnable headless: `godot --headless --path . -- --test`
 - **Owner:** laptop
 
-### WB18: CI integration (laptop)
+### WB19: CI integration (laptop)
 - [ ] Create `.github/workflows/test.yml`:
   - Trigger on push to main and pull requests
   - Install Godot headless on Ubuntu runner
@@ -497,7 +525,7 @@ Node3D (SmokeCloud)
 - Godot 4.7.2 on laptop with editor — **done**
 - Godot 4.7.2 headless on vm-prime — **done**
 - Phase 2 conditions carried forward:
-  - CI integration (WB18)
+  - CI integration (WB19)
   - Bullet tagging (WB14)
   - Per-weapon maxspeed (WB1)
   - Movement inaccuracy threshold (WB6)
@@ -559,6 +587,7 @@ After WB6 + movement system:
 - [ ] Grenade cooking works (A&D fuse on pin pull)
 - [ ] Smoke is fully opaque and covers ~300u diameter (A&D redesign)
 - [ ] Bullet tagging reduces speed on hit (enhanced for bhop)
+- [ ] Crosshair aligned to actual bullet POI, dynamic spread visualization works
 - [ ] No client-authoritative damage (code structured for server authority)
 - [ ] Combat test range provides damage validation tools
 - [ ] Regression tests pass headless on vm-prime
@@ -600,20 +629,22 @@ After WB6 + movement system:
 ## Suggested work order
 1. **WB1** (weapon data framework) — foundation for everything
 2. **WB2** (hitscan) + **WB3** (damage) — core shooting loop
-3. **WB4** (armor) — complete damage pipeline
-4. **WB6** (accuracy) + **WB7** (recoil) — shooting feel
-5. **WB8** (weapon switching) + **WB9** (silencer/scope) — weapon variety
-6. **WB5** (wall penetration) — completes weapon system
-7. **WB14** (bullet tagging) — carried from Phase 2
-8. **WB10-13** (grenades) — HE first, then flash, then smoke (hardest last)
-9. **WB15** (combat test range) — can start early as a shell, populate as features land
-10. **WB16** (combat HUD) — extend incrementally alongside features
-11. **WB17** (regression tests) — write tests as features are implemented
-12. **WB18** (CI) — set up early, add tests to pipeline as they're written
+3. **WB16** (crosshair) — needed to visually test accuracy and recoil
+4. **WB4** (armor) — complete damage pipeline
+5. **WB6** (accuracy) + **WB7** (recoil) — shooting feel (crosshair visualizes spread)
+6. **WB8** (weapon switching) + **WB9** (silencer/scope) — weapon variety
+7. **WB5** (wall penetration) — completes weapon system
+8. **WB14** (bullet tagging) — carried from Phase 2
+9. **WB10-13** (grenades) — HE first, then flash, then smoke (hardest last)
+10. **WB15** (combat test range) — can start early as a shell, populate as features land
+11. **WB17** (combat HUD) — extend incrementally alongside features
+12. **WB18** (regression tests) — write tests as features are implemented
+13. **WB19** (CI) — set up early, add tests to pipeline as they're written
 
 ---
 
 ## Immediate next steps
 1. **Laptop:** Start with WB1 (weapon data) and WB2+WB3 (hitscan + damage) — get a bullet hitting a target with correct damage as fast as possible
-2. **vm-prime:** Set up GitHub Actions workflow (WB18) early so every push validates
-3. **Key milestone:** AK-47 shooting a target dummy showing correct headshot/chest/leg damage numbers with armor — this validates the entire damage pipeline
+2. **Laptop:** WB16 (crosshair) immediately after — you need it to visually validate accuracy and recoil
+3. **vm-prime:** Set up GitHub Actions workflow (WB19) early so every push validates
+4. **Key milestone:** AK-47 with crosshair shooting a target dummy showing correct headshot/chest/leg damage numbers with armor — this validates the entire damage pipeline
