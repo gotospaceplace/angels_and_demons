@@ -70,11 +70,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("reload"):
 		_start_reload()
 	if event.is_action_pressed("weapon_1"):
-		_switch_to_slot(0)
+		_switch_to_slot(2)  # primary (AK/M4/AWP)
 	if event.is_action_pressed("weapon_2"):
-		_switch_to_slot(1)
+		_switch_to_slot(1)  # pistol (USP)
 	if event.is_action_pressed("weapon_3"):
-		_switch_to_slot(2)
+		_switch_to_slot(0)  # knife
 
 
 func _physics_process(delta: float) -> void:
