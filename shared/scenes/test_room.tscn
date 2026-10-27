@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://c8testroom001"]
+[gd_scene load_steps=14 format=3 uid="uid://c8testroom001"]
 
 [ext_resource type="Script" path="res://shared/scripts/ladder_volume.gd" id="ladder_script"]
 [ext_resource type="Script" path="res://shared/scripts/target_dummy.gd" id="target_dummy_script"]
@@ -31,6 +31,12 @@ albedo_color = Color(0.2, 0.45, 0.65, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ladder"]
 albedo_color = Color(0.55, 0.45, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood_cover"]
+albedo_color = Color(0.6, 0.4, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_concrete"]
+albedo_color = Color(0.3, 0.3, 0.32, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ladder_trigger"]
 size = Vector3(1.0, 4.5, 1.0)
@@ -229,3 +235,47 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, -6)
 script = ExtResource("target_dummy_script")
 armor_value = 100.0
 has_helmet = true
+
+[node name="PenTestLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2.5, -2)
+billboard = 1
+text = "WALL PEN TEST"
+font_size = 40
+outline_size = 6
+modulate = Color(1, 0.6, 0.2, 1)
+
+[node name="ThinCover" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0.85, -3)
+use_collision = true
+size = Vector3(2, 1.5, 0.15)
+material = SubResource("StandardMaterial3D_wood_cover")
+
+[node name="ThinCoverLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 1.8, -2.7)
+billboard = 1
+text = "THIN 0.15m"
+font_size = 32
+outline_size = 5
+modulate = Color(0.6, 0.4, 0.2, 1)
+
+[node name="PenDummyThin" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0.1, -4.5)
+script = ExtResource("target_dummy_script")
+
+[node name="ThickWall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 0.85, -3)
+use_collision = true
+size = Vector3(2, 1.5, 0.8)
+material = SubResource("StandardMaterial3D_concrete")
+
+[node name="ThickWallLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 1.8, -2.7)
+billboard = 1
+text = "THICK 0.8m"
+font_size = 32
+outline_size = 5
+modulate = Color(0.3, 0.3, 0.32, 1)
+
+[node name="PenDummyThick" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 0.1, -4.5)
+script = ExtResource("target_dummy_script")

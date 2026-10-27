@@ -12,12 +12,18 @@ const HITGROUP_MULTIPLIERS := {
 # Distance unit for range_modifier exponent (GoldSrc units)
 const RANGE_UNIT := 500.0
 
-# Wall penetration damage retention per level (WB5 — stubbed)
+# Wall penetration damage retention per level
 const WALL_PEN_RETENTION := {
 	0: 0.0,   # none
 	1: 0.0,   # pistol — no penetration
 	2: 0.46,  # rifle
 	3: 0.49,  # sniper
+}
+
+# Max wall thickness (Godot meters) a bullet can penetrate per tier
+const PEN_MAX_DEPTH := {
+	2: 0.4,   # rifle — ~16 GoldSrc units
+	3: 0.6,   # sniper — ~24 GoldSrc units
 }
 
 # Armor absorption rate

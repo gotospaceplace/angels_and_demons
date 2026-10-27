@@ -167,16 +167,7 @@ func _fire(now: float) -> void:
 	else:
 		max_range = WC.MAX_HITSCAN_RANGE / MC.UNITS_PER_METER
 
-	var end := origin + direction * max_range
-	var space := player.get_world_3d().direct_space_state
-	var params := PhysicsRayQueryParameters3D.create(origin, end)
-	params.exclude = [player.get_rid()]
-	params.collide_with_areas = true
-	params.collision_mask = 1 | 8  # Layer 1 (World) + Layer 4 (Hitboxes)
-
-	var result := space.intersect_ray(params)
-	if result:
-		_process_hit(result, origin)
+	_trace_bullet(origin, direction, max_range)
 
 	_update_accuracy_after_shot()
 	_apply_recoil_kick()
@@ -185,10 +176,67 @@ func _fire(now: float) -> void:
 		_start_reload()
 
 
-func _process_hit(result: Dictionary, origin: Vector3) -> void:
+func _trace_bullet(cam_origin: Vector3, direction: Vector3, max_range: float) -> void:
+	var pen_left: int = current.penetration_level
+	var base_retention: float = WC.WALL_PEN_RETENTION.get(pen_left, 0.0)
+	var damage_scale: float = 1.0
+	var trace_start := cam_origin
+	var space := player.get_world_3d().direct_space_state
+
+	for _i in range(pen_left + 1):
+		var remaining := max_range - cam_origin.distance_to(trace_start)
+		if remaining <= 0.0:
+			return
+
+		var end := trace_start + direction * remaining
+		var params := PhysicsRayQueryParameters3D.create(trace_start, end)
+		params.exclude = [player.get_rid()]
+		params.collide_with_areas = true
+		params.collision_mask = 1 | 8  # Layer 1 (World) + Layer 4 (Hitboxes)
+
+		var result := space.intersect_ray(params)
+		if not result:
+			return
+
+		var collider: Object = result["collider"]
+		var hit_pos: Vector3 = result["position"]
+
+		if collider.has_meta("hitgroup"):
+			_apply_hit_damage(result, cam_origin, damage_scale)
+			return
+
+		# Hit world geometry — attempt wall penetration
+		if pen_left <= 1 or base_retention <= 0.0:
+			return
+
+		var max_depth: float = WC.PEN_MAX_DEPTH.get(pen_left, 0.0)
+		if max_depth <= 0.0:
+			return
+
+		var exit_pos := _find_wall_exit(hit_pos, direction, max_depth, space)
+		if exit_pos == Vector3.ZERO:
+			return
+
+		trace_start = exit_pos + direction * 0.01
+		damage_scale *= base_retention
+		pen_left -= 1
+
+
+func _find_wall_exit(entry: Vector3, direction: Vector3, max_depth: float, space: PhysicsDirectSpaceState3D) -> Vector3:
+	var probe_start := entry + direction * (max_depth + 0.05)
+	var params := PhysicsRayQueryParameters3D.create(probe_start, entry)
+	params.exclude = [player.get_rid()]
+	params.collision_mask = 1  # World only
+	var result := space.intersect_ray(params)
+	if not result:
+		return Vector3.ZERO
+	return result["position"]
+
+
+func _apply_hit_damage(result: Dictionary, cam_origin: Vector3, damage_scale: float) -> void:
 	var collider: Object = result["collider"]
 	var hit_pos: Vector3 = result["position"]
-	var distance_m := origin.distance_to(hit_pos)
+	var distance_m := cam_origin.distance_to(hit_pos)
 
 	if not collider.has_meta("hitgroup"):
 		return
@@ -210,7 +258,7 @@ func _process_hit(result: Dictionary, origin: Vector3) -> void:
 
 	var dist_gsrc := distance_m * MC.UNITS_PER_METER
 	var range_factor := pow(rm, dist_gsrc / WC.RANGE_UNIT)
-	var final_damage := dmg * range_factor * multiplier
+	var final_damage := dmg * range_factor * multiplier * damage_scale
 
 	var target = collider.get_parent()
 	if target and target.has_method("take_damage"):
