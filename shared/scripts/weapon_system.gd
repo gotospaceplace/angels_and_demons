@@ -43,9 +43,12 @@ var fire_queued: bool = false
 # Scope
 var is_scoped: bool = false
 var zoom_level: int = 0  # 0=none, 1=first zoom, 2=second zoom
+var next_scope_time: float = 0.0
+const SCOPE_CYCLE_DELAY := 0.3
 
 # Silencer
 var silencer_on: bool = false
+var is_toggling: bool = false
 
 
 func _ready() -> void:
@@ -98,6 +101,9 @@ func _physics_process(delta: float) -> void:
 	if is_switching and now >= next_action_time:
 		is_switching = false
 		player.max_speed = current.max_speed
+	if is_toggling and now >= next_action_time:
+		is_toggling = false
+		silencer_on = not silencer_on
 
 	var should_fire := false
 	if current.is_automatic:
@@ -127,7 +133,7 @@ func get_ammo_display() -> String:
 # --- Core fire logic ---
 
 func _can_fire(now: float) -> bool:
-	if is_reloading or is_switching:
+	if is_reloading or is_switching or is_toggling:
 		return false
 	if now < next_fire_time:
 		return false
@@ -417,11 +423,24 @@ func _finish_reload() -> void:
 func _secondary_action() -> void:
 	if current.has_scope:
 		_toggle_scope()
+	elif current.has_silencer:
+		_toggle_silencer()
+
+
+func _toggle_silencer() -> void:
+	if is_reloading or is_switching or is_toggling:
+		return
+	is_toggling = true
+	next_action_time = _now() + current.silencer_toggle_time
 
 
 func _toggle_scope() -> void:
-	if is_reloading or is_switching:
+	if is_reloading or is_switching or is_toggling:
 		return
+	var now := _now()
+	if now < next_scope_time:
+		return
+	next_scope_time = now + SCOPE_CYCLE_DELAY
 	zoom_level = (zoom_level + 1) % 3
 	match zoom_level:
 		0:

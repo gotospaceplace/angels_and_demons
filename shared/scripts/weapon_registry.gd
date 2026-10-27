@@ -60,6 +60,7 @@ static func _usp() -> Resource:
 	w.recoil_airborne = PackedFloat64Array([2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0])
 	# Silencer
 	w.has_silencer = true
+	w.silencer_toggle_time = 3.13
 	w.silenced_damage = 30.0
 	w.silenced_range_modifier = 0.79
 	w.silenced_spread_standing = 0.15
@@ -138,6 +139,7 @@ static func _m4a1() -> Resource:
 	w.recoil_airborne = PackedFloat64Array([1.2, 0.5, 0.23, 0.15, 5.5, 3.5, 6])
 	# Silencer
 	w.has_silencer = true
+	w.silencer_toggle_time = 2.0
 	w.silenced_damage = 33.0
 	w.silenced_range_modifier = 0.95
 	w.silenced_spread_standing = 0.025

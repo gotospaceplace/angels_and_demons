@@ -24,6 +24,9 @@ func _process(_delta: float) -> void:
 		_draw_node.ammo_text = _weapon_system.get_ammo_display()
 		_draw_node.is_reloading = _weapon_system.is_reloading
 		_draw_node.is_switching = _weapon_system.is_switching
+		_draw_node.is_toggling = _weapon_system.is_toggling
+		_draw_node.is_scoped = _weapon_system.is_scoped
+		_draw_node.silencer_on = _weapon_system.silencer_on
 
 	_draw_node.queue_redraw()
 
@@ -34,6 +37,9 @@ class CrosshairDraw extends Control:
 	var ammo_text: String = ""
 	var is_reloading: bool = false
 	var is_switching: bool = false
+	var is_toggling: bool = false
+	var is_scoped: bool = false
+	var silencer_on: bool = false
 
 	const LINE_LEN := 8.0
 	const THICKNESS := 2.0
@@ -42,20 +48,29 @@ class CrosshairDraw extends Control:
 	const SPREAD_SCALE := 800.0
 	const OUTLINE := Color(0, 0, 0, 0.85)
 	const FILL := Color.WHITE
+	const SCOPE_LINE := Color(0, 0, 0, 0.6)
 
 	func _draw() -> void:
 		var center := size / 2.0
-		var gap := GAP_MIN + spread * SPREAD_SCALE
-		_draw_cross(center, gap, OUTLINE, THICKNESS + 2.0)
-		_draw_cross(center, gap, FILL, THICKNESS)
+
+		if is_scoped:
+			_draw_scope(center)
+		else:
+			var gap := GAP_MIN + spread * SPREAD_SCALE
+			_draw_cross(center, gap, OUTLINE, THICKNESS + 2.0)
+			_draw_cross(center, gap, FILL, THICKNESS)
 
 		# Weapon info (bottom center)
 		if weapon_name != "":
 			var info := weapon_name
+			if silencer_on:
+				info += " [S]"
 			if is_reloading:
 				info += "  [RELOADING]"
 			elif is_switching:
 				info += "  [SWITCHING]"
+			elif is_toggling:
+				info += "  [SILENCER]"
 			elif ammo_text != "":
 				info += "  " + ammo_text
 
@@ -65,6 +80,12 @@ class CrosshairDraw extends Control:
 			var text_pos := Vector2(center.x - text_size.x / 2.0, size.y - 40)
 			draw_string(font, text_pos + Vector2(1, 1), info, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize, OUTLINE)
 			draw_string(font, text_pos, info, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize, FILL)
+
+	func _draw_scope(center: Vector2) -> void:
+		# Full-screen cross for AWP scope
+		draw_line(Vector2(center.x, 0), Vector2(center.x, size.y), SCOPE_LINE, 1.0)
+		draw_line(Vector2(0, center.y), Vector2(size.x, center.y), SCOPE_LINE, 1.0)
+		draw_circle(center, DOT_RADIUS, FILL)
 
 	func _draw_cross(center: Vector2, gap: float, color: Color, thick: float) -> void:
 		# Top

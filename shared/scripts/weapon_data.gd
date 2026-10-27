@@ -57,6 +57,7 @@ extends Resource
 
 # --- Silencer ---
 @export var has_silencer: bool = false
+@export var silencer_toggle_time: float = 0.0
 @export var silenced_damage: float = 0.0
 @export var silenced_range_modifier: float = 1.0
 @export var silenced_spread_standing: float = 0.0
