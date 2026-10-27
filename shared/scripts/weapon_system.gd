@@ -33,6 +33,9 @@ var viewpunch := Vector2.ZERO
 var recoil_shots: int = 0
 var lateral_dir: float = 1.0
 
+# Weapon switching
+var prev_index: int = 0
+
 # Input
 var fire_held: bool = false
 var fire_queued: bool = false
@@ -55,6 +58,7 @@ func _ready() -> void:
 		magazine.append(w.magazine_size)
 		reserve.append(w.reserve_ammo)
 	_equip(0)
+	player.max_speed = current.max_speed
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -75,6 +79,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_switch_to_slot(1)  # pistol (USP)
 	if event.is_action_pressed("weapon_3"):
 		_switch_to_slot(0)  # knife
+	if event.is_action_pressed("weapon_last"):
+		_switch_to_last()
+	if event.is_action_pressed("weapon_next"):
+		_cycle_weapon(1)
+	if event.is_action_pressed("weapon_prev"):
+		_cycle_weapon(-1)
 
 
 func _physics_process(delta: float) -> void:
@@ -87,6 +97,7 @@ func _physics_process(delta: float) -> void:
 		_finish_reload()
 	if is_switching and now >= next_action_time:
 		is_switching = false
+		player.max_speed = current.max_speed
 
 	var should_fire := false
 	if current.is_automatic:
@@ -337,9 +348,25 @@ func _switch_to_slot(slot: int) -> void:
 			return
 
 
+func _switch_to_last() -> void:
+	if is_switching:
+		return
+	if prev_index != current_index:
+		_switch_weapon(prev_index)
+
+
+func _cycle_weapon(direction: int) -> void:
+	if is_switching:
+		return
+	var next := posmod(current_index + direction, weapons.size())
+	if next != current_index:
+		_switch_weapon(next)
+
+
 func _switch_weapon(index: int) -> void:
 	if index < 0 or index >= weapons.size():
 		return
+	prev_index = current_index
 	is_switching = true
 	is_reloading = false
 	var total_time: float = current.holster_time + weapons[index].draw_time
@@ -358,7 +385,6 @@ func _equip(index: int) -> void:
 	zoom_level = 0
 	silencer_on = false
 	camera.fov = 75.0
-	player.max_speed = current.max_speed
 
 
 # --- Reload ---
