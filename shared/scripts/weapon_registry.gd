@@ -24,6 +24,7 @@ static func _knife() -> Resource:
 	w.reserve_ammo = 0
 	w.is_automatic = false
 	w.max_speed = MC.SPEED_KNIFE
+	w.armor_penetration = 1.0
 	w.accuracy_type = 0  # None
 	return w
 

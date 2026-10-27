@@ -210,3 +210,22 @@ script = ExtResource("target_dummy_script")
 [node name="TargetDummy3" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -8)
 script = ExtResource("target_dummy_script")
+
+[node name="ArmorLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2.5, -3)
+billboard = 1
+text = "ARMORED TARGETS"
+font_size = 40
+outline_size = 6
+modulate = Color(0.3, 0.6, 1.0, 1)
+
+[node name="ArmoredDummyVest" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, -4)
+script = ExtResource("target_dummy_script")
+armor_value = 100.0
+
+[node name="ArmoredDummyFull" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, -6)
+script = ExtResource("target_dummy_script")
+armor_value = 100.0
+has_helmet = true

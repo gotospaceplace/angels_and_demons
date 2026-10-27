@@ -197,7 +197,7 @@ func _process_hit(result: Dictionary, origin: Vector3) -> void:
 
 	var target = collider.get_parent()
 	if target and target.has_method("take_damage"):
-		target.take_damage(final_damage, hitgroup, current.weapon_name)
+		target.take_damage(final_damage, hitgroup, current.weapon_name, current.armor_penetration)
 
 
 # --- Spread calculation ---
