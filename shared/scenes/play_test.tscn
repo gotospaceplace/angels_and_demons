@@ -1,25 +1,26 @@
 [gd_scene format=3 uid="uid://c8playtest001"]
 
-[ext_resource type="Script" path="res://shared/scripts/player_movement.gd" id="1_player"]
-[ext_resource type="PackedScene" path="res://shared/scenes/test_room.tscn" id="2_room"]
+[ext_resource type="Script" uid="uid://6pdl0y5exuf6" path="res://shared/scripts/player_movement.gd" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://c8testroom001" path="res://shared/scenes/test_room.tscn" id="2_room"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.35
 height = 1.8
 
-[node name="PlayTest" type="Node3D"]
+[node name="PlayTest" type="Node3D" unique_id=354254261]
 
-[node name="TestRoom" parent="." instance=ExtResource("2_room")]
+[node name="TestRoom" parent="." unique_id=1748404381 instance=ExtResource("2_room")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0066354275, 0, -0.003625393)
 
-[node name="Player" type="CharacterBody3D" parent="."]
+[node name="Player" type="CharacterBody3D" parent="." unique_id=128207344]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("1_player")
 
-[node name="PlayerCollision" type="CollisionShape3D" parent="Player"]
+[node name="PlayerCollision" type="CollisionShape3D" parent="Player" unique_id=1023002987]
 shape = SubResource("CapsuleShape3D_player")
 
-[node name="Head" type="Node3D" parent="Player"]
+[node name="Head" type="Node3D" parent="Player" unique_id=1555252849]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.711, 0)
 
-[node name="Camera3D" type="Camera3D" parent="Player/Head"]
+[node name="Camera3D" type="Camera3D" parent="Player/Head" unique_id=280323114]
 fov = 90.0

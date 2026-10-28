@@ -47,3 +47,9 @@ const GRENADE_MAX_VEL_GSRC := 750.0   # cap on throw speed
 const GRENADE_SHORT_TOSS_MULT := 0.33 # right-click toss velocity multiplier
 const GRENADE_BOUNCE := 0.45          # restitution coefficient
 const GRENADE_FRICTION := 0.6
+
+# --- Flash grenade ---
+const FLASH_ANGLES := [0.0, 45.0, 90.0, 180.0]
+const FLASH_BLIND := [3.0, 2.3, 1.9, 0.0]
+const FLASH_FADE := [5.7, 4.5, 2.8, 0.0]
+const FLASH_TINT_TIME := 0.3

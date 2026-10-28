@@ -30,7 +30,8 @@ func _process(_delta: float) -> void:
 		_draw_node.is_grenade_mode = _weapon_system.is_grenade_mode
 		_draw_node.is_cooking = _weapon_system.is_cooking
 		_draw_node.cook_timer = _weapon_system.cook_timer
-		_draw_node.grenade_count = _weapon_system.grenade_he_count
+		_draw_node.grenade_count = _weapon_system._grenade_count(_weapon_system.current_grenade)
+		_draw_node.grenade_name = _weapon_system._get_grenade_name()
 
 	_draw_node.queue_redraw()
 
@@ -48,6 +49,7 @@ class CrosshairDraw extends Control:
 	var is_cooking: bool = false
 	var cook_timer: float = 0.0
 	var grenade_count: int = 0
+	var grenade_name: String = "HE GRENADE"
 
 	const LINE_LEN := 8.0
 	const THICKNESS := 2.0
@@ -73,7 +75,7 @@ class CrosshairDraw extends Control:
 		# Weapon info (bottom center)
 		var info := ""
 		if is_grenade_mode:
-			info = "HE GRENADE  x%d" % grenade_count
+			info = "%s  x%d" % [grenade_name, grenade_count]
 			if is_cooking:
 				info += "  COOK %.1fs" % cook_timer
 			else:

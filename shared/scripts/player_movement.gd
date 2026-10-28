@@ -39,6 +39,12 @@ var _ladder_area: Area3D
 var tag_base_cap: float = 0.0
 var tag_timer: float = 0.0
 
+# Flash effect
+var _flash_overlay: CanvasLayer = null
+var _flash_blind: float = 0.0
+var _flash_fade: float = 0.0
+var _flash_fade_total: float = 0.0
+
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_to_group("player")
@@ -557,3 +563,33 @@ func apply_bullet_tag(weapon_max_speed: float) -> void:
 
 	tag_base_cap = cap
 	tag_timer = MC.TAG_RECOVERY_TIME
+
+
+func apply_flash(blind_time: float, fade_time: float) -> void:
+	if not _flash_overlay:
+		_flash_overlay = CanvasLayer.new()
+		_flash_overlay.layer = 100
+		var rect := ColorRect.new()
+		rect.name = "Rect"
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		rect.color = Color(1, 1, 1, 0)
+		_flash_overlay.add_child(rect)
+		add_child(_flash_overlay)
+	_flash_blind = blind_time
+	_flash_fade = fade_time
+	_flash_fade_total = fade_time
+	_flash_overlay.get_node("Rect").color = Color(1, 1, 1, 1)
+	_flash_overlay.visible = true
+
+
+func _process(delta: float) -> void:
+	if _flash_overlay and _flash_overlay.visible:
+		if _flash_blind > 0.0:
+			_flash_blind -= delta
+		elif _flash_fade > 0.0:
+			_flash_fade -= delta
+			var alpha := _flash_fade / _flash_fade_total if _flash_fade_total > 0.0 else 0.0
+			_flash_overlay.get_node("Rect").color = Color(1, 1, 1, maxf(alpha, 0.0))
+		else:
+			_flash_overlay.visible = false

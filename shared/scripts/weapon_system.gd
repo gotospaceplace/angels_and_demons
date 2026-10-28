@@ -53,6 +53,8 @@ var is_toggling: bool = false
 
 # Grenades
 var grenade_he_count: int = 1
+var grenade_flash_count: int = 2
+var current_grenade: int = 0  # 0=HE, 1=Flash
 var is_grenade_mode: bool = false
 var is_cooking: bool = false
 var cook_timer: float = 0.0
@@ -549,7 +551,12 @@ func _now() -> float:
 # --- Grenades ---
 
 func _select_grenade() -> void:
-	if grenade_he_count <= 0 or is_grenade_mode or is_cooking:
+	if is_cooking:
+		return
+	if is_grenade_mode:
+		_cycle_grenade()
+		return
+	if _total_grenades() <= 0:
 		return
 	is_grenade_mode = true
 	is_reloading = false
@@ -557,6 +564,41 @@ func _select_grenade() -> void:
 	is_toggling = false
 	_unscope()
 	player.max_speed = MC.SPEED_KNIFE
+	if _grenade_count(current_grenade) <= 0:
+		_cycle_grenade()
+
+
+func _cycle_grenade() -> void:
+	var start := current_grenade
+	for _i in range(2):
+		current_grenade = (current_grenade + 1) % 2
+		if _grenade_count(current_grenade) > 0:
+			return
+	current_grenade = start
+
+
+func _grenade_count(idx: int) -> int:
+	match idx:
+		0: return grenade_he_count
+		1: return grenade_flash_count
+	return 0
+
+
+func _total_grenades() -> int:
+	return grenade_he_count + grenade_flash_count
+
+
+func _consume_grenade() -> void:
+	match current_grenade:
+		0: grenade_he_count -= 1
+		1: grenade_flash_count -= 1
+
+
+func _get_grenade_name() -> String:
+	match current_grenade:
+		0: return "HE GRENADE"
+		1: return "FLASH"
+	return "GRENADE"
 
 
 func _grenade_input(event: InputEvent) -> void:
@@ -609,9 +651,9 @@ func _throw_grenade() -> void:
 	player.get_parent().add_child(grenade)
 	grenade.global_position = spawn_pos
 	grenade.linear_velocity = throw_dir * speed_m + player.velocity
-	grenade.start(cook_timer)
+	grenade.start(cook_timer, current_grenade)
 
-	grenade_he_count -= 1
+	_consume_grenade()
 	is_cooking = false
 	is_grenade_mode = false
 	player.max_speed = current.max_speed
@@ -622,9 +664,9 @@ func _grenade_detonate_in_hand() -> void:
 	grenade.set_script(GrenadeProjectile)
 	player.get_parent().add_child(grenade)
 	grenade.global_position = camera.global_position
-	grenade.start(0.0)
+	grenade.start(0.0, current_grenade)
 
-	grenade_he_count -= 1
+	_consume_grenade()
 	is_cooking = false
 	is_grenade_mode = false
 	player.max_speed = current.max_speed

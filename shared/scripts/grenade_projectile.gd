@@ -4,7 +4,10 @@ extends RigidBody3D
 const MC := preload("res://shared/scripts/movement_constants.gd")
 const WC := preload("res://shared/scripts/weapon_constants.gd")
 
+enum Type { HE, FLASH }
+
 var fuse_remaining: float = 0.0
+var type: int = Type.HE
 
 func _ready() -> void:
 	collision_layer = 4
@@ -21,6 +24,7 @@ func _ready() -> void:
 
 	linear_damp = 0.1
 	angular_damp = 2.0
+	continuous_cd = true
 
 	var shape := SphereShape3D.new()
 	shape.radius = 0.04
@@ -39,8 +43,9 @@ func _ready() -> void:
 	add_child(mesh)
 
 
-func start(fuse: float) -> void:
+func start(fuse: float, grenade_type: int = Type.HE) -> void:
 	fuse_remaining = fuse
+	type = grenade_type
 
 
 func _physics_process(delta: float) -> void:
@@ -50,6 +55,15 @@ func _physics_process(delta: float) -> void:
 
 
 func _detonate() -> void:
+	match type:
+		Type.HE:
+			_detonate_he()
+		Type.FLASH:
+			_detonate_flash()
+	queue_free()
+
+
+func _detonate_he() -> void:
 	var blast_radius_m := WC.HE_BLAST_RADIUS_GSRC * MC.METERS_PER_UNIT
 	var pos := global_position
 	var space := get_world_3d().direct_space_state
@@ -96,4 +110,54 @@ func _detonate() -> void:
 		target.take_damage(damage, "chest", "HE Grenade", WC.HE_ARMOR_PEN)
 		damaged[target] = true
 
-	queue_free()
+
+func _detonate_flash() -> void:
+	var pos := global_position
+	var space := get_world_3d().direct_space_state
+
+	var players := get_tree().get_nodes_in_group("player")
+	for p in players:
+		if not p is CharacterBody3D:
+			continue
+		if not p.has_method("apply_flash"):
+			continue
+
+		var cam: Camera3D = p.get_node("Head/Camera3D")
+		var eye_pos: Vector3 = cam.global_position
+
+		var los_params := PhysicsRayQueryParameters3D.create(
+			pos + Vector3(0, 0.1, 0), eye_pos)
+		los_params.collision_mask = 1
+		los_params.exclude = [p.get_rid()]
+		var los_result := space.intersect_ray(los_params)
+		if los_result:
+			continue
+
+		var cam_forward := -cam.global_transform.basis.z
+		var dir_to_flash := pos - eye_pos
+		cam_forward.y = 0.0
+		dir_to_flash.y = 0.0
+		cam_forward = cam_forward.normalized()
+		dir_to_flash = dir_to_flash.normalized()
+		var dot := cam_forward.dot(dir_to_flash)
+		var angle_deg := rad_to_deg(acos(clampf(dot, -1.0, 1.0)))
+
+		var blind := _lerp_by_angle(angle_deg, WC.FLASH_ANGLES, WC.FLASH_BLIND)
+		var fade := _lerp_by_angle(angle_deg, WC.FLASH_ANGLES, WC.FLASH_FADE)
+
+		if blind <= 0.0 and fade <= 0.0:
+			fade = WC.FLASH_TINT_TIME
+		if blind <= 0.0 and fade <= 0.0:
+			continue
+
+		p.apply_flash(blind, fade)
+
+
+func _lerp_by_angle(angle: float, angles: Array, values: Array) -> float:
+	if angle <= float(angles[0]):
+		return float(values[0])
+	for i in range(1, angles.size()):
+		if angle <= float(angles[i]):
+			var t: float = (angle - float(angles[i - 1])) / (float(angles[i]) - float(angles[i - 1]))
+			return lerpf(float(values[i - 1]), float(values[i]), t)
+	return float(values[values.size() - 1])
