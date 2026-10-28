@@ -3,8 +3,12 @@ extends Node
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if "--test" in args:
-		print("EntryPoint: launching test runner")
+		print("EntryPoint: launching movement test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/test_scene.tscn")
+		return
+	if "--test-combat" in args:
+		print("EntryPoint: launching combat test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/combat_test_scene.tscn")
 		return
 	if "--play" in args:
 		print("EntryPoint: launching play test")

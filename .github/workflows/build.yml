@@ -29,6 +29,29 @@ jobs:
       - name: Validate scripts
         run: godot --headless --check-only --script res://client/scripts/player_controller.gd
 
+  test:
+    name: Run Tests
+    runs-on: ubuntu-24.04
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot
+        run: |
+          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" -O /tmp/godot.zip
+          sudo unzip /tmp/godot.zip -d /usr/local/bin/
+          sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Import project
+        run: godot --headless --import
+
+      - name: Movement tests
+        run: timeout 30 godot --headless --path . -- --test
+
+      - name: Combat tests
+        run: timeout 30 godot --headless --path . -- --test-combat
+
   export-server:
     name: Export Linux Server
     runs-on: ubuntu-24.04
