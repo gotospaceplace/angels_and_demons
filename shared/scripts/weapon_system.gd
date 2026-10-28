@@ -226,7 +226,13 @@ func _trace_bullet(cam_origin: Vector3, direction: Vector3, max_range: float) ->
 
 		if collider.has_meta("hitgroup"):
 			_apply_hit_damage(result, cam_origin, damage_scale)
-			return
+			if pen_left <= 1 or base_retention <= 0.0:
+				return
+			trace_start = hit_pos + direction * 0.01
+			damage_scale *= base_retention
+			pen_left -= 1
+			params.exclude.append(collider.get_rid())
+			continue
 
 		# Hit world geometry — attempt wall penetration
 		if pen_left <= 1 or base_retention <= 0.0:
