@@ -35,6 +35,10 @@ var on_ladder := false
 var ladder_normal := Vector3.FORWARD
 var _ladder_area: Area3D
 
+# Bullet tagging
+var tag_base_cap: float = 0.0
+var tag_timer: float = 0.0
+
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_to_group("player")
@@ -104,6 +108,21 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= MC.GRAVITY * delta * 0.5
 	else:
 		velocity.y = 0.0
+
+	# Bullet tag: decaying speed cap
+	if tag_timer > 0.0:
+		tag_timer -= delta
+		if tag_timer <= 0.0:
+			tag_timer = 0.0
+		else:
+			var decay := 1.0 - (tag_timer / MC.TAG_RECOVERY_TIME)
+			var current_cap := lerpf(tag_base_cap, max_speed, decay)
+			var h_vel := Vector3(velocity.x, 0, velocity.z)
+			var h_speed := h_vel.length()
+			if h_speed > current_cap:
+				var scale_f := current_cap / h_speed
+				velocity.x *= scale_f
+				velocity.z *= scale_f
 
 	scroll_jump_queued = false
 
@@ -519,3 +538,22 @@ func _on_ladder_exited(area: Area3D) -> void:
 	if area is LadderVolume:
 		on_ladder = false
 		velocity.y = 0.0
+
+
+func apply_bullet_tag(weapon_max_speed: float) -> void:
+	var h_vel := Vector3(velocity.x, 0, velocity.z)
+	var h_speed := h_vel.length()
+
+	var cap: float
+	if hop_count > 0 and h_speed > max_speed * 1.1:
+		cap = weapon_max_speed * MC.TAG_BHOP_MULTIPLIER
+	else:
+		cap = weapon_max_speed
+
+	if h_speed > cap:
+		var scale_f := cap / h_speed
+		velocity.x *= scale_f
+		velocity.z *= scale_f
+
+	tag_base_cap = cap
+	tag_timer = MC.TAG_RECOVERY_TIME

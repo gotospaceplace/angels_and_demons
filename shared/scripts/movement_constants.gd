@@ -95,5 +95,9 @@ const INACCURACY_SPEED_THRESHOLD := 140.0 * METERS_PER_UNIT  # 3.556 m/s
 const GROUND_TRACE_DIST := 2.0 * METERS_PER_UNIT  # 0.051 m
 const FLOOR_NORMAL_MIN := 0.7  # normal.y >= 0.7 for walkable surface (~45°)
 
+# --- Bullet tagging ---
+const TAG_RECOVERY_TIME := 0.5   # seconds to fully recover from a tag
+const TAG_BHOP_MULTIPLIER := 0.5 # extra penalty when tagged while bhopping
+
 # --- Edge friction trace ---
 const EDGE_FRICTION_TRACE_DIST := 16.0 * METERS_PER_UNIT  # 0.406 m ahead

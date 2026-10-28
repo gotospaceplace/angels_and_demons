@@ -102,6 +102,9 @@ func _physics_process(delta: float) -> void:
 		text += "Bhop: %d hops\n" % player.hop_count
 	text += "Pos: %.1f, %.1f, %.1f\n" % [pos.x, pos.y, pos.z]
 
+	if player.tag_timer > 0.0:
+		text += "TAGGED (%.1fs)\n" % player.tag_timer
+
 	if tracking_jump:
 		var cur_height := pos.y - jump_start_y
 		var peak := peak_height - jump_start_y
