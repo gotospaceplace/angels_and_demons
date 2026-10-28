@@ -261,12 +261,12 @@ func test_weapon_switch_time() -> void:
 	if not _approx(awp.draw_time, 1.5, 0.01):
 		_fail("AWP draw=%.2f, expected 1.5" % awp.draw_time)
 		return
-	var switch_time := knife.holster_time + awp.draw_time
+	var switch_time: float = float(knife.holster_time) + float(awp.draw_time)
 	_pass("knife draw=%.1fs AWP draw=%.1fs switch=%.1fs" % [knife.draw_time, awp.draw_time, switch_time])
 
 
 func test_accuracy_first_shot() -> void:
-	var spread := ak.spread_standing * ak.accuracy_deploy
+	var spread: float = float(ak.spread_standing) * float(ak.accuracy_deploy)
 	if _approx(spread, 0.0055, 0.0005):
 		_pass("AK first-shot spread=%.4f (expected ~0.0055)" % spread)
 	else:
@@ -275,9 +275,9 @@ func test_accuracy_first_shot() -> void:
 
 func test_accuracy_degradation() -> void:
 	var shots := 7
-	var acc := (pow(shots, 3) / ak.accuracy_divisor) + ak.accuracy_offset
-	acc = minf(acc, ak.accuracy_cap)
-	var spread := ak.spread_standing * acc
+	var acc: float = (pow(shots, 3) / float(ak.accuracy_divisor)) + float(ak.accuracy_offset)
+	acc = minf(acc, float(ak.accuracy_cap))
+	var spread: float = float(ak.spread_standing) * acc
 	if _approx(acc, ak.accuracy_cap, 0.01) and spread > 0.03:
 		_pass("7 shots: acc=%.3f (cap=%.2f) spread=%.4f" % [acc, ak.accuracy_cap, spread])
 	else:
@@ -285,7 +285,7 @@ func test_accuracy_degradation() -> void:
 
 
 func test_per_weapon_maxspeed() -> void:
-	var ak_gsrc := ak.max_speed * MC.UNITS_PER_METER
+	var ak_gsrc: float = float(ak.max_speed) * MC.UNITS_PER_METER
 	if _approx(ak_gsrc, 221.0, 1.0):
 		_pass("AK maxspeed=%.1f u/s (expected 221)" % ak_gsrc)
 	else:
@@ -293,8 +293,8 @@ func test_per_weapon_maxspeed() -> void:
 
 
 func test_movement_inaccuracy() -> void:
-	var standing := ak.spread_standing * ak.accuracy_deploy
-	var moving := ak.spread_base_moving + ak.spread_moving * ak.accuracy_deploy
+	var standing: float = float(ak.spread_standing) * float(ak.accuracy_deploy)
+	var moving: float = float(ak.spread_base_moving) + float(ak.spread_moving) * float(ak.accuracy_deploy)
 	if moving > standing * 5.0:
 		_pass("moving=%.4f >> standing=%.4f (%.1fx worse)" % [moving, standing, moving / standing])
 	else:
