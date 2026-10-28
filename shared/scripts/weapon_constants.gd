@@ -48,6 +48,12 @@ const GRENADE_SHORT_TOSS_MULT := 0.33 # right-click toss velocity multiplier
 const GRENADE_BOUNCE := 0.45          # restitution coefficient
 const GRENADE_FRICTION := 0.6
 
+# --- Smoke grenade ---
+const SMOKE_RADIUS_GSRC := 150.0      # 300u diameter cloud
+const SMOKE_DURATION := 25.3           # seconds visible
+const SMOKE_FADE_IN := 1.2             # seconds to reach full opacity
+const SMOKE_FADE_OUT := 2.0            # seconds to dissipate
+
 # --- Flash grenade ---
 const FLASH_ANGLES := [0.0, 45.0, 90.0, 180.0]
 const FLASH_BLIND := [3.0, 2.3, 1.9, 0.0]

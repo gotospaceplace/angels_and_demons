@@ -54,7 +54,8 @@ var is_toggling: bool = false
 # Grenades
 var grenade_he_count: int = 1
 var grenade_flash_count: int = 2
-var current_grenade: int = 0  # 0=HE, 1=Flash
+var grenade_smoke_count: int = 1
+var current_grenade: int = 0  # 0=HE, 1=Flash, 2=Smoke
 var is_grenade_mode: bool = false
 var is_cooking: bool = false
 var cook_timer: float = 0.0
@@ -570,8 +571,8 @@ func _select_grenade() -> void:
 
 func _cycle_grenade() -> void:
 	var start := current_grenade
-	for _i in range(2):
-		current_grenade = (current_grenade + 1) % 2
+	for _i in range(3):
+		current_grenade = (current_grenade + 1) % 3
 		if _grenade_count(current_grenade) > 0:
 			return
 	current_grenade = start
@@ -581,23 +582,26 @@ func _grenade_count(idx: int) -> int:
 	match idx:
 		0: return grenade_he_count
 		1: return grenade_flash_count
+		2: return grenade_smoke_count
 	return 0
 
 
 func _total_grenades() -> int:
-	return grenade_he_count + grenade_flash_count
+	return grenade_he_count + grenade_flash_count + grenade_smoke_count
 
 
 func _consume_grenade() -> void:
 	match current_grenade:
 		0: grenade_he_count -= 1
 		1: grenade_flash_count -= 1
+		2: grenade_smoke_count -= 1
 
 
 func _get_grenade_name() -> String:
 	match current_grenade:
 		0: return "HE GRENADE"
 		1: return "FLASH"
+		2: return "SMOKE"
 	return "GRENADE"
 
 

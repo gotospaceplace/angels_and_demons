@@ -4,7 +4,7 @@ extends RigidBody3D
 const MC := preload("res://shared/scripts/movement_constants.gd")
 const WC := preload("res://shared/scripts/weapon_constants.gd")
 
-enum Type { HE, FLASH }
+enum Type { HE, FLASH, SMOKE }
 
 var fuse_remaining: float = 0.0
 var type: int = Type.HE
@@ -60,6 +60,8 @@ func _detonate() -> void:
 			_detonate_he()
 		Type.FLASH:
 			_detonate_flash()
+		Type.SMOKE:
+			_detonate_smoke()
 	queue_free()
 
 
@@ -151,6 +153,13 @@ func _detonate_flash() -> void:
 			continue
 
 		p.apply_flash(blind, fade)
+
+
+func _detonate_smoke() -> void:
+	var cloud := Node3D.new()
+	cloud.set_script(preload("res://shared/scripts/smoke_cloud.gd"))
+	get_parent().add_child(cloud)
+	cloud.global_position = global_position
 
 
 func _lerp_by_angle(angle: float, angles: Array, values: Array) -> float:
