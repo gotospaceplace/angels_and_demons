@@ -34,3 +34,16 @@ const MAX_HITSCAN_RANGE := 4096.0
 
 # Unscoped spread penalty for AWP
 const AWP_UNSCOPED_SPREAD := 0.08
+
+# --- HE Grenade ---
+const HE_DAMAGE := 100.0
+const HE_BLAST_RADIUS_GSRC := 350.0  # GoldSrc units
+const HE_ARMOR_PEN := 0.5
+
+# --- Grenade throw ---
+const GRENADE_FUSE := 3.5             # seconds (A&D cooking: starts on pin pull)
+const GRENADE_SPAWN_OFFSET := 0.406   # 16 GoldSrc units in front of eye
+const GRENADE_MAX_VEL_GSRC := 750.0   # cap on throw speed
+const GRENADE_SHORT_TOSS_MULT := 0.33 # right-click toss velocity multiplier
+const GRENADE_BOUNCE := 0.45          # restitution coefficient
+const GRENADE_FRICTION := 0.6

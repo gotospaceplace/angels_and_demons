@@ -27,6 +27,10 @@ func _process(_delta: float) -> void:
 		_draw_node.is_toggling = _weapon_system.is_toggling
 		_draw_node.is_scoped = _weapon_system.is_scoped
 		_draw_node.silencer_on = _weapon_system.silencer_on
+		_draw_node.is_grenade_mode = _weapon_system.is_grenade_mode
+		_draw_node.is_cooking = _weapon_system.is_cooking
+		_draw_node.cook_timer = _weapon_system.cook_timer
+		_draw_node.grenade_count = _weapon_system.grenade_he_count
 
 	_draw_node.queue_redraw()
 
@@ -40,6 +44,10 @@ class CrosshairDraw extends Control:
 	var is_toggling: bool = false
 	var is_scoped: bool = false
 	var silencer_on: bool = false
+	var is_grenade_mode: bool = false
+	var is_cooking: bool = false
+	var cook_timer: float = 0.0
+	var grenade_count: int = 0
 
 	const LINE_LEN := 8.0
 	const THICKNESS := 2.0
@@ -53,7 +61,9 @@ class CrosshairDraw extends Control:
 	func _draw() -> void:
 		var center := size / 2.0
 
-		if is_scoped:
+		if is_grenade_mode:
+			pass
+		elif is_scoped:
 			_draw_scope(center)
 		else:
 			var gap := GAP_MIN + spread * SPREAD_SCALE
@@ -61,8 +71,15 @@ class CrosshairDraw extends Control:
 			_draw_cross(center, gap, FILL, THICKNESS)
 
 		# Weapon info (bottom center)
-		if weapon_name != "":
-			var info := weapon_name
+		var info := ""
+		if is_grenade_mode:
+			info = "HE GRENADE  x%d" % grenade_count
+			if is_cooking:
+				info += "  COOK %.1fs" % cook_timer
+			else:
+				info += "  [FIRE to pull pin]"
+		elif weapon_name != "":
+			info = weapon_name
 			if silencer_on:
 				info += " [S]"
 			if is_reloading:
@@ -74,6 +91,7 @@ class CrosshairDraw extends Control:
 			elif ammo_text != "":
 				info += "  " + ammo_text
 
+		if info != "":
 			var font := ThemeDB.fallback_font
 			var fsize := 14
 			var text_size := font.get_string_size(info, HORIZONTAL_ALIGNMENT_CENTER, -1, fsize)

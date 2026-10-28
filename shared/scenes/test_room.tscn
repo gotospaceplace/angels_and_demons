@@ -1,8 +1,9 @@
-[gd_scene load_steps=17 format=3 uid="uid://c8testroom001"]
+[gd_scene load_steps=18 format=3 uid="uid://c8testroom001"]
 
 [ext_resource type="Script" path="res://shared/scripts/ladder_volume.gd" id="ladder_script"]
 [ext_resource type="Script" path="res://shared/scripts/target_dummy.gd" id="target_dummy_script"]
 [ext_resource type="Script" path="res://shared/scripts/tag_test_zone.gd" id="tag_zone_script"]
+[ext_resource type="Script" path="res://shared/scripts/grenade_test_range.gd" id="grenade_range_script"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
 albedo_color = Color(0.25, 0.25, 0.28, 1)
@@ -309,3 +310,7 @@ script = ExtResource("tag_zone_script")
 
 [node name="TagTrigger" type="CollisionShape3D" parent="TagTestZone"]
 shape = SubResource("BoxShape3D_tag_trigger")
+
+[node name="GrenadeTestRange" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.1, -8)
+script = ExtResource("grenade_range_script")

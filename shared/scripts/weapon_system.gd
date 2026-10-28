@@ -3,6 +3,7 @@ extends Node
 const MC := preload("res://shared/scripts/movement_constants.gd")
 const WC := preload("res://shared/scripts/weapon_constants.gd")
 const WR := preload("res://shared/scripts/weapon_registry.gd")
+const GrenadeProjectile := preload("res://shared/scripts/grenade_projectile.gd")
 
 var player: CharacterBody3D
 var camera: Camera3D
@@ -50,6 +51,13 @@ const SCOPE_CYCLE_DELAY := 0.3
 var silencer_on: bool = false
 var is_toggling: bool = false
 
+# Grenades
+var grenade_he_count: int = 1
+var is_grenade_mode: bool = false
+var is_cooking: bool = false
+var cook_timer: float = 0.0
+var cook_short_toss: bool = false
+
 
 func _ready() -> void:
 	add_to_group("weapon_system")
@@ -66,6 +74,12 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if player.test_driven:
+		return
+	if event.is_action_pressed("weapon_4"):
+		_select_grenade()
+		return
+	if is_grenade_mode:
+		_grenade_input(event)
 		return
 	if event.is_action_pressed("fire"):
 		fire_held = true
@@ -104,6 +118,15 @@ func _physics_process(delta: float) -> void:
 	if is_toggling and now >= next_action_time:
 		is_toggling = false
 		silencer_on = not silencer_on
+
+	if is_cooking:
+		cook_timer -= delta
+		if cook_timer <= 0.0:
+			_grenade_detonate_in_hand()
+		return
+
+	if is_grenade_mode:
+		return
 
 	var should_fire := false
 	if current.is_automatic:
@@ -515,3 +538,92 @@ func _unscope() -> void:
 
 func _now() -> float:
 	return Time.get_ticks_msec() / 1000.0
+
+
+# --- Grenades ---
+
+func _select_grenade() -> void:
+	if grenade_he_count <= 0 or is_grenade_mode or is_cooking:
+		return
+	is_grenade_mode = true
+	is_reloading = false
+	is_switching = false
+	is_toggling = false
+	_unscope()
+	player.max_speed = MC.SPEED_KNIFE
+
+
+func _grenade_input(event: InputEvent) -> void:
+	if event.is_action_pressed("fire") and not is_cooking:
+		_start_cooking(false)
+	elif event.is_action_released("fire") and is_cooking and not cook_short_toss:
+		_throw_grenade()
+	elif event.is_action_pressed("fire_secondary") and not is_cooking:
+		_start_cooking(true)
+	elif event.is_action_released("fire_secondary") and is_cooking and cook_short_toss:
+		_throw_grenade()
+	elif not is_cooking:
+		if event.is_action_pressed("weapon_1"):
+			_exit_grenade_mode()
+			_switch_to_slot(2)
+		elif event.is_action_pressed("weapon_2"):
+			_exit_grenade_mode()
+			_switch_to_slot(1)
+		elif event.is_action_pressed("weapon_3"):
+			_exit_grenade_mode()
+			_switch_to_slot(0)
+		elif event.is_action_pressed("weapon_last"):
+			_exit_grenade_mode()
+			_switch_to_last()
+
+
+func _start_cooking(short: bool) -> void:
+	is_cooking = true
+	cook_timer = WC.GRENADE_FUSE
+	cook_short_toss = short
+
+
+func _throw_grenade() -> void:
+	var cam := camera.global_transform
+	var forward := -cam.basis.z
+	var spawn_pos := cam.origin + forward * WC.GRENADE_SPAWN_OFFSET
+
+	# Throw angle: small upward bias (5°) for gentle arc
+	var view_pitch := rad_to_deg(head.rotation.x)
+	var speed_gsrc := (90.0 + view_pitch) * 8.0
+	speed_gsrc = clampf(speed_gsrc, 0.0, WC.GRENADE_MAX_VEL_GSRC)
+	if cook_short_toss:
+		speed_gsrc *= WC.GRENADE_SHORT_TOSS_MULT
+	var speed_m := speed_gsrc * MC.METERS_PER_UNIT
+
+	var throw_dir := forward.rotated(cam.basis.x, deg_to_rad(5.0))
+
+	var grenade := RigidBody3D.new()
+	grenade.set_script(GrenadeProjectile)
+	player.get_parent().add_child(grenade)
+	grenade.global_position = spawn_pos
+	grenade.linear_velocity = throw_dir * speed_m + player.velocity
+	grenade.start(cook_timer)
+
+	grenade_he_count -= 1
+	is_cooking = false
+	is_grenade_mode = false
+	player.max_speed = current.max_speed
+
+
+func _grenade_detonate_in_hand() -> void:
+	var grenade := RigidBody3D.new()
+	grenade.set_script(GrenadeProjectile)
+	player.get_parent().add_child(grenade)
+	grenade.global_position = camera.global_position
+	grenade.start(0.0)
+
+	grenade_he_count -= 1
+	is_cooking = false
+	is_grenade_mode = false
+	player.max_speed = current.max_speed
+
+
+func _exit_grenade_mode() -> void:
+	is_grenade_mode = false
+	player.max_speed = current.max_speed
