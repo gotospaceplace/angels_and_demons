@@ -61,6 +61,15 @@ var is_cooking: bool = false
 var cook_timer: float = 0.0
 var cook_short_toss: bool = false
 
+# Telemetry: last hit
+var last_hit_group: String = ""
+var last_hit_damage: float = 0.0
+var last_hit_distance: float = 0.0
+var last_hit_weapon: String = ""
+var last_hit_timer: float = 0.0
+var damage_dealt_log: Array[float] = []
+var damage_time_log: Array[float] = []
+
 
 func _ready() -> void:
 	add_to_group("weapon_system")
@@ -113,6 +122,10 @@ func _physics_process(delta: float) -> void:
 	_apply_viewpunch()
 	_update_accuracy_recovery(delta, now)
 
+	while damage_time_log.size() > 0 and now - damage_time_log[0] > 5.0:
+		damage_time_log.remove_at(0)
+		damage_dealt_log.remove_at(0)
+
 	if is_reloading and now >= next_action_time:
 		_finish_reload()
 	if is_switching and now >= next_action_time:
@@ -143,6 +156,18 @@ func _physics_process(delta: float) -> void:
 
 
 # --- Public interface for crosshair / HUD ---
+
+func get_dps() -> float:
+	var total := 0.0
+	for d in damage_dealt_log:
+		total += d
+	if damage_time_log.size() < 2:
+		return total
+	var span := damage_time_log[damage_time_log.size() - 1] - damage_time_log[0]
+	if span <= 0.0:
+		return total
+	return total / span
+
 
 func get_current_spread() -> float:
 	return _calc_spread()
@@ -295,6 +320,15 @@ func _apply_hit_damage(result: Dictionary, cam_origin: Vector3, damage_scale: fl
 	var target = collider.get_parent()
 	if target and target.has_method("take_damage"):
 		target.take_damage(final_damage, hitgroup, current.weapon_name, current.armor_penetration)
+
+	last_hit_group = hitgroup
+	last_hit_damage = final_damage
+	last_hit_distance = dist_gsrc
+	last_hit_weapon = current.weapon_name
+	last_hit_timer = 1.0
+	var now := _now()
+	damage_dealt_log.append(final_damage)
+	damage_time_log.append(now)
 
 
 # --- Spread calculation ---

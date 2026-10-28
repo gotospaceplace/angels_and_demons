@@ -114,8 +114,43 @@ func _physics_process(delta: float) -> void:
 		text += "Last jump: %.3fm\n" % last_jump_height
 		text += "Last air peak: %.0f u/s\n" % (last_air_speed_peak * MC.UNITS_PER_METER)
 
+	# --- Weapon telemetry ---
+	var ws := _find_weapon_system()
+	if ws:
+		text += "\n--- WEAPON ---\n"
+		text += "Weapon: %s" % ws.get_weapon_name()
+		if ws.silencer_on:
+			text += " [S]"
+		text += "\n"
+		text += "Ammo: %s\n" % ws.get_ammo_display()
+		text += "Spread: %.4f\n" % ws.get_current_spread()
+		text += "Accuracy: %.3f  Shots: %d\n" % [ws.accuracy, ws.shots_fired]
+		text += "Viewpunch: %.2f, %.2f\n" % [ws.viewpunch.x, ws.viewpunch.y]
+
+		if ws.is_grenade_mode:
+			text += "Grenade: %s x%d\n" % [ws._get_grenade_name(), ws._grenade_count(ws.current_grenade)]
+			if ws.is_cooking:
+				text += "Cook: %.1fs\n" % ws.cook_timer
+
+		if ws.last_hit_group != "":
+			text += "\n--- LAST HIT ---\n"
+			text += "%s → %s\n" % [ws.last_hit_weapon, ws.last_hit_group]
+			text += "Damage: %.1f  Dist: %.0fu\n" % [ws.last_hit_damage, ws.last_hit_distance]
+
+		var dps: float = ws.get_dps()
+		if dps > 0.0:
+			text += "DPS (5s): %.0f\n" % dps
+
 	display_text = text
 	label.text = display_text
+
+
+func _find_weapon_system() -> Node:
+	var ws_nodes := get_tree().get_nodes_in_group("weapon_system")
+	if ws_nodes.size() > 0:
+		return ws_nodes[0]
+	return null
+
 
 func _find_player() -> CharacterBody3D:
 	var players := get_tree().get_nodes_in_group("player")
