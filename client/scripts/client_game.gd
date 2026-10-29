@@ -9,6 +9,7 @@ var recent_inputs: Array = []
 
 var local_player: CharacterBody3D
 var snapshot_buffer: Array = []
+var last_received_snapshot_tick: int = 0
 
 var snapshots_received: int = 0
 
@@ -99,7 +100,7 @@ func _store_input(cmd: NetInput) -> void:
 func _send_input() -> void:
 	if recent_inputs.is_empty():
 		return
-	var packet := NetProtocol.pack_input_packet(recent_inputs)
+	var packet := NetProtocol.pack_input_packet(recent_inputs, last_received_snapshot_tick)
 	multiplayer.send_bytes(packet, 1,
 		MultiplayerPeer.TRANSFER_MODE_UNRELIABLE_ORDERED,
 		NetConstants.CHANNEL_INPUT)
@@ -132,6 +133,7 @@ func _handle_snapshot(packet: PackedByteArray) -> void:
 		snapshot_buffer.pop_front()
 
 	server_tick = result["tick"]
+	last_received_snapshot_tick = server_tick
 	snapshots_received += 1
 
 	if not tick_synced:

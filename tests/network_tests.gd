@@ -327,14 +327,17 @@ func test_input_packet_roundtrip() -> void:
 	var cmd2 := NetInput.create(99, 0b010, 89.0, 9.0)
 	var cmd3 := NetInput.create(98, 0b001, 88.0, 8.0)
 
-	var packet := NetProtocol.pack_input_packet([cmd1, cmd2, cmd3])
-	var commands := NetProtocol.unpack_input_packet(packet)
+	var packet := NetProtocol.pack_input_packet([cmd1, cmd2, cmd3], 4200)
+	var result := NetProtocol.unpack_input_packet(packet)
+	var commands: Array = result["commands"]
 
 	if commands.size() != 3:
 		_fail("expected 3 commands, got %d" % commands.size()); return
 	if commands[0].tick != 100 or commands[1].tick != 99 or commands[2].tick != 98:
 		_fail("tick mismatch"); return
-	_pass("3-command packet roundtrip, %d bytes" % packet.size())
+	if result["ack_tick"] != 4200:
+		_fail("ack_tick: %d expected 4200" % result["ack_tick"]); return
+	_pass("3-command packet roundtrip, %d bytes, ack=%d" % [packet.size(), result["ack_tick"]])
 
 
 func test_snapshot_packet_full_roundtrip() -> void:

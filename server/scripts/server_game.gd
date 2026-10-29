@@ -4,8 +4,9 @@ const ServerPlayer = preload("res://server/scripts/server_player.gd")
 
 var server_tick: int = 0
 var players: Dictionary = {}
-var last_snapshots: Dictionary = {}
 var world_node: Node3D
+var snapshot_bytes_total: int = 0
+var snapshot_count: int = 0
 
 var spawn_points: Array[Vector3] = [
 	Vector3(0, 1, 0),
@@ -72,7 +73,6 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if players.has(peer_id):
 		players[peer_id].destroy()
 		players.erase(peer_id)
-		last_snapshots.erase(peer_id)
 	print("[Server] Player %d disconnected (total: %d)" % [peer_id, players.size()])
 
 
@@ -90,11 +90,16 @@ func _on_peer_packet(peer_id: int, packet: PackedByteArray) -> void:
 func _handle_input_packet(peer_id: int, packet: PackedByteArray) -> void:
 	if not players.has(peer_id):
 		return
-	var commands := NetProtocol.unpack_input_packet(packet)
+	var result := NetProtocol.unpack_input_packet(packet)
+	var commands: Array = result["commands"]
 	if commands.is_empty():
 		return
 
 	var sp = players[peer_id]
+	var ack_tick: int = result["ack_tick"]
+	if ack_tick > sp.acked_snapshot_tick:
+		sp.acked_snapshot_tick = ack_tick
+
 	for i in range(commands.size() - 1, -1, -1):
 		var cmd = commands[i]
 		if cmd.tick > sp.last_acked_tick:
@@ -109,22 +114,32 @@ func _broadcast_snapshots() -> void:
 	for sp in players.values():
 		states.append(sp.get_snapshot(server_tick))
 
+	var broadcast_bytes := 0
 	for peer_id in players:
-		var bases: Dictionary = last_snapshots.get(peer_id, {})
+		var sp = players[peer_id]
+		var bases: Dictionary = sp.get_acked_bases()
 		var packet: PackedByteArray
 		if bases.is_empty():
 			packet = NetProtocol.pack_snapshot_full(server_tick, states)
 		else:
-			packet = NetProtocol.pack_snapshot_delta(server_tick, server_tick - 2, states, bases)
+			packet = NetProtocol.pack_snapshot_delta(server_tick, sp.acked_snapshot_tick, states, bases)
 
 		multiplayer.send_bytes(packet, peer_id,
 			MultiplayerPeer.TRANSFER_MODE_UNRELIABLE_ORDERED,
 			NetConstants.CHANNEL_SNAPSHOT)
+		broadcast_bytes += packet.size()
 
-		var new_bases: Dictionary = {}
-		for s in states:
-			new_bases[s.peer_id] = s.duplicate_state()
-		last_snapshots[peer_id] = new_bases
+		sp.store_snapshot(server_tick, states)
+
+	snapshot_bytes_total += broadcast_bytes
+	snapshot_count += 1
+	if snapshot_count % 128 == 0:
+		var avg_bytes := snapshot_bytes_total / snapshot_count
+		var bw_kbps := float(snapshot_bytes_total) / (float(snapshot_count) / 64.0) / 1024.0
+		print("[Server] Snapshot stats: %d players, avg %d bytes/broadcast, %.1f KB/s total" % [
+			players.size(), avg_bytes, bw_kbps])
+		snapshot_bytes_total = 0
+		snapshot_count = 0
 
 
 func _create_floor() -> void:

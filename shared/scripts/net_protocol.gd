@@ -18,37 +18,44 @@ const HEADER_SIZE := 2
 
 
 # --- Input packet: client → server ---
-# Header (2) + input_count (1) + InputCommands (10 × count)
+# Header (2) + ack_tick (4) + input_count (1) + InputCommands (10 × count)
 
-static func pack_input_packet(commands: Array) -> PackedByteArray:
+static func pack_input_packet(commands: Array, ack_tick: int = 0) -> PackedByteArray:
 	var count := mini(commands.size(), NetConstants.INPUT_REDUNDANCY)
 	var buf := PackedByteArray()
-	buf.resize(HEADER_SIZE + 1)
+	buf.resize(HEADER_SIZE + 5)
 	buf[0] = NetConstants.PROTOCOL_VERSION
 	buf[1] = MSG_INPUT
-	buf[2] = count
+	buf[2] = ack_tick & 0xFF
+	buf[3] = (ack_tick >> 8) & 0xFF
+	buf[4] = (ack_tick >> 16) & 0xFF
+	buf[5] = (ack_tick >> 24) & 0xFF
+	buf[6] = count
 	for i in range(count):
 		buf.append_array(commands[i].to_bytes())
 	return buf
 
 
-static func unpack_input_packet(buf: PackedByteArray) -> Array:
-	# Returns Array of NetInput
-	if buf.size() < HEADER_SIZE + 1:
-		return []
+static func unpack_input_packet(buf: PackedByteArray) -> Dictionary:
+	# Returns {ack_tick: int, commands: Array[NetInput]}
+	var result := {"ack_tick": 0, "commands": []}
+	if buf.size() < HEADER_SIZE + 5:
+		return result
 	if buf[0] != NetConstants.PROTOCOL_VERSION:
-		return []
+		return result
 	if buf[1] != MSG_INPUT:
-		return []
-	var count: int = buf[2]
+		return result
+	result["ack_tick"] = buf[2] | (buf[3] << 8) | (buf[4] << 16) | (buf[5] << 24)
+	var count: int = buf[6]
 	var commands: Array = []
-	var offset := HEADER_SIZE + 1
+	var offset := HEADER_SIZE + 5
 	for i in range(count):
 		if offset + NetInput.SIZE > buf.size():
 			break
 		commands.append(NetInput.from_bytes(buf, offset))
 		offset += NetInput.SIZE
-	return commands
+	result["commands"] = commands
+	return result
 
 
 # --- Snapshot packet: server → client ---

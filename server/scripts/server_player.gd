@@ -14,6 +14,9 @@ var weapon_idx: int = 0
 var ammo_mag: int = 30
 var is_dead: bool = false
 
+var snapshot_history: Array = []
+var acked_snapshot_tick: int = 0
+
 
 func create(p_peer_id: int, spawn_pos: Vector3, parent: Node) -> void:
 	peer_id = p_peer_id
@@ -83,6 +86,24 @@ func get_snapshot(tick: int) -> NetSnapshot:
 	s.weapon_idx = weapon_idx
 	s.ammo_mag = ammo_mag
 	return s
+
+
+func store_snapshot(tick: int, states: Array) -> void:
+	var entry := {"tick": tick, "states": {}}
+	for s in states:
+		entry["states"][s.peer_id] = s.duplicate_state()
+	snapshot_history.append(entry)
+	if snapshot_history.size() > NetConstants.SNAPSHOT_BUFFER_SIZE:
+		snapshot_history.pop_front()
+
+
+func get_acked_bases() -> Dictionary:
+	if acked_snapshot_tick == 0:
+		return {}
+	for i in range(snapshot_history.size() - 1, -1, -1):
+		if snapshot_history[i]["tick"] == acked_snapshot_tick:
+			return snapshot_history[i]["states"]
+	return {}
 
 
 func destroy() -> void:
