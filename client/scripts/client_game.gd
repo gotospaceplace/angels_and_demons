@@ -11,7 +11,13 @@ var local_player: CharacterBody3D
 var snapshot_buffer: Array = []
 var last_received_snapshot_tick: int = 0
 
+var prediction_buffer: Array = []
+var correction_offset := Vector3.ZERO
+var correction_timer: float = 0.0
+var correction_count: int = 0
+
 var snapshots_received: int = 0
+var my_peer_id: int = 0
 
 
 func _ready() -> void:
@@ -39,7 +45,8 @@ func _ready() -> void:
 
 
 func _on_connected() -> void:
-	print("[Client] Connected to server (peer ID: %d)" % multiplayer.get_unique_id())
+	my_peer_id = multiplayer.get_unique_id()
+	print("[Client] Connected to server (peer ID: %d)" % my_peer_id)
 
 
 func _on_connection_failed() -> void:
@@ -57,6 +64,11 @@ func _physics_process(_delta: float) -> void:
 	if multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
 		return
 
+	# Capture predicted state from the previous tick
+	# (player_movement ran after us in the last physics frame)
+	if local_player and client_tick > 0:
+		_store_prediction(client_tick)
+
 	client_tick += 1
 
 	var cmd := _sample_input()
@@ -64,6 +76,17 @@ func _physics_process(_delta: float) -> void:
 
 	if client_tick % 2 == 0:
 		_send_input()
+
+
+func _process(delta: float) -> void:
+	if correction_timer > 0.0:
+		correction_timer -= delta
+		if correction_timer <= 0.0:
+			correction_offset = Vector3.ZERO
+			correction_timer = 0.0
+		else:
+			var t := correction_timer / NetConstants.RECONCILE_SMOOTH_TIME
+			correction_offset = correction_offset * t
 
 
 func _sample_input() -> NetInput:
@@ -95,6 +118,32 @@ func _store_input(cmd: NetInput) -> void:
 	recent_inputs.append(cmd)
 	if recent_inputs.size() > NetConstants.INPUT_REDUNDANCY:
 		recent_inputs.pop_front()
+
+
+func _store_prediction(tick: int) -> void:
+	prediction_buffer.append({
+		"tick": tick,
+		"position": local_player.global_position,
+		"velocity": local_player.velocity,
+		"on_ground": local_player.on_ground,
+		"is_ducked": local_player.is_ducked,
+	})
+	if prediction_buffer.size() > NetConstants.INPUT_BUFFER_SIZE:
+		prediction_buffer.pop_front()
+
+
+func _find_prediction(tick: int) -> Dictionary:
+	for i in range(prediction_buffer.size() - 1, -1, -1):
+		if prediction_buffer[i]["tick"] == tick:
+			return prediction_buffer[i]
+	return {}
+
+
+func _find_input(tick: int) -> NetInput:
+	for i in range(input_buffer.size() - 1, -1, -1):
+		if input_buffer[i].tick == tick:
+			return input_buffer[i]
+	return null
 
 
 func _send_input() -> void:
@@ -141,9 +190,65 @@ func _handle_snapshot(packet: PackedByteArray) -> void:
 		tick_synced = true
 		print("[Client] Tick synced to server: %d" % server_tick)
 
-	if snapshots_received % 64 == 0:
-		print("[Client] Snapshot %d: tick=%d players=%d" % [
-			snapshots_received, server_tick, result["states"].size()])
+	# Reconciliation: compare server state to our prediction
+	if local_player and my_peer_id > 0:
+		_try_reconcile(result)
+
+	if snapshots_received % 128 == 0:
+		print("[Client] Snapshot %d: tick=%d corrections=%d" % [
+			snapshots_received, server_tick, correction_count])
+
+
+func _try_reconcile(snapshot_result: Dictionary) -> void:
+	var server_state: NetSnapshot = null
+	for s in snapshot_result["states"]:
+		if s.peer_id == my_peer_id:
+			server_state = s
+			break
+	if server_state == null:
+		return
+
+	var snap_tick: int = snapshot_result["tick"]
+	var predicted := _find_prediction(snap_tick)
+	if predicted.is_empty():
+		return
+
+	var error := predicted["position"].distance_to(server_state.position)
+	if error <= NetConstants.RECONCILE_THRESHOLD:
+		return
+
+	correction_count += 1
+	var old_pos: Vector3 = local_player.global_position
+
+	# Snap to server authoritative state
+	local_player.global_position = server_state.position
+	local_player.velocity = server_state.velocity
+	local_player.on_ground = server_state.get_flag(NetSnapshot.FLAG_ON_GROUND)
+	local_player.is_ducked = server_state.get_flag(NetSnapshot.FLAG_IS_DUCKED)
+
+	# Replay inputs from snap_tick+1 to current client_tick
+	var saved_test_driven: bool = local_player.test_driven
+	local_player.test_driven = true
+
+	for replay_tick in range(snap_tick + 1, client_tick + 1):
+		var cmd := _find_input(replay_tick)
+		if cmd == null:
+			continue
+		local_player.apply_network_input(cmd.yaw, cmd.pitch,
+			cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
+			cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
+			cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK))
+		local_player.simulate_tick(NetConstants.TICK_INTERVAL)
+
+	local_player.test_driven = saved_test_driven
+
+	# Visual smoothing: offset decays over RECONCILE_SMOOTH_TIME
+	correction_offset = old_pos - local_player.global_position
+	correction_timer = NetConstants.RECONCILE_SMOOTH_TIME
+
+	if correction_count <= 10 or correction_count % 50 == 0:
+		print("[Client] Correction #%d: error=%.3fm, replayed %d ticks" % [
+			correction_count, error, client_tick - snap_tick])
 
 
 func set_local_player(player: CharacterBody3D) -> void:

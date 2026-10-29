@@ -86,6 +86,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_read_input()
+	simulate_tick(delta)
+
+
+func simulate_tick(delta: float) -> void:
 	_handle_ducking(delta)
 
 	if is_ducked:
@@ -110,13 +114,11 @@ func _physics_process(delta: float) -> void:
 
 	_categorize_position()
 
-	# Post-move half gravity
 	if not on_ground:
 		velocity.y -= MC.GRAVITY * delta * 0.5
 	else:
 		velocity.y = 0.0
 
-	# Bullet tag: decaying speed cap
 	if tag_timer > 0.0:
 		tag_timer -= delta
 		if tag_timer <= 0.0:
