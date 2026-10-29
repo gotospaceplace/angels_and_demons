@@ -162,6 +162,11 @@ func _sample_input() -> NetInput:
 	cmd.set_button(NetInput.BIT_FIRE, Input.is_action_pressed("fire"))
 	cmd.set_button(NetInput.BIT_FIRE2, Input.is_action_pressed("fire_secondary"))
 	cmd.set_button(NetInput.BIT_RELOAD, Input.is_action_pressed("reload"))
+	cmd.set_button(NetInput.BIT_WEAPON1, Input.is_action_pressed("weapon_1"))
+	cmd.set_button(NetInput.BIT_WEAPON2, Input.is_action_pressed("weapon_2"))
+	cmd.set_button(NetInput.BIT_WEAPON3, Input.is_action_pressed("weapon_3"))
+	cmd.set_button(NetInput.BIT_WEAPON4, Input.is_action_pressed("weapon_4"))
+	cmd.set_button(NetInput.BIT_WEAPON5, Input.is_action_pressed("weapon_5"))
 
 	return cmd
 

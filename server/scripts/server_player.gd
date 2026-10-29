@@ -76,10 +76,34 @@ func dequeue_input() -> void:
 			false, false, false, false, false, false)
 		return
 
+	_check_weapon_switch(cmd)
+
 	body.apply_network_input(cmd.yaw, cmd.pitch,
 		cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
 		cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
 		cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK))
+
+
+const WEAPON_MAG_SIZES := [0, 12, 30, 30, 10]  # knife, usp, ak47, m4a1, awp
+const WEAPON_COUNT := 5
+
+func _check_weapon_switch(cmd: NetInput) -> void:
+	var new_idx := -1
+	if cmd.has_button(NetInput.BIT_WEAPON1):
+		new_idx = 0
+	elif cmd.has_button(NetInput.BIT_WEAPON2):
+		new_idx = 1
+	elif cmd.has_button(NetInput.BIT_WEAPON3):
+		new_idx = 2
+	elif cmd.has_button(NetInput.BIT_WEAPON4):
+		new_idx = 3
+	elif cmd.has_button(NetInput.BIT_WEAPON5):
+		new_idx = 4
+	if new_idx >= 0 and new_idx < WEAPON_COUNT and new_idx != weapon_idx:
+		weapon_idx = new_idx
+		ammo_mag = WEAPON_MAG_SIZES[new_idx]
+		fire_pressed = false
+		next_fire_tick = 0
 
 
 func get_snapshot(tick: int) -> NetSnapshot:
