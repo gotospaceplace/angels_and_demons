@@ -10,12 +10,15 @@ var last_input: NetInput
 var last_acked_tick: int = 0
 var hp: int = 100
 var armor: int = 0
-var weapon_idx: int = 0
+var weapon_idx: int = 2
 var ammo_mag: int = 30
 var is_dead: bool = false
 
 var snapshot_history: Array = []
 var acked_snapshot_tick: int = 0
+
+var fire_pressed: bool = false
+var next_fire_tick: int = 0
 
 
 func create(p_peer_id: int, spawn_pos: Vector3, parent: Node) -> void:
@@ -104,6 +107,15 @@ func get_acked_bases() -> Dictionary:
 		if snapshot_history[i]["tick"] == acked_snapshot_tick:
 			return snapshot_history[i]["states"]
 	return {}
+
+
+func take_damage(damage: float) -> void:
+	if is_dead:
+		return
+	hp -= int(ceilf(damage))
+	if hp <= 0:
+		hp = 0
+		is_dead = true
 
 
 func destroy() -> void:

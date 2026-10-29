@@ -1,12 +1,14 @@
 extends Node
 
 const ServerPlayer = preload("res://server/scripts/server_player.gd")
+const ServerLagComp = preload("res://server/scripts/server_lag_comp.gd")
 
 var server_tick: int = 0
 var players: Dictionary = {}
 var world_node: Node3D
 var snapshot_bytes_total: int = 0
 var snapshot_count: int = 0
+var lag_comp: ServerLagComp
 
 var spawn_points: Array[Vector3] = [
 	Vector3(0, 1, 0),
@@ -37,6 +39,8 @@ func _ready() -> void:
 		if arg.begins_with("--port="):
 			port = arg.get_slice("=", 1).to_int()
 
+	lag_comp = ServerLagComp.new()
+
 	var err := NetworkManager.host_server(port)
 	if err != OK:
 		push_error("Server failed to start on port %d" % port)
@@ -53,11 +57,14 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	server_tick += 1
 
-	if server_tick % 2 == 0:
-		_broadcast_snapshots()
-
 	for sp in players.values():
 		sp.dequeue_input()
+
+	_process_fire_commands()
+	lag_comp.store_tick(server_tick, players)
+
+	if server_tick % 2 == 0:
+		_broadcast_snapshots()
 
 
 func _on_peer_connected(peer_id: int) -> void:
@@ -104,6 +111,70 @@ func _handle_input_packet(peer_id: int, packet: PackedByteArray) -> void:
 		var cmd = commands[i]
 		if cmd.tick > sp.last_acked_tick:
 			sp.queue_input(cmd)
+
+
+func _process_fire_commands() -> void:
+	if players.is_empty():
+		return
+	var space := world_node.get_world_3d().direct_space_state
+
+	for peer_id in players:
+		var sp = players[peer_id]
+		if sp.is_dead:
+			sp.fire_pressed = false
+			continue
+
+		var cmd: NetInput = sp.last_input
+		var wants_fire: bool = cmd.has_button(NetInput.BIT_FIRE)
+
+		var should_fire := false
+		var weapon = lag_comp.get_weapon(sp.weapon_idx)
+
+		if weapon.is_melee:
+			if wants_fire and not sp.fire_pressed and server_tick >= sp.next_fire_tick:
+				should_fire = true
+		elif weapon.is_automatic:
+			if wants_fire and server_tick >= sp.next_fire_tick and sp.ammo_mag > 0:
+				should_fire = true
+		else:
+			if wants_fire and not sp.fire_pressed and server_tick >= sp.next_fire_tick and sp.ammo_mag > 0:
+				should_fire = true
+
+		sp.fire_pressed = wants_fire
+
+		if not should_fire:
+			continue
+
+		if not weapon.is_melee:
+			sp.ammo_mag -= 1
+
+		sp.next_fire_tick = server_tick + maxi(1, int(weapon.cycle_time * float(NetConstants.TICK_RATE)))
+
+		var hit := lag_comp.process_fire(peer_id, cmd, server_tick, players, space)
+		if hit.is_empty():
+			continue
+
+		var victim_id: int = hit["victim_id"]
+		if not players.has(victim_id):
+			continue
+		var victim_sp = players[victim_id]
+		victim_sp.take_damage(hit["damage"])
+
+		var hit_packet := NetProtocol.pack_hit_event(
+			victim_id, int(hit["damage"]), hit["headshot"])
+		multiplayer.send_bytes(hit_packet, peer_id,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+
+		if victim_sp.is_dead:
+			var kill_packet := NetProtocol.pack_kill_event(
+				peer_id, victim_id, sp.weapon_idx, hit["headshot"])
+			for pid in players:
+				multiplayer.send_bytes(kill_packet, pid,
+					MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+					NetConstants.CHANNEL_EVENTS)
+			print("[Server] KILL: Player %d → Player %d (%s, dmg=%.1f)" % [
+				peer_id, victim_id, hit["hitgroup"], hit["damage"]])
 
 
 func _broadcast_snapshots() -> void:

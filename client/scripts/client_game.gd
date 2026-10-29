@@ -173,6 +173,8 @@ func _on_peer_packet(_peer_id: int, packet: PackedByteArray) -> void:
 	var msg_type: int = packet[1]
 	if msg_type == NetProtocol.MSG_SNAPSHOT:
 		_handle_snapshot(packet)
+	elif msg_type == NetProtocol.MSG_EVENT:
+		_handle_event(packet)
 
 
 func _handle_snapshot(packet: PackedByteArray) -> void:
@@ -261,6 +263,28 @@ func _try_reconcile(snapshot_result: Dictionary) -> void:
 	if correction_count <= 10 or correction_count % 50 == 0:
 		print("[Client] Correction #%d: error=%.3fm, replayed %d ticks" % [
 			correction_count, error, client_tick - snap_tick])
+
+
+func _handle_event(packet: PackedByteArray) -> void:
+	if packet.size() < 3:
+		return
+	var evt_type: int = packet[2]
+	match evt_type:
+		NetProtocol.EVT_KILL:
+			if packet.size() >= 8:
+				var killer_id := packet[3] | (packet[4] << 8)
+				var victim_id := packet[5] | (packet[6] << 8)
+				var weapon_byte := packet[7]
+				var headshot := (weapon_byte & 0x80) != 0
+				print("[Client] KILL: Player %d killed Player %d%s" % [
+					killer_id, victim_id, " (HEADSHOT)" if headshot else ""])
+		NetProtocol.EVT_HIT:
+			if packet.size() >= 7:
+				var victim_id := packet[3] | (packet[4] << 8)
+				var damage := packet[5]
+				var headshot := packet[6] != 0
+				print("[Client] HIT: Player %d for %d dmg%s" % [
+					victim_id, damage, " (HEADSHOT)" if headshot else ""])
 
 
 func set_local_player(player: CharacterBody3D) -> void:

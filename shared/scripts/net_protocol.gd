@@ -12,6 +12,7 @@ const EVT_KILL       := 1
 const EVT_SPAWN      := 2
 const EVT_CHAT       := 3
 const EVT_SERVER_MSG := 4
+const EVT_HIT        := 5
 
 # Packet header: version (1) + msg_type (1) = 2 bytes
 const HEADER_SIZE := 2
@@ -183,4 +184,17 @@ static func pack_spawn_event(peer_id: int, pos: Vector3) -> PackedByteArray:
 	i = NetSnapshot._write_i32(buf, i, int(pos.x / NetConstants.POS_PRECISION))
 	i = NetSnapshot._write_i32(buf, i, int(pos.y / NetConstants.POS_PRECISION))
 	i = NetSnapshot._write_i32(buf, i, int(pos.z / NetConstants.POS_PRECISION))
+	return buf
+
+
+static func pack_hit_event(victim_id: int, damage: int, headshot: bool) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 5)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_HIT
+	buf[3] = victim_id & 0xFF
+	buf[4] = (victim_id >> 8) & 0xFF
+	buf[5] = clampi(damage, 0, 255)
+	buf[6] = 1 if headshot else 0
 	return buf
