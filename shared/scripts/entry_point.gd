@@ -14,6 +14,10 @@ func _ready() -> void:
 		print("EntryPoint: launching network test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/network_test_scene.tscn")
 		return
+	if "--bench" in args:
+		print("EntryPoint: launching performance benchmark")
+		get_tree().change_scene_to_file.call_deferred("res://tests/perf_benchmark_scene.tscn")
+		return
 	if "--play" in args:
 		print("EntryPoint: launching play test")
 		get_tree().change_scene_to_file.call_deferred("res://shared/scenes/play_test.tscn")
