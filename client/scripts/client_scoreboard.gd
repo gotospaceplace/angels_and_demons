@@ -19,6 +19,7 @@ func _ready() -> void:
 	style.corner_radius_bottom_right = 4
 	panel.add_theme_stylebox_override("panel", style)
 	panel.visible = false
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
 
 	title_label = Label.new()
@@ -26,16 +27,19 @@ func _ready() -> void:
 	title_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.text = "SCOREBOARD"
+	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(title_label)
 
 	header_label = Label.new()
 	header_label.add_theme_font_size_override("font_size", 16)
 	header_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	header_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(header_label)
 
 	content_label = Label.new()
 	content_label.add_theme_font_size_override("font_size", 16)
 	content_label.add_theme_color_override("font_color", Color.WHITE)
+	content_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(content_label)
 
 
