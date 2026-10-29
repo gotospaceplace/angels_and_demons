@@ -1,5 +1,7 @@
 extends Node
 
+const ClientInterpolation = preload("res://client/scripts/client_interpolation.gd")
+
 var client_tick: int = 0
 var server_tick: int = 0
 var tick_synced: bool = false
@@ -18,6 +20,7 @@ var correction_count: int = 0
 
 var snapshots_received: int = 0
 var my_peer_id: int = 0
+var interpolation: Node = null
 
 
 func _ready() -> void:
@@ -37,6 +40,12 @@ func _ready() -> void:
 	var player := get_node_or_null("Player")
 	if player:
 		set_local_player(player)
+
+	var interp_node := Node3D.new()
+	interp_node.name = "Interpolation"
+	interp_node.set_script(ClientInterpolation)
+	add_child(interp_node)
+	interpolation = interp_node
 
 	var err := NetworkManager.join_server(server_address)
 	if err != OK:
@@ -193,6 +202,9 @@ func _handle_snapshot(packet: PackedByteArray) -> void:
 	# Reconciliation: compare server state to our prediction
 	if local_player and my_peer_id > 0:
 		_try_reconcile(result)
+
+	if interpolation:
+		interpolation.on_snapshot(result, my_peer_id)
 
 	if snapshots_received % 128 == 0:
 		print("[Client] Snapshot %d: tick=%d corrections=%d" % [
