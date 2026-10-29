@@ -18,6 +18,15 @@ func _ready() -> void:
 		print("EntryPoint: launching play test")
 		get_tree().change_scene_to_file.call_deferred("res://shared/scenes/play_test.tscn")
 		return
+	if "--host" in args:
+		print("EntryPoint: starting multiplayer server")
+		get_tree().change_scene_to_file.call_deferred("res://server/scenes/server_main.tscn")
+		return
+	for arg in args:
+		if arg.begins_with("--join"):
+			print("EntryPoint: joining as client")
+			get_tree().change_scene_to_file.call_deferred("res://client/scenes/mp_client.tscn")
+			return
 
 	var is_server := OS.has_feature("dedicated_server")
 	print("EntryPoint: dedicated_server=%s" % is_server)

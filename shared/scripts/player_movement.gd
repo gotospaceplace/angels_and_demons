@@ -46,7 +46,8 @@ var _flash_fade: float = 0.0
 var _flash_fade_total: float = 0.0
 
 func _ready() -> void:
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if not test_driven:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_to_group("player")
 	standing_collision.shape = standing_collision.shape.duplicate()
 	var capsule: CapsuleShape3D = standing_collision.shape
@@ -593,3 +594,36 @@ func _process(delta: float) -> void:
 			_flash_overlay.get_node("Rect").color = Color(1, 1, 1, maxf(alpha, 0.0))
 		else:
 			_flash_overlay.visible = false
+
+
+func apply_network_input(yaw_deg: float, pitch_deg: float,
+		fwd: bool, back: bool, left: bool, right_btn: bool,
+		jump: bool, duck: bool) -> void:
+	rotation.y = deg_to_rad(yaw_deg)
+	head.rotation.x = clampf(deg_to_rad(pitch_deg), -PI / 2.0, PI / 2.0)
+
+	var forward := -global_transform.basis.z
+	var right_v := global_transform.basis.x
+	forward.y = 0.0
+	right_v.y = 0.0
+	forward = forward.normalized()
+	right_v = right_v.normalized()
+
+	var input_v := Vector2.ZERO
+	if left: input_v.x -= 1.0
+	if right_btn: input_v.x += 1.0
+	if fwd: input_v.y -= 1.0
+	if back: input_v.y += 1.0
+	if input_v.length_squared() > 1.0:
+		input_v = input_v.normalized()
+
+	var wish_vel := forward * (-input_v.y) + right_v * input_v.x
+	wish_speed = wish_vel.length() * max_speed
+	if wish_vel.length() > 0.001:
+		wish_dir = wish_vel.normalized()
+	else:
+		wish_dir = Vector3.ZERO
+
+	jump_was_pressed = jump_pressed
+	jump_pressed = jump
+	wants_duck = duck
