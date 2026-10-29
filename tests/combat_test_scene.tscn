@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://c8combattest01"]
+[gd_scene format=3 uid="uid://t2yxsxapj3b5"]
 
 [ext_resource type="Script" path="res://shared/scripts/player_movement.gd" id="1_player"]
 [ext_resource type="Script" path="res://shared/scripts/weapon_system.gd" id="2_ws"]

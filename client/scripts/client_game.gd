@@ -21,9 +21,11 @@ var correction_count: int = 0
 var snapshots_received: int = 0
 var my_peer_id: int = 0
 var interpolation: Node = null
+var player_stats: Dictionary = {}
 
 
 func _ready() -> void:
+	add_to_group("client_game")
 	Engine.physics_ticks_per_second = NetConstants.TICK_RATE
 	process_physics_priority = -1
 
@@ -276,6 +278,7 @@ func _handle_event(packet: PackedByteArray) -> void:
 				var victim_id := packet[5] | (packet[6] << 8)
 				var weapon_byte := packet[7]
 				var headshot := (weapon_byte & 0x80) != 0
+				_track_kill(killer_id, victim_id)
 				print("[Client] KILL: Player %d killed Player %d%s" % [
 					killer_id, victim_id, " (HEADSHOT)" if headshot else ""])
 		NetProtocol.EVT_HIT:
@@ -302,3 +305,12 @@ func _handle_event(packet: PackedByteArray) -> void:
 
 func set_local_player(player: CharacterBody3D) -> void:
 	local_player = player
+
+
+func _track_kill(killer_id: int, victim_id: int) -> void:
+	if not player_stats.has(killer_id):
+		player_stats[killer_id] = {"kills": 0, "deaths": 0}
+	if not player_stats.has(victim_id):
+		player_stats[victim_id] = {"kills": 0, "deaths": 0}
+	player_stats[killer_id]["kills"] += 1
+	player_stats[victim_id]["deaths"] += 1
