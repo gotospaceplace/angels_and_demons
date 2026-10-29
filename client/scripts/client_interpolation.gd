@@ -75,7 +75,7 @@ func _interpolate(rp: Dictionary, render_time: float) -> void:
 
 		a = states[states.size() - 2]
 		b = states[states.size() - 1]
-		var past := render_time - b["time"]
+		var past: float = render_time - b["time"]
 		if past > NetConstants.INTERP_MAX_EXTRAPOLATE_MS / 1000.0:
 			rp["node"].apply_state(b["position"], b["yaw"], b["pitch"], b["is_ducked"])
 			return

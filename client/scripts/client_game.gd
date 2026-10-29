@@ -25,6 +25,7 @@ var player_stats: Dictionary = {}
 
 var session_token: int = 0
 var server_address: String = "127.0.0.1"
+var server_port: int = NetworkManager.DEFAULT_PORT
 var reconnecting: bool = false
 var reconnect_timer: float = 0.0
 var reconnect_elapsed: float = 0.0
@@ -41,6 +42,8 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--join="):
 			server_address = arg.get_slice("=", 1)
+		elif arg.begins_with("--port="):
+			server_port = arg.get_slice("=", 1).to_int()
 
 	_setup_reconnect_overlay()
 
@@ -59,15 +62,15 @@ func _ready() -> void:
 	add_child(interp_node)
 	interpolation = interp_node
 
-	var err := NetworkManager.join_server(server_address)
+	var err := NetworkManager.join_server(server_address, server_port)
 	if err != OK:
-		push_error("Failed to connect to %s" % server_address)
+		push_error("Failed to connect to %s:%d" % [server_address, server_port])
 		get_tree().quit(1)
 
 
 func _on_connected() -> void:
-	my_peer_id = multiplayer.get_unique_id()
-	print("[Client] Connected to server (peer ID: %d)" % my_peer_id)
+	my_peer_id = multiplayer.get_unique_id() & 0xFFFF
+	print("[Client] Connected to server (peer ID: %d, net ID: %d)" % [my_peer_id, multiplayer.get_unique_id()])
 
 	if reconnecting:
 		reconnecting = false
@@ -279,7 +282,7 @@ func _try_reconcile(snapshot_result: Dictionary) -> void:
 	if predicted.is_empty():
 		return
 
-	var error := predicted["position"].distance_to(server_state.position)
+	var error: float = predicted["position"].distance_to(server_state.position)
 	if error <= NetConstants.RECONCILE_THRESHOLD:
 		return
 
@@ -407,6 +410,6 @@ func _start_reconnect() -> void:
 
 func _attempt_reconnect() -> void:
 	NetworkManager.disconnect_from_server()
-	var err := NetworkManager.join_server(server_address)
+	var err := NetworkManager.join_server(server_address, server_port)
 	if err != OK:
 		print("[Client] Reconnect attempt failed: %s" % error_string(err))
