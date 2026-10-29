@@ -13,6 +13,10 @@ const EVT_SPAWN      := 2
 const EVT_CHAT       := 3
 const EVT_SERVER_MSG := 4
 const EVT_HIT        := 5
+const EVT_SESSION    := 6
+
+# Admin subtypes (MSG_ADMIN payload)
+const ADMIN_REJOIN   := 1
 
 # Packet header: version (1) + msg_type (1) = 2 bytes
 const HEADER_SIZE := 2
@@ -197,4 +201,30 @@ static func pack_hit_event(victim_id: int, damage: int, headshot: bool) -> Packe
 	buf[4] = (victim_id >> 8) & 0xFF
 	buf[5] = clampi(damage, 0, 255)
 	buf[6] = 1 if headshot else 0
+	return buf
+
+
+static func pack_session_event(token: int) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 5)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_SESSION
+	buf[3] = token & 0xFF
+	buf[4] = (token >> 8) & 0xFF
+	buf[5] = (token >> 16) & 0xFF
+	buf[6] = (token >> 24) & 0xFF
+	return buf
+
+
+static func pack_rejoin_request(token: int) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 5)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_ADMIN
+	buf[2] = ADMIN_REJOIN
+	buf[3] = token & 0xFF
+	buf[4] = (token >> 8) & 0xFF
+	buf[5] = (token >> 16) & 0xFF
+	buf[6] = (token >> 24) & 0xFF
 	return buf

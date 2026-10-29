@@ -23,16 +23,26 @@ var my_peer_id: int = 0
 var interpolation: Node = null
 var player_stats: Dictionary = {}
 
+var session_token: int = 0
+var server_address: String = "127.0.0.1"
+var reconnecting: bool = false
+var reconnect_timer: float = 0.0
+var reconnect_elapsed: float = 0.0
+var reconnect_label: Label
+const RECONNECT_INTERVAL := 2.0
+const RECONNECT_MAX_TIME := 30.0
+
 
 func _ready() -> void:
 	add_to_group("client_game")
 	Engine.physics_ticks_per_second = NetConstants.TICK_RATE
 	process_physics_priority = -1
 
-	var server_address := "127.0.0.1"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--join="):
 			server_address = arg.get_slice("=", 1)
+
+	_setup_reconnect_overlay()
 
 	multiplayer.peer_packet.connect(_on_peer_packet)
 	multiplayer.connected_to_server.connect(_on_connected)
@@ -59,14 +69,36 @@ func _on_connected() -> void:
 	my_peer_id = multiplayer.get_unique_id()
 	print("[Client] Connected to server (peer ID: %d)" % my_peer_id)
 
+	if reconnecting:
+		reconnecting = false
+		reconnect_label.visible = false
+		reconnect_elapsed = 0.0
+		tick_synced = false
+		snapshot_buffer.clear()
+		prediction_buffer.clear()
+		input_buffer.clear()
+		recent_inputs.clear()
+		print("[Client] Reconnected successfully")
+
+	if session_token > 0:
+		var packet := NetProtocol.pack_rejoin_request(session_token)
+		multiplayer.send_bytes(packet, 1,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_ADMIN)
+
 
 func _on_connection_failed() -> void:
+	if reconnecting:
+		print("[Client] Reconnect attempt failed, will retry...")
+		return
 	print("[Client] Connection failed")
 	get_tree().quit(1)
 
 
 func _on_server_disconnected() -> void:
 	print("[Client] Server disconnected")
+	if session_token > 0 and not reconnecting:
+		_start_reconnect()
 
 
 func _physics_process(_delta: float) -> void:
@@ -98,6 +130,19 @@ func _process(delta: float) -> void:
 		else:
 			var t := correction_timer / NetConstants.RECONCILE_SMOOTH_TIME
 			correction_offset = correction_offset * t
+
+	if reconnecting:
+		reconnect_elapsed += delta
+		if reconnect_elapsed >= RECONNECT_MAX_TIME:
+			reconnecting = false
+			reconnect_label.text = "Connection lost"
+			print("[Client] Reconnect timed out after %.0fs" % RECONNECT_MAX_TIME)
+			return
+		reconnect_timer -= delta
+		if reconnect_timer <= 0.0:
+			reconnect_timer = RECONNECT_INTERVAL
+			_attempt_reconnect()
+		reconnect_label.text = "Reconnecting... (%.0fs)" % (RECONNECT_MAX_TIME - reconnect_elapsed)
 
 
 func _sample_input() -> NetInput:
@@ -288,6 +333,10 @@ func _handle_event(packet: PackedByteArray) -> void:
 				var headshot := packet[6] != 0
 				print("[Client] HIT: Player %d for %d dmg%s" % [
 					victim_id, damage, " (HEADSHOT)" if headshot else ""])
+		NetProtocol.EVT_SESSION:
+			if packet.size() >= 7:
+				session_token = packet[3] | (packet[4] << 8) | (packet[5] << 16) | (packet[6] << 24)
+				print("[Client] Session token: %d" % session_token)
 		NetProtocol.EVT_SPAWN:
 			if packet.size() >= 17:
 				var spawned_id := packet[3] | (packet[4] << 8)
@@ -314,3 +363,39 @@ func _track_kill(killer_id: int, victim_id: int) -> void:
 		player_stats[victim_id] = {"kills": 0, "deaths": 0}
 	player_stats[killer_id]["kills"] += 1
 	player_stats[victim_id]["deaths"] += 1
+
+
+func _setup_reconnect_overlay() -> void:
+	var overlay := CanvasLayer.new()
+	overlay.name = "ReconnectOverlay"
+	overlay.layer = 20
+	add_child(overlay)
+
+	reconnect_label = Label.new()
+	reconnect_label.add_theme_font_size_override("font_size", 28)
+	reconnect_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	reconnect_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	reconnect_label.add_theme_constant_override("shadow_offset_x", 2)
+	reconnect_label.add_theme_constant_override("shadow_offset_y", 2)
+	reconnect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	reconnect_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	reconnect_label.anchors_preset = Control.PRESET_FULL_RECT
+	reconnect_label.visible = false
+	overlay.add_child(reconnect_label)
+
+
+func _start_reconnect() -> void:
+	reconnecting = true
+	reconnect_timer = 0.0
+	reconnect_elapsed = 0.0
+	reconnect_label.visible = true
+	reconnect_label.text = "Reconnecting..."
+	NetworkManager.disconnect_from_server()
+	print("[Client] Starting reconnect (token=%d)" % session_token)
+
+
+func _attempt_reconnect() -> void:
+	NetworkManager.disconnect_from_server()
+	var err := NetworkManager.join_server(server_address)
+	if err != OK:
+		print("[Client] Reconnect attempt failed: %s" % error_string(err))

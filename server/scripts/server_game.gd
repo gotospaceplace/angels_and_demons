@@ -10,6 +10,13 @@ var snapshot_bytes_total: int = 0
 var snapshot_count: int = 0
 var lag_comp: ServerLagComp
 
+var peer_tokens: Dictionary = {}
+var disconnected_players: Dictionary = {}
+var pending_peers: Dictionary = {}
+var next_token: int = 1
+
+const PENDING_TIMEOUT_TICKS := 64
+
 var spawn_points: Array[Vector3] = [
 	Vector3(0, 1, 0),
 	Vector3(5, 1, 0),
@@ -57,6 +64,9 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	server_tick += 1
 
+	_process_pending_peers()
+	_process_disconnect_timeouts()
+
 	for sp in players.values():
 		sp.dequeue_input()
 
@@ -69,19 +79,28 @@ func _physics_process(_delta: float) -> void:
 
 
 func _on_peer_connected(peer_id: int) -> void:
-	var sp = ServerPlayer.new()
-	var spawn_pos := spawn_points[next_spawn % spawn_points.size()]
-	next_spawn += 1
-	sp.create(peer_id, spawn_pos, world_node)
-	players[peer_id] = sp
-	print("[Server] Player %d spawned at %s (total: %d)" % [peer_id, spawn_pos, players.size()])
+	pending_peers[peer_id] = server_tick
+	print("[Server] Peer %d connected, waiting for rejoin or timeout" % peer_id)
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
+	pending_peers.erase(peer_id)
 	if players.has(peer_id):
-		players[peer_id].destroy()
+		var sp = players[peer_id]
+		var token: int = peer_tokens.get(peer_id, 0)
+		if token > 0:
+			disconnected_players[token] = {
+				"kills": sp.kills,
+				"deaths": sp.deaths,
+				"disconnect_tick": server_tick,
+			}
+			print("[Server] Player %d disconnected, state saved (token=%d, K:%d D:%d, timeout=%.0fs)" % [
+				peer_id, token, sp.kills, sp.deaths, NetConstants.DISCONNECT_TIMEOUT])
+		sp.destroy()
 		players.erase(peer_id)
-	print("[Server] Player %d disconnected (total: %d)" % [peer_id, players.size()])
+		peer_tokens.erase(peer_id)
+	else:
+		print("[Server] Peer %d disconnected (was not spawned)" % peer_id)
 
 
 func _on_peer_packet(peer_id: int, packet: PackedByteArray) -> void:
@@ -92,7 +111,11 @@ func _on_peer_packet(peer_id: int, packet: PackedByteArray) -> void:
 
 	var msg_type: int = packet[1]
 	if msg_type == NetProtocol.MSG_INPUT:
+		if pending_peers.has(peer_id):
+			_spawn_new_player(peer_id)
 		_handle_input_packet(peer_id, packet)
+	elif msg_type == NetProtocol.MSG_ADMIN:
+		_handle_admin_packet(peer_id, packet)
 
 
 func _handle_input_packet(peer_id: int, packet: PackedByteArray) -> void:
@@ -234,6 +257,103 @@ func _broadcast_snapshots() -> void:
 			players.size(), avg_bytes, bw_kbps])
 		snapshot_bytes_total = 0
 		snapshot_count = 0
+
+
+func _handle_admin_packet(peer_id: int, packet: PackedByteArray) -> void:
+	if packet.size() < 3:
+		return
+	var admin_type: int = packet[2]
+	if admin_type == NetProtocol.ADMIN_REJOIN:
+		if packet.size() < 7:
+			return
+		var token: int = packet[3] | (packet[4] << 8) | (packet[5] << 16) | (packet[6] << 24)
+		if disconnected_players.has(token):
+			_restore_player(peer_id, token)
+		else:
+			_spawn_new_player(peer_id)
+
+
+func _spawn_new_player(peer_id: int) -> void:
+	if players.has(peer_id):
+		return
+	pending_peers.erase(peer_id)
+
+	var token := next_token
+	next_token += 1
+
+	var sp = ServerPlayer.new()
+	var spawn_pos := spawn_points[next_spawn % spawn_points.size()]
+	next_spawn += 1
+	sp.create(peer_id, spawn_pos, world_node)
+	players[peer_id] = sp
+	peer_tokens[peer_id] = token
+
+	var session_packet := NetProtocol.pack_session_event(token)
+	multiplayer.send_bytes(session_packet, peer_id,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_EVENTS)
+
+	var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
+	for pid in players:
+		multiplayer.send_bytes(spawn_packet, pid,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+
+	print("[Server] New player %d spawned at %s (token=%d, total: %d)" % [
+		peer_id, spawn_pos, token, players.size()])
+
+
+func _restore_player(peer_id: int, token: int) -> void:
+	pending_peers.erase(peer_id)
+
+	var saved: Dictionary = disconnected_players[token]
+	disconnected_players.erase(token)
+
+	var sp = ServerPlayer.new()
+	var spawn_pos := spawn_points[next_spawn % spawn_points.size()]
+	next_spawn += 1
+	sp.create(peer_id, spawn_pos, world_node)
+	sp.kills = saved["kills"]
+	sp.deaths = saved["deaths"]
+	players[peer_id] = sp
+	peer_tokens[peer_id] = token
+
+	var session_packet := NetProtocol.pack_session_event(token)
+	multiplayer.send_bytes(session_packet, peer_id,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_EVENTS)
+
+	var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
+	for pid in players:
+		multiplayer.send_bytes(spawn_packet, pid,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+
+	print("[Server] Player %d reconnected (token=%d, K:%d D:%d, total: %d)" % [
+		peer_id, token, sp.kills, sp.deaths, players.size()])
+
+
+func _process_pending_peers() -> void:
+	var to_spawn: Array = []
+	for pid in pending_peers:
+		if server_tick - pending_peers[pid] >= PENDING_TIMEOUT_TICKS:
+			to_spawn.append(pid)
+	for pid in to_spawn:
+		_spawn_new_player(pid)
+
+
+func _process_disconnect_timeouts() -> void:
+	var timeout_ticks := int(NetConstants.DISCONNECT_TIMEOUT * float(NetConstants.TICK_RATE))
+	var expired: Array = []
+	for token in disconnected_players:
+		var data: Dictionary = disconnected_players[token]
+		if server_tick - data["disconnect_tick"] >= timeout_ticks:
+			expired.append(token)
+	for token in expired:
+		var data: Dictionary = disconnected_players[token]
+		disconnected_players.erase(token)
+		print("[Server] Disconnected player timed out (token=%d, K:%d D:%d)" % [
+			token, data["kills"], data["deaths"]])
 
 
 func _create_floor() -> void:
