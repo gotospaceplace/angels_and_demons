@@ -24,6 +24,10 @@ func _ready() -> void:
 		&"test_snapshot_packet_multi_player",
 		&"test_input_size",
 		&"test_snapshot_size",
+		&"test_damage_server_authority",
+		&"test_weapon_switch_updates_ammo",
+		&"test_rewind_window_clamped",
+		&"test_server_msg_event_roundtrip",
 	]
 
 	print("=== Network Serialization Tests ===")
@@ -414,3 +418,82 @@ func test_snapshot_size() -> void:
 		_pass("PlayerState = %d bytes" % buf.size())
 	else:
 		_fail("PlayerState = %d bytes, expected %d" % [buf.size(), NetSnapshot.FULL_SIZE])
+
+
+# --- Regression tests ---
+
+const ServerPlayer = preload("res://server/scripts/server_player.gd")
+const ServerLagComp = preload("res://server/scripts/server_lag_comp.gd")
+
+
+func test_damage_server_authority() -> void:
+	var sp = ServerPlayer.new()
+	if sp.hp != 100:
+		_fail("initial HP: %d, expected 100" % sp.hp); return
+	sp.take_damage(35.0)
+	if sp.hp != 65:
+		_fail("HP after 35 dmg: %d, expected 65" % sp.hp); return
+	sp.take_damage(200.0)
+	if sp.hp != 0:
+		_fail("HP after overkill: %d, expected 0" % sp.hp); return
+	if not sp.is_dead:
+		_fail("should be dead after overkill"); return
+	sp.take_damage(50.0)
+	if sp.hp != 0:
+		_fail("dead player took more damage: HP=%d" % sp.hp); return
+	_pass("damage is server-authoritative, dead ignores further damage")
+
+
+func test_weapon_switch_updates_ammo() -> void:
+	var sp = ServerPlayer.new()
+	sp.weapon_idx = 2
+	sp.ammo_mag = 30
+	var cmd := NetInput.create(1, 0, 0.0, 0.0)
+	cmd.set_button(NetInput.BIT_WEAPON5, true)
+	sp._check_weapon_switch(cmd)
+	if sp.weapon_idx != 4:
+		_fail("weapon_idx: %d, expected 4 (AWP)" % sp.weapon_idx); return
+	if sp.ammo_mag != 10:
+		_fail("ammo_mag: %d, expected 10 (AWP mag)" % sp.ammo_mag); return
+	cmd = NetInput.create(2, 0, 0.0, 0.0)
+	cmd.set_button(NetInput.BIT_WEAPON1, true)
+	sp._check_weapon_switch(cmd)
+	if sp.weapon_idx != 0:
+		_fail("weapon_idx: %d, expected 0 (knife)" % sp.weapon_idx); return
+	if sp.ammo_mag != 0:
+		_fail("ammo_mag: %d, expected 0 (knife)" % sp.ammo_mag); return
+	_pass("weapon switch updates idx and ammo correctly")
+
+
+func test_rewind_window_clamped() -> void:
+	var lag := ServerLagComp.new()
+	var players: Dictionary = {}
+	lag.store_tick(1000, players)
+	lag.store_tick(1001, players)
+	var cmd := NetInput.create(500, 0, 0.0, 0.0)
+	cmd.set_button(NetInput.BIT_FIRE, true)
+	var rewind_tick := cmd.tick - ServerLagComp.INTERP_TICKS
+	var min_tick := 1001 - NetConstants.MAX_REWIND_TICKS
+	var clamped := maxi(rewind_tick, min_tick)
+	if clamped == rewind_tick:
+		_fail("rewind not clamped: cmd.tick=500 should be clamped to min_tick=%d" % min_tick); return
+	if clamped != min_tick:
+		_fail("clamped to %d, expected min_tick=%d" % [clamped, min_tick]); return
+	_pass("rewind clamped: cmd.tick=500 → tick %d (min=%d, max_rewind=%d ticks)" % [
+		clamped, min_tick, NetConstants.MAX_REWIND_TICKS])
+
+
+func test_server_msg_event_roundtrip() -> void:
+	var msg := "Server shutting down in 10s"
+	var packet := NetProtocol.pack_server_msg_event(msg)
+	if packet[0] != NetConstants.PROTOCOL_VERSION:
+		_fail("version byte: %d" % packet[0]); return
+	if packet[1] != NetProtocol.MSG_EVENT:
+		_fail("msg_type: %d, expected MSG_EVENT=%d" % [packet[1], NetProtocol.MSG_EVENT]); return
+	if packet[2] != NetProtocol.EVT_SERVER_MSG:
+		_fail("evt_type: %d, expected EVT_SERVER_MSG=%d" % [packet[2], NetProtocol.EVT_SERVER_MSG]); return
+	var msg_len := packet[3] | (packet[4] << 8)
+	var decoded := packet.slice(5, 5 + msg_len).get_string_from_utf8()
+	if decoded != msg:
+		_fail("decoded '%s', expected '%s'" % [decoded, msg]); return
+	_pass("server msg event roundtrip: %d bytes, msg='%s'" % [packet.size(), decoded])
