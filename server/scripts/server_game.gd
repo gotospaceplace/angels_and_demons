@@ -2,6 +2,7 @@ extends Node
 
 const ServerPlayer = preload("res://server/scripts/server_player.gd")
 const ServerLagComp = preload("res://server/scripts/server_lag_comp.gd")
+const ServerConsole = preload("res://server/scripts/server_console.gd")
 
 var server_tick: int = 0
 var players: Dictionary = {}
@@ -9,6 +10,7 @@ var world_node: Node3D
 var snapshot_bytes_total: int = 0
 var snapshot_count: int = 0
 var lag_comp: ServerLagComp
+var console: Node
 
 var peer_tokens: Dictionary = {}
 var disconnected_players: Dictionary = {}
@@ -57,6 +59,13 @@ func _ready() -> void:
 	NetworkManager.peer_connected.connect(_on_peer_connected)
 	NetworkManager.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.peer_packet.connect(_on_peer_packet)
+
+	var console_node := Node.new()
+	console_node.name = "ServerConsole"
+	console_node.set_script(ServerConsole)
+	add_child(console_node)
+	console = console_node
+	console.command_received.connect(_on_console_command)
 
 	print("[Server] Running at %d Hz, listening on port %d" % [NetConstants.TICK_RATE, port])
 
@@ -354,6 +363,76 @@ func _process_disconnect_timeouts() -> void:
 		disconnected_players.erase(token)
 		print("[Server] Disconnected player timed out (token=%d, K:%d D:%d)" % [
 			token, data["kills"], data["deaths"]])
+
+
+func _on_console_command(cmd: String, args: String) -> void:
+	match cmd:
+		"status":
+			_cmd_status()
+		"kick":
+			_cmd_kick(args)
+		"say":
+			_cmd_say(args)
+		"quit":
+			_cmd_quit()
+		_:
+			print("[Console] Unknown command: %s" % cmd)
+
+
+func _cmd_status() -> void:
+	print("[Console] === Server Status (tick %d) ===" % server_tick)
+	print("[Console] Players: %d / %d" % [players.size(), NetConstants.MAX_PLAYERS])
+	print("[Console] Pending connections: %d" % pending_peers.size())
+	print("[Console] Disconnected (saved): %d" % disconnected_players.size())
+	if players.is_empty():
+		print("[Console] No players connected")
+		return
+	for peer_id in players:
+		var sp = players[peer_id]
+		var ping := 0
+		var enet_peer := NetworkManager.peer.get_peer(peer_id)
+		if enet_peer:
+			ping = int(enet_peer.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME))
+		var token: int = peer_tokens.get(peer_id, 0)
+		print("[Console]   ID:%d  token:%d  K:%d D:%d  HP:%d  ping:%dms%s" % [
+			peer_id, token, sp.kills, sp.deaths, sp.hp, ping,
+			" (DEAD)" if sp.is_dead else ""])
+
+
+func _cmd_kick(args: String) -> void:
+	if args.is_empty():
+		print("[Console] Usage: kick <peer_id>")
+		return
+	var peer_id := args.strip_edges().to_int()
+	if not players.has(peer_id) and not pending_peers.has(peer_id):
+		print("[Console] No player with ID %d" % peer_id)
+		return
+	print("[Console] ADMIN: Kicking player %d" % peer_id)
+	NetworkManager.peer.get_peer(peer_id).peer_disconnect_now(0)
+
+
+func _cmd_say(args: String) -> void:
+	if args.is_empty():
+		print("[Console] Usage: say <message>")
+		return
+	print("[Console] ADMIN: Broadcast: %s" % args)
+	var packet := NetProtocol.pack_server_msg_event(args)
+	for peer_id in players:
+		multiplayer.send_bytes(packet, peer_id,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+
+
+func _cmd_quit() -> void:
+	print("[Console] ADMIN: Server shutting down")
+	var msg := NetProtocol.pack_server_msg_event("Server shutting down")
+	for peer_id in players:
+		multiplayer.send_bytes(msg, peer_id,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+	if console:
+		console.stop()
+	get_tree().quit()
 
 
 func _create_floor() -> void:

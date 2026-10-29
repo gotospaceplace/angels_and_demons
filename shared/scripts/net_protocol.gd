@@ -217,6 +217,19 @@ static func pack_session_event(token: int) -> PackedByteArray:
 	return buf
 
 
+static func pack_server_msg_event(message: String) -> PackedByteArray:
+	var msg_bytes := message.to_utf8_buffer()
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 3)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_SERVER_MSG
+	buf[3] = msg_bytes.size() & 0xFF
+	buf[4] = (msg_bytes.size() >> 8) & 0xFF
+	buf.append_array(msg_bytes)
+	return buf
+
+
 static func pack_rejoin_request(token: int) -> PackedByteArray:
 	var buf := PackedByteArray()
 	buf.resize(HEADER_SIZE + 5)

@@ -337,6 +337,12 @@ func _handle_event(packet: PackedByteArray) -> void:
 			if packet.size() >= 7:
 				session_token = packet[3] | (packet[4] << 8) | (packet[5] << 16) | (packet[6] << 24)
 				print("[Client] Session token: %d" % session_token)
+		NetProtocol.EVT_SERVER_MSG:
+			if packet.size() >= 5:
+				var msg_len := packet[3] | (packet[4] << 8)
+				if packet.size() >= 5 + msg_len:
+					var msg := packet.slice(5, 5 + msg_len).get_string_from_utf8()
+					print("[Server] %s" % msg)
 		NetProtocol.EVT_SPAWN:
 			if packet.size() >= 17:
 				var spawned_id := packet[3] | (packet[4] << 8)
