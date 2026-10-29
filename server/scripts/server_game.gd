@@ -3,6 +3,7 @@ extends Node
 const ServerPlayer = preload("res://server/scripts/server_player.gd")
 const ServerLagComp = preload("res://server/scripts/server_lag_comp.gd")
 const ServerConsole = preload("res://server/scripts/server_console.gd")
+const TestMapScene = preload("res://shared/scenes/mp_testmap.tscn")
 
 var server_tick: int = 0
 var players: Dictionary = {}
@@ -38,10 +39,12 @@ func _ready() -> void:
 	Engine.physics_ticks_per_second = NetConstants.TICK_RATE
 	process_physics_priority = 1
 
-	world_node = Node3D.new()
-	world_node.name = "World"
-	add_child(world_node)
-	_create_floor()
+	var map := TestMapScene.instantiate()
+	map.name = "World"
+	add_child(map)
+	world_node = map
+	if map.spawn_points.size() > 0:
+		spawn_points = map.spawn_points
 
 	var port := NetworkManager.DEFAULT_PORT
 	for arg in OS.get_cmdline_user_args():
@@ -435,13 +438,3 @@ func _cmd_quit() -> void:
 	get_tree().quit()
 
 
-func _create_floor() -> void:
-	var floor_body := StaticBody3D.new()
-	floor_body.name = "Floor"
-	var floor_shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(100, 0.2, 100)
-	floor_shape.shape = box
-	floor_body.add_child(floor_shape)
-	floor_body.position.y = -0.1
-	world_node.add_child(floor_body)
