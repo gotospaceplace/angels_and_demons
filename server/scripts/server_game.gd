@@ -61,6 +61,7 @@ func _physics_process(_delta: float) -> void:
 		sp.dequeue_input()
 
 	_process_fire_commands()
+	_process_respawns()
 	lag_comp.store_tick(server_tick, players)
 
 	if server_tick % 2 == 0:
@@ -167,14 +168,36 @@ func _process_fire_commands() -> void:
 			NetConstants.CHANNEL_EVENTS)
 
 		if victim_sp.is_dead:
+			victim_sp.die(server_tick)
+			sp.kills += 1
 			var kill_packet := NetProtocol.pack_kill_event(
 				peer_id, victim_id, sp.weapon_idx, hit["headshot"])
 			for pid in players:
 				multiplayer.send_bytes(kill_packet, pid,
 					MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 					NetConstants.CHANNEL_EVENTS)
-			print("[Server] KILL: Player %d → Player %d (%s, dmg=%.1f)" % [
-				peer_id, victim_id, hit["hitgroup"], hit["damage"]])
+			print("[Server] KILL: Player %d → Player %d (%s, dmg=%.1f) [K:%d D:%d]" % [
+				peer_id, victim_id, hit["hitgroup"], hit["damage"],
+				sp.kills, victim_sp.deaths])
+
+
+func _process_respawns() -> void:
+	for peer_id in players:
+		var sp = players[peer_id]
+		if not sp.is_dead:
+			continue
+		if sp.respawn_tick <= 0 or server_tick < sp.respawn_tick:
+			continue
+
+		var spawn_pos := spawn_points[randi() % spawn_points.size()]
+		sp.respawn(spawn_pos)
+
+		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
+		for pid in players:
+			multiplayer.send_bytes(spawn_packet, pid,
+				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+				NetConstants.CHANNEL_EVENTS)
+		print("[Server] Player %d respawned at %s" % [peer_id, spawn_pos])
 
 
 func _broadcast_snapshots() -> void:

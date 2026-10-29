@@ -285,6 +285,19 @@ func _handle_event(packet: PackedByteArray) -> void:
 				var headshot := packet[6] != 0
 				print("[Client] HIT: Player %d for %d dmg%s" % [
 					victim_id, damage, " (HEADSHOT)" if headshot else ""])
+		NetProtocol.EVT_SPAWN:
+			if packet.size() >= 17:
+				var spawned_id := packet[3] | (packet[4] << 8)
+				var px := NetSnapshot._read_i32_s(packet, 5)
+				var py := NetSnapshot._read_i32_s(packet, 9)
+				var pz := NetSnapshot._read_i32_s(packet, 13)
+				var pos := Vector3(float(px), float(py), float(pz)) * NetConstants.POS_PRECISION
+				if spawned_id == my_peer_id and local_player:
+					local_player.global_position = pos
+					local_player.velocity = Vector3.ZERO
+					prediction_buffer.clear()
+					snapshot_buffer.clear()
+				print("[Client] SPAWN: Player %d at %s" % [spawned_id, pos])
 
 
 func set_local_player(player: CharacterBody3D) -> void:

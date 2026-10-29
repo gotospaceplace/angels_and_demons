@@ -20,6 +20,10 @@ var acked_snapshot_tick: int = 0
 var fire_pressed: bool = false
 var next_fire_tick: int = 0
 
+var kills: int = 0
+var deaths: int = 0
+var respawn_tick: int = 0
+
 
 func create(p_peer_id: int, spawn_pos: Vector3, parent: Node) -> void:
 	peer_id = p_peer_id
@@ -66,6 +70,11 @@ func dequeue_input() -> void:
 		last_acked_tick = cmd.tick
 	else:
 		cmd = last_input
+
+	if is_dead:
+		body.apply_network_input(cmd.yaw, cmd.pitch,
+			false, false, false, false, false, false)
+		return
 
 	body.apply_network_input(cmd.yaw, cmd.pitch,
 		cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
@@ -116,6 +125,33 @@ func take_damage(damage: float) -> void:
 	if hp <= 0:
 		hp = 0
 		is_dead = true
+
+
+func die(current_tick: int) -> void:
+	is_dead = true
+	hp = 0
+	deaths += 1
+	fire_pressed = false
+	respawn_tick = current_tick + int(NetConstants.RESPAWN_DELAY * float(NetConstants.TICK_RATE))
+	var collision := body.get_node_or_null("PlayerCollision")
+	if collision:
+		collision.disabled = true
+
+
+func respawn(spawn_pos: Vector3) -> void:
+	is_dead = false
+	hp = 100
+	armor = 0
+	weapon_idx = 2
+	ammo_mag = 30
+	fire_pressed = false
+	next_fire_tick = 0
+	input_buffer.clear()
+	body.global_position = spawn_pos
+	body.velocity = Vector3.ZERO
+	var collision := body.get_node_or_null("PlayerCollision")
+	if collision:
+		collision.disabled = false
 
 
 func destroy() -> void:
