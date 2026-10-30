@@ -32,7 +32,7 @@ func _process(delta: float) -> void:
 			entries[i]["label"].queue_free()
 			entries.remove_at(i)
 		elif entries[i]["time"] >= DISPLAY_TIME:
-			var t := (entries[i]["time"] - DISPLAY_TIME) / FADE_DURATION
+			var t: float = (entries[i]["time"] - DISPLAY_TIME) / FADE_DURATION
 			entries[i]["label"].modulate.a = 1.0 - t
 		i -= 1
 
@@ -41,7 +41,7 @@ func add_kill(killer_id: int, victim_id: int, weapon_idx: int, headshot: bool) -
 	var my_id := _get_local_peer_id()
 	var killer := "Player %d" % killer_id
 	var victim := "Player %d" % victim_id
-	var weapon := WEAPON_NAMES[weapon_idx] if weapon_idx < WEAPON_NAMES.size() else "???"
+	var weapon: String = WEAPON_NAMES[weapon_idx] if weapon_idx < WEAPON_NAMES.size() else "???"
 	var is_knife := weapon_idx == 0
 
 	var text := "[right]"

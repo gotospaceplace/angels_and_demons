@@ -50,7 +50,7 @@ func apply_all() -> void:
 
 
 func apply_resolution() -> void:
-	var res := RESOLUTIONS[clampi(resolution_index, 0, RESOLUTIONS.size() - 1)]
+	var res: Vector2i = RESOLUTIONS[clampi(resolution_index, 0, RESOLUTIONS.size() - 1)]
 	if get_window().mode == Window.MODE_WINDOWED:
 		get_window().size = res
 
