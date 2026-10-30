@@ -136,6 +136,10 @@ func simulate_tick(delta: float) -> void:
 
 	scroll_jump_queued = false
 
+	if not test_driven and has_node("/root/SoundManager"):
+		var h_speed := Vector3(velocity.x, 0, velocity.z).length()
+		SoundManager.update_footsteps(delta, on_ground, h_speed, on_ladder)
+
 func _read_input() -> void:
 	if test_driven:
 		return

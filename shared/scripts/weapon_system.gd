@@ -200,6 +200,9 @@ func _fire(now: float) -> void:
 	if not current.is_melee:
 		magazine[current_index] -= 1
 
+	if not player.test_driven and has_node("/root/SoundManager"):
+		SoundManager.play_fire(current_index)
+
 	var spread := _calc_spread()
 	var cam_xform := camera.global_transform
 	var origin := cam_xform.origin
@@ -492,6 +495,8 @@ func _switch_weapon(index: int) -> void:
 	var total_time: float = current.holster_time + weapons[index].draw_time
 	next_action_time = _now() + total_time
 	_equip(index)
+	if not player.test_driven and has_node("/root/SoundManager"):
+		SoundManager.play_weapon_switch()
 
 
 func _equip(index: int) -> void:
@@ -519,6 +524,8 @@ func _start_reload() -> void:
 	is_reloading = true
 	_unscope()
 	next_action_time = _now() + current.reload_time
+	if not player.test_driven and has_node("/root/SoundManager"):
+		SoundManager.play_reload()
 
 
 func _finish_reload() -> void:

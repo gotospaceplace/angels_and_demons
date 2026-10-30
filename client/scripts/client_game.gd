@@ -381,6 +381,10 @@ func _handle_event(packet: PackedByteArray) -> void:
 				var weapon_idx := weapon_byte & 0x7F
 				_track_kill(killer_id, victim_id)
 				KillFeed.add_kill(killer_id, victim_id, weapon_idx, headshot)
+				if killer_id == my_peer_id:
+					SoundManager.play_hit_confirm(headshot)
+				if victim_id == my_peer_id:
+					SoundManager.play_death()
 				print("[Client] KILL: Player %d killed Player %d%s" % [
 					killer_id, victim_id, " (HEADSHOT)" if headshot else ""])
 		NetProtocol.EVT_HIT:
@@ -388,6 +392,7 @@ func _handle_event(packet: PackedByteArray) -> void:
 				var victim_id := packet[3] | (packet[4] << 8)
 				var damage := packet[5]
 				var headshot := packet[6] != 0
+				SoundManager.play_hit_confirm(headshot)
 				print("[Client] HIT: Player %d for %d dmg%s" % [
 					victim_id, damage, " (HEADSHOT)" if headshot else ""])
 		NetProtocol.EVT_SESSION:

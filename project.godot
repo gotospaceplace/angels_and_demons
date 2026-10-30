@@ -26,6 +26,7 @@ Crosshair="*res://client/scripts/crosshair.gd"
 ClientScoreboard="*res://client/scripts/client_scoreboard.gd"
 ClientNetHud="*res://client/scripts/client_net_hud.gd"
 KillFeed="*res://client/scripts/kill_feed.gd"
+SoundManager="*res://client/scripts/sound_manager.gd"
 
 [display]
 
