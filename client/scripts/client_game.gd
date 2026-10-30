@@ -195,9 +195,16 @@ func _store_input(cmd: NetInput) -> void:
 
 
 func _store_prediction(tick: int) -> void:
+	var pos := local_player.global_position
+	var prec := NetConstants.POS_PRECISION
+	var qpos := Vector3(
+		float(int(pos.x / prec)) * prec,
+		float(int(pos.y / prec)) * prec,
+		float(int(pos.z / prec)) * prec,
+	)
 	prediction_buffer.append({
 		"tick": tick,
-		"position": local_player.global_position,
+		"position": qpos,
 		"velocity": local_player.velocity,
 		"on_ground": local_player.on_ground,
 		"is_ducked": local_player.is_ducked,
