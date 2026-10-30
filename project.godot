@@ -24,6 +24,7 @@ TelemetryHUD="*res://client/scripts/telemetry_hud.gd"
 Crosshair="*res://client/scripts/crosshair.gd"
 ClientScoreboard="*res://client/scripts/client_scoreboard.gd"
 ClientNetHud="*res://client/scripts/client_net_hud.gd"
+KillFeed="*res://client/scripts/kill_feed.gd"
 
 [display]
 

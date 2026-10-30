@@ -378,7 +378,9 @@ func _handle_event(packet: PackedByteArray) -> void:
 				var victim_id := packet[5] | (packet[6] << 8)
 				var weapon_byte := packet[7]
 				var headshot := (weapon_byte & 0x80) != 0
+				var weapon_idx := weapon_byte & 0x7F
 				_track_kill(killer_id, victim_id)
+				KillFeed.add_kill(killer_id, victim_id, weapon_idx, headshot)
 				print("[Client] KILL: Player %d killed Player %d%s" % [
 					killer_id, victim_id, " (HEADSHOT)" if headshot else ""])
 		NetProtocol.EVT_HIT:
