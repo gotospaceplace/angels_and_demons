@@ -507,13 +507,21 @@ func _ladder_move(delta: float) -> void:
 	if is_ducked:
 		climb_speed *= MC.DUCKING_MULTIPLIER
 
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	var cam_forward := -camera.global_transform.basis.z
-	var right := global_transform.basis.x
+	var look_fwd := -head.global_transform.basis.z
+	var body_fwd := -global_transform.basis.z
+	body_fwd.y = 0.0
+	body_fwd = body_fwd.normalized()
+	var right_v := global_transform.basis.x
+	right_v.y = 0.0
+	right_v = right_v.normalized()
 
-	var wish_vel := cam_forward * (-input_dir.y) + right * input_dir.x
+	var wish_vel := Vector3.ZERO
+	if wish_speed > 0.001:
+		var fwd_amt := wish_dir.dot(body_fwd)
+		var side_amt := wish_dir.dot(right_v)
+		wish_vel = look_fwd * fwd_amt + right_v * side_amt
 
-	# Dismount if pushing away from ladder face (pressing S while facing wall)
+	# Dismount if pushing away from ladder face
 	if wish_vel.dot(ladder_normal) > 0.5:
 		on_ladder = false
 		velocity = ladder_normal * MC.MAX_CLIMB_SPEED * 0.5
