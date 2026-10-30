@@ -18,6 +18,7 @@ var correction_offset := Vector3.ZERO
 var correction_origin := Vector3.ZERO
 var correction_timer: float = 0.0
 var correction_count: int = 0
+var _pending_reconcile = null
 
 var snapshots_received: int = 0
 var my_peer_id: int = 0
@@ -111,8 +112,20 @@ func _physics_process(_delta: float) -> void:
 	if multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
 		return
 
-	# Capture predicted state from the previous tick
-	# (player_movement ran after us in the last physics frame)
+	var visual_yaw := 0.0
+	var visual_pitch := 0.0
+	if local_player:
+		visual_yaw = local_player.rotation.y
+		visual_pitch = local_player.get_node("Head").rotation.x
+
+	if _pending_reconcile != null:
+		_try_reconcile(_pending_reconcile)
+		_pending_reconcile = null
+
+	if local_player:
+		local_player.rotation.y = visual_yaw
+		local_player.get_node("Head").rotation.x = visual_pitch
+
 	if local_player and client_tick > 0:
 		_store_prediction(client_tick)
 
@@ -120,6 +133,15 @@ func _physics_process(_delta: float) -> void:
 
 	var cmd := _sample_input()
 	_store_input(cmd)
+
+	if local_player:
+		local_player.apply_network_input(cmd.yaw, cmd.pitch,
+			cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
+			cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
+			cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK))
+		local_player.simulate_tick(NetConstants.TICK_INTERVAL)
+		local_player.rotation.y = visual_yaw
+		local_player.get_node("Head").rotation.x = visual_pitch
 
 	if client_tick % 2 == 0:
 		_send_input()
@@ -165,6 +187,10 @@ func _sample_input() -> NetInput:
 	if local_player:
 		cmd.yaw = fposmod(rad_to_deg(local_player.rotation.y), 360.0)
 		cmd.pitch = rad_to_deg(local_player.get_node("Head").rotation.x)
+		var yaw_q := int(fmod(cmd.yaw, 360.0) * NetConstants.YAW_SCALE) & 0xFFFF
+		cmd.yaw = float(yaw_q) / NetConstants.YAW_SCALE
+		var pitch_q := clampi(int(cmd.pitch * NetConstants.PITCH_SCALE), -32768, 32767)
+		cmd.pitch = float(pitch_q) / NetConstants.PITCH_SCALE
 
 	cmd.set_button(NetInput.BIT_FORWARD, Input.is_action_pressed("move_forward"))
 	cmd.set_button(NetInput.BIT_BACK, Input.is_action_pressed("move_backward"))
@@ -269,13 +295,14 @@ func _handle_snapshot(packet: PackedByteArray) -> void:
 	snapshots_received += 1
 
 	if not tick_synced:
-		client_tick = server_tick
+		var lead := _compute_tick_lead()
+		client_tick = server_tick + lead
 		tick_synced = true
-		print("[Client] Tick synced to server: %d" % server_tick)
+		print("[Client] Tick synced: server=%d client=%d (lead=%d)" % [server_tick, client_tick, lead])
 
 	# Reconciliation: compare server state to our prediction
 	if local_player and my_peer_id > 0:
-		_try_reconcile(result)
+		_pending_reconcile = result
 
 	if interpolation:
 		interpolation.on_snapshot(result, my_peer_id)
@@ -333,6 +360,8 @@ func _try_reconcile(snapshot_result: Dictionary) -> void:
 	correction_offset = correction_origin
 	correction_timer = NetConstants.RECONCILE_SMOOTH_TIME
 
+	local_player.reset_physics_interpolation()
+
 	if correction_count <= 10 or correction_count % 50 == 0:
 		print("[Client] Correction #%d: error=%.3fm, replayed %d ticks" % [
 			correction_count, error, client_tick - snap_tick])
@@ -386,6 +415,19 @@ func _handle_event(packet: PackedByteArray) -> void:
 
 func set_local_player(player: CharacterBody3D) -> void:
 	local_player = player
+	local_player.test_driven = true
+	local_player.set_physics_process(false)
+	local_player.set_physics_interpolation_mode(Node.PHYSICS_INTERPOLATION_MODE_OFF)
+
+
+func _compute_tick_lead() -> int:
+	var rtt_ms := 10.0
+	if NetworkManager.peer:
+		var server_peer := NetworkManager.peer.get_peer(1)
+		if server_peer:
+			rtt_ms = maxf(float(server_peer.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME)), 1.0)
+	var rtt_ticks := int(ceil(rtt_ms / (NetConstants.TICK_INTERVAL * 1000.0)))
+	return maxi(3, rtt_ticks + 2)
 
 
 func _track_kill(killer_id: int, victim_id: int) -> void:

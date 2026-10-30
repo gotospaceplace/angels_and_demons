@@ -144,5 +144,6 @@ weapon_prev={
 
 [physics]
 
+common/physics_interpolation=true
 common/physics_ticks_per_second=128
 3d/default_gravity=20.32

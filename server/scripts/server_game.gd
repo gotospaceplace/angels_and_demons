@@ -80,7 +80,7 @@ func _physics_process(_delta: float) -> void:
 	_process_disconnect_timeouts()
 
 	for sp in players.values():
-		sp.dequeue_input()
+		sp.dequeue_input(server_tick)
 
 	_process_fire_commands()
 	_process_respawns()
@@ -143,10 +143,8 @@ func _handle_input_packet(peer_id: int, packet: PackedByteArray) -> void:
 	if ack_tick > sp.acked_snapshot_tick:
 		sp.acked_snapshot_tick = ack_tick
 
-	for i in range(commands.size() - 1, -1, -1):
-		var cmd = commands[i]
-		if cmd.tick > sp.last_acked_tick:
-			sp.queue_input(cmd)
+	for cmd in commands:
+		sp.queue_input(cmd)
 
 
 func _process_fire_commands() -> void:

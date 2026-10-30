@@ -58,17 +58,27 @@ func create(p_peer_id: int, spawn_pos: Vector3, parent: Node) -> void:
 
 
 func queue_input(cmd: NetInput) -> void:
+	if cmd.tick <= last_acked_tick:
+		return
+	for i in range(input_buffer.size() - 1, -1, -1):
+		if input_buffer[i].tick >= cmd.tick:
+			return
 	if input_buffer.size() >= NetConstants.SERVER_INPUT_BUFFER:
 		input_buffer.pop_front()
 	input_buffer.append(cmd)
 
 
-func dequeue_input() -> void:
+func dequeue_input(current_tick: int) -> void:
 	var cmd: NetInput
-	if input_buffer.size() > 0:
+
+	while input_buffer.size() > 0 and input_buffer[0].tick < current_tick:
+		last_input = input_buffer.pop_front()
+		last_acked_tick = maxi(last_acked_tick, last_input.tick)
+
+	if input_buffer.size() > 0 and input_buffer[0].tick == current_tick:
 		cmd = input_buffer.pop_front()
 		last_input = cmd
-		last_acked_tick = cmd.tick
+		last_acked_tick = maxi(last_acked_tick, cmd.tick)
 	else:
 		cmd = last_input
 
