@@ -1,7 +1,8 @@
 extends CharacterBody3D
 
 const MC := preload("res://shared/scripts/movement_constants.gd")
-const MOUSE_SENSITIVITY := 0.002
+var MOUSE_SENSITIVITY: float:
+	get: return GameSettings.mouse_sensitivity
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D

@@ -2,7 +2,8 @@ extends CharacterBody3D
 
 const SPEED := 7.0
 const JUMP_VELOCITY := 7.5
-const MOUSE_SENSITIVITY := 0.002
+var MOUSE_SENSITIVITY: float:
+	get: return GameSettings.mouse_sensitivity
 
 @onready var head: Node3D = $Head
 

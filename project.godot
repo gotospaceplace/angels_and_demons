@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+GameSettings="*res://shared/scripts/game_settings.gd"
 NetworkManager="*res://shared/scripts/network_manager.gd"
 TelemetryHUD="*res://client/scripts/telemetry_hud.gd"
 Crosshair="*res://client/scripts/crosshair.gd"
