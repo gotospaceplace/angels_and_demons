@@ -5,6 +5,8 @@ const STATE_BUFFER_SIZE := 32
 
 var remote_players: Dictionary = {}
 var server_time: float = 0.0
+var _ideal_server_time: float = 0.0
+var _clock_initialized: bool = false
 var interp_delay: float = NetConstants.INTERP_DELAY_SEC
 var my_peer_id: int = 0
 
@@ -12,7 +14,10 @@ var my_peer_id: int = 0
 func on_snapshot(snapshot_result: Dictionary, p_my_peer_id: int) -> void:
 	my_peer_id = p_my_peer_id
 	var tick: int = snapshot_result["tick"]
-	server_time = float(tick) * NetConstants.TICK_INTERVAL
+	_ideal_server_time = float(tick) * NetConstants.TICK_INTERVAL
+	if not _clock_initialized:
+		server_time = _ideal_server_time
+		_clock_initialized = true
 
 	var active_peers := {}
 	for state in snapshot_result["states"]:
@@ -42,6 +47,12 @@ func on_snapshot(snapshot_result: Dictionary, p_my_peer_id: int) -> void:
 
 func _process(delta: float) -> void:
 	server_time += delta
+	if _clock_initialized:
+		var diff := _ideal_server_time - server_time
+		if absf(diff) > 0.5:
+			server_time = _ideal_server_time
+		else:
+			server_time += diff * clampf(delta * 6.0, 0.0, 1.0)
 	var render_time := server_time - interp_delay
 
 	for rp in remote_players.values():

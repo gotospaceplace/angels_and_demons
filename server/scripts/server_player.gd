@@ -52,6 +52,7 @@ func create(p_peer_id: int, spawn_pos: Vector3, parent: Node) -> void:
 	body.position = spawn_pos
 	body.test_driven = true
 	parent.add_child(body)
+	body.set_physics_process(false)
 
 	last_input = NetInput.new()
 
@@ -74,6 +75,7 @@ func dequeue_input() -> void:
 	if is_dead:
 		body.apply_network_input(cmd.yaw, cmd.pitch,
 			false, false, false, false, false, false)
+		body.simulate_tick(NetConstants.TICK_INTERVAL)
 		return
 
 	_check_weapon_switch(cmd)
@@ -82,6 +84,7 @@ func dequeue_input() -> void:
 		cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
 		cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
 		cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK))
+	body.simulate_tick(NetConstants.TICK_INTERVAL)
 
 
 const WEAPON_MAG_SIZES := [0, 12, 30, 30, 10]  # knife, usp, ak47, m4a1, awp

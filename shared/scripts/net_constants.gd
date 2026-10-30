@@ -19,8 +19,8 @@ const INTERP_DELAY_SEC := INTERP_DELAY_MS / 1000.0
 const INTERP_MAX_EXTRAPOLATE_MS := 50.0  # Max extrapolation before freeze
 
 # --- Reconciliation ---
-const RECONCILE_THRESHOLD := 0.05  # Position error threshold in meters (~2 GoldSrc units)
-const RECONCILE_SMOOTH_TIME := 0.1 # Visual correction smoothing (seconds)
+const RECONCILE_THRESHOLD := 0.1   # Position error threshold in meters (~4 GoldSrc units)
+const RECONCILE_SMOOTH_TIME := 0.2 # Visual correction smoothing (seconds)
 
 # --- Lag compensation ---
 const MAX_REWIND_MS := 200.0      # Maximum hitbox rewind window

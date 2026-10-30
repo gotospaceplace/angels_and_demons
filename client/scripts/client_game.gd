@@ -15,6 +15,7 @@ var last_received_snapshot_tick: int = 0
 
 var prediction_buffer: Array = []
 var correction_offset := Vector3.ZERO
+var correction_origin := Vector3.ZERO
 var correction_timer: float = 0.0
 var correction_count: int = 0
 
@@ -129,10 +130,19 @@ func _process(delta: float) -> void:
 		correction_timer -= delta
 		if correction_timer <= 0.0:
 			correction_offset = Vector3.ZERO
+			correction_origin = Vector3.ZERO
 			correction_timer = 0.0
 		else:
 			var t := correction_timer / NetConstants.RECONCILE_SMOOTH_TIME
-			correction_offset = correction_offset * t
+			correction_offset = correction_origin * t
+
+	if local_player:
+		var cam := local_player.get_node_or_null("Head/Camera3D")
+		if cam:
+			cam.position = Vector3.ZERO
+			if correction_offset.length_squared() > 0.00001:
+				var head_basis_inv: Basis = cam.get_parent().global_transform.basis.inverse()
+				cam.position = head_basis_inv * correction_offset
 
 	if reconnecting:
 		reconnect_elapsed += delta
@@ -287,7 +297,7 @@ func _try_reconcile(snapshot_result: Dictionary) -> void:
 		return
 
 	correction_count += 1
-	var old_pos: Vector3 = local_player.global_position
+	var visual_pos: Vector3 = local_player.global_position + correction_offset
 
 	# Snap to server authoritative state
 	local_player.global_position = server_state.position
@@ -312,7 +322,8 @@ func _try_reconcile(snapshot_result: Dictionary) -> void:
 	local_player.test_driven = saved_test_driven
 
 	# Visual smoothing: offset decays over RECONCILE_SMOOTH_TIME
-	correction_offset = old_pos - local_player.global_position
+	correction_origin = visual_pos - local_player.global_position
+	correction_offset = correction_origin
 	correction_timer = NetConstants.RECONCILE_SMOOTH_TIME
 
 	if correction_count <= 10 or correction_count % 50 == 0:
