@@ -25,7 +25,7 @@ stretch_mode = 6
 
 [node name="MenuPanel" type="CenterContainer" parent="."]
 layout_mode = 1
-anchors_preset = 15
+anchor_top = 0.45
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
