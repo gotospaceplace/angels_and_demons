@@ -20,7 +20,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.08, 0.08, 0.12, 1)
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="MenuPanel" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -28,53 +28,97 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBox" type="VBoxContainer" parent="CenterContainer"]
+[node name="VBox" type="VBoxContainer" parent="MenuPanel"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="CenterContainer/VBox"]
+[node name="Title" type="Label" parent="MenuPanel/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 36
 text = "ANGELS AND DEMONS"
 horizontal_alignment = 1
-vertical_alignment = 1
 
-[node name="Subtitle" type="Label" parent="CenterContainer/VBox"]
+[node name="Subtitle" type="Label" parent="MenuPanel/VBox"]
 layout_mode = 2
-text = "Phase 1 — Connection Test"
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+text = "Pre-Alpha"
 horizontal_alignment = 1
 
-[node name="Spacer" type="Control" parent="CenterContainer/VBox"]
+[node name="Spacer" type="Control" parent="MenuPanel/VBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 20)
+custom_minimum_size = Vector2(0, 30)
 
-[node name="IPLabel" type="Label" parent="CenterContainer/VBox"]
+[node name="FindServersButton" type="Button" parent="MenuPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 45)
+text = "Find Servers"
+
+[node name="OptionsButton" type="Button" parent="MenuPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 45)
+text = "Options"
+
+[node name="QuitButton" type="Button" parent="MenuPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 45)
+text = "Quit"
+
+[node name="ConnectPanel" type="CenterContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="ConnectPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="ConnectPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "CONNECT TO SERVER"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="ConnectPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 10)
+
+[node name="IPLabel" type="Label" parent="ConnectPanel/VBox"]
 layout_mode = 2
 text = "Server Address:"
 
-[node name="IPInput" type="LineEdit" parent="CenterContainer/VBox"]
+[node name="IPInput" type="LineEdit" parent="ConnectPanel/VBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(300, 0)
 text = "192.168.30.11"
 placeholder_text = "IP address"
 alignment = 1
 
-[node name="PortLabel" type="Label" parent="CenterContainer/VBox"]
+[node name="PortLabel" type="Label" parent="ConnectPanel/VBox"]
 layout_mode = 2
 text = "Port:"
 
-[node name="PortInput" type="LineEdit" parent="CenterContainer/VBox"]
+[node name="PortInput" type="LineEdit" parent="ConnectPanel/VBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(300, 0)
 text = "27050"
 placeholder_text = "Port"
 alignment = 1
 
-[node name="ConnectButton" type="Button" parent="CenterContainer/VBox"]
+[node name="ConnectButton" type="Button" parent="ConnectPanel/VBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(300, 40)
 text = "Connect"
 
-[node name="StatusLabel" type="Label" parent="CenterContainer/VBox"]
+[node name="StatusLabel" type="Label" parent="ConnectPanel/VBox"]
 layout_mode = 2
 text = ""
 horizontal_alignment = 1
+
+[node name="BackButton" type="Button" parent="ConnectPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 40)
+text = "Back"
