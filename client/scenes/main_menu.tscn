@@ -37,9 +37,9 @@ theme_override_constants/separation = 16
 
 [node name="Subtitle" type="Label" parent="MenuPanel/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-text = "PRE-ALPHA"
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Pre Alpha"
 horizontal_alignment = 1
 
 [node name="Spacer" type="Control" parent="MenuPanel/VBox"]
