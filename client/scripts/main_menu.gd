@@ -93,7 +93,7 @@ func _on_connect_pressed() -> void:
 
 func _on_connected() -> void:
 	status_label.text = "Connected! (Peer ID: %d)" % multiplayer.get_unique_id()
-	get_tree().change_scene_to_file("res://client/scenes/main.tscn")
+	get_tree().change_scene_to_file("res://client/scenes/mp_client.tscn")
 
 
 func _on_connection_failed() -> void:
