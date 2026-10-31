@@ -3,7 +3,7 @@ FROM ubuntu:24.04 AS build
 ARG GODOT_VERSION=4.7.2
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates wget unzip \
+    ca-certificates wget unzip fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" \
