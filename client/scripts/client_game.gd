@@ -64,10 +64,14 @@ func _ready() -> void:
 	add_child(interp_node)
 	interpolation = interp_node
 
-	var err := NetworkManager.join_server(server_address, server_port)
-	if err != OK:
-		push_error("Failed to connect to %s:%d" % [server_address, server_port])
-		get_tree().quit(1)
+	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
+		print("[Client] Already connected (peer ID: %d)" % my_peer_id)
+	else:
+		var err := NetworkManager.join_server(server_address, server_port)
+		if err != OK:
+			push_error("Failed to connect to %s:%d" % [server_address, server_port])
+			get_tree().quit(1)
 
 
 func _on_connected() -> void:
