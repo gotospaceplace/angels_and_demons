@@ -12,8 +12,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2.0"
-          memory: 2G
+          cpus: "1.0"
+          memory: 512M
 
 volumes:
   server-config:
