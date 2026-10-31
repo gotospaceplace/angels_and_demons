@@ -85,7 +85,7 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if player.test_driven:
+	if not player.is_local_client:
 		return
 	if event.is_action_pressed("weapon_4"):
 		_select_grenade()
@@ -200,7 +200,7 @@ func _fire(now: float) -> void:
 	if not current.is_melee:
 		magazine[current_index] -= 1
 
-	if not player.test_driven and has_node("/root/SoundManager"):
+	if player.is_local_client and has_node("/root/SoundManager"):
 		SoundManager.play_fire(current_index)
 
 	var spread := _calc_spread()
@@ -495,7 +495,7 @@ func _switch_weapon(index: int) -> void:
 	var total_time: float = current.holster_time + weapons[index].draw_time
 	next_action_time = _now() + total_time
 	_equip(index)
-	if not player.test_driven and has_node("/root/SoundManager"):
+	if player.is_local_client and has_node("/root/SoundManager"):
 		SoundManager.play_weapon_switch()
 
 
@@ -524,7 +524,7 @@ func _start_reload() -> void:
 	is_reloading = true
 	_unscope()
 	next_action_time = _now() + current.reload_time
-	if not player.test_driven and has_node("/root/SoundManager"):
+	if player.is_local_client and has_node("/root/SoundManager"):
 		SoundManager.play_reload()
 
 

@@ -18,6 +18,7 @@ var jump_was_pressed := false
 
 var scroll_jump_queued := false
 var test_driven := false
+var is_local_client := false
 
 # Ducking
 var is_ducked := false
@@ -47,7 +48,7 @@ var _flash_fade: float = 0.0
 var _flash_fade_total: float = 0.0
 
 func _ready() -> void:
-	if not test_driven:
+	if not test_driven or is_local_client:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_to_group("player")
 	standing_collision.shape = standing_collision.shape.duplicate()
@@ -136,7 +137,7 @@ func simulate_tick(delta: float) -> void:
 
 	scroll_jump_queued = false
 
-	if not test_driven and has_node("/root/SoundManager"):
+	if is_local_client and has_node("/root/SoundManager"):
 		var h_speed := Vector3(velocity.x, 0, velocity.z).length()
 		SoundManager.update_footsteps(delta, on_ground, h_speed, on_ladder)
 

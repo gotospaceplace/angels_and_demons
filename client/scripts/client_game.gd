@@ -427,6 +427,7 @@ func _handle_event(packet: PackedByteArray) -> void:
 func set_local_player(player: CharacterBody3D) -> void:
 	local_player = player
 	local_player.test_driven = true
+	local_player.is_local_client = true
 	local_player.set_physics_process(false)
 	local_player.set_physics_interpolation_mode(Node.PHYSICS_INTERPOLATION_MODE_OFF)
 
