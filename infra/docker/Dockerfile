@@ -13,12 +13,12 @@ RUN wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=
     && chmod +x /usr/local/bin/godot \
     && rm /tmp/godot.zip
 
-RUN wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=export_templates.tpz&platform=templates" \
+RUN mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable \
+    && wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=export_templates.tpz&platform=templates" \
     -O /tmp/templates.tpz \
-    && mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable \
-    && unzip /tmp/templates.tpz -d /tmp/tpl \
-    && cp /tmp/tpl/templates/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ \
-    && rm -rf /tmp/templates.tpz /tmp/tpl
+    && unzip -j /tmp/templates.tpz "templates/linux_release.x86_64" "templates/version.txt" \
+    -d /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ \
+    && rm -f /tmp/templates.tpz
 
 WORKDIR /build
 COPY . .
