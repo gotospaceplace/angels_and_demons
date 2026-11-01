@@ -193,7 +193,7 @@ jobs:
           sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
 
-      - name: Create canary prototype
+      - name: Create canary prototype and validator
         run: |
           mkdir -p /tmp/canary-proto/scripts /tmp/canary-proto/scenes
           cat > /tmp/canary-proto/project.godot << 'PROJ'
@@ -216,16 +216,67 @@ jobs:
           script = ExtResource("1_valid")
           SCENE
 
+          # Shared validator script — same approach used by the validate job.
+          # Loads every .gd file via Godot's resource system and reports results.
+          cat > /tmp/canary-validator.gd << 'VALIDATOR'
+          extends SceneTree
+          func _init() -> void:
+              var scripts := _find_scripts("res://")
+              var errors := 0
+              for path in scripts:
+                  if path.ends_with("_ci_validate_all.gd"):
+                      continue
+                  var scr = load(path)
+                  if scr == null:
+                      printerr("VALIDATE_FAIL: could not load " + path)
+                      errors += 1
+                  else:
+                      print("VALIDATE_OK: " + path)
+              if errors > 0:
+                  printerr("VALIDATE_RESULT: %d script(s) failed to load" % errors)
+              else:
+                  print("VALIDATE_RESULT: all %d script(s) loaded successfully" % scripts.size())
+              quit(errors)
+
+          func _find_scripts(dir_path: String) -> Array[String]:
+              var results: Array[String] = []
+              var dir := DirAccess.open(dir_path)
+              if dir == null:
+                  return results
+              dir.list_dir_begin()
+              var name := dir.get_next()
+              while name != "":
+                  var full := dir_path.path_join(name)
+                  if dir.current_is_dir():
+                      if name != ".godot" and name != ".git":
+                          results.append_array(_find_scripts(full))
+                  elif name.ends_with(".gd"):
+                      results.append(full)
+                  name = dir.get_next()
+              return results
+          VALIDATOR
+
       - name: Canary — valid prototype must pass
         run: |
           echo "=== Canary: importing valid prototype ==="
-          godot --headless --path /tmp/canary-proto --import 2>&1 | tee /tmp/canary-valid.log
-          ERRORS=$(grep -ciE "SCRIPT ERROR|Parse Error" /tmp/canary-valid.log | head -1 || echo 0)
-          if [ "$ERRORS" -gt 0 ]; then
-            echo "::error::Canary FAILED — valid prototype reported errors"
+          godot --headless --path /tmp/canary-proto --import 2>&1 | tee /tmp/canary-import.log
+
+          echo "=== Canary: validating scripts ==="
+          cp /tmp/canary-validator.gd /tmp/canary-proto/scripts/_ci_validate_all.gd
+          timeout 30 godot --headless --path /tmp/canary-proto -s scripts/_ci_validate_all.gd 2>&1 | tee /tmp/canary-valid.log
+          rm -f /tmp/canary-proto/scripts/_ci_validate_all.gd /tmp/canary-proto/scripts/_ci_validate_all.gd.uid
+
+          if ! grep -q "VALIDATE_RESULT" /tmp/canary-valid.log; then
+            echo "::error::Canary FAILED — validator did not produce results"
             exit 1
           fi
-          echo "Canary: valid prototype imports cleanly"
+          if grep -q "VALIDATE_FAIL" /tmp/canary-valid.log; then
+            echo "::error::Canary FAILED — valid prototype reported script failures"
+            exit 1
+          fi
+          echo "Canary PASSED — valid prototype scripts all load correctly"
+          grep "VALIDATE_OK" /tmp/canary-valid.log
+          grep "VALIDATE_RESULT" /tmp/canary-valid.log
 
       - name: Canary — broken script must be detected
         run: |
@@ -235,26 +286,34 @@ jobs:
               var x: int = "not an int" +++
           BROKEN
 
-          echo "=== Canary: importing with broken script ==="
-          godot --headless --path /tmp/canary-proto --import 2>&1 | tee /tmp/canary-broken.log
+          echo "=== Canary: re-importing with broken script ==="
+          rm -rf /tmp/canary-proto/.godot
+          godot --headless --path /tmp/canary-proto --import 2>&1 | tee /tmp/canary-reimport.log
 
-          echo "=== Checking import log for broken.gd errors ==="
-          if grep -iE "SCRIPT ERROR|Parse Error" /tmp/canary-broken.log | grep -qi "broken"; then
-            echo "Canary PASSED — broken.gd error detected in import log:"
-            grep -iE "SCRIPT ERROR|Parse Error" /tmp/canary-broken.log | grep -i "broken"
+          echo "=== Canary: running validator with broken script present ==="
+          cp /tmp/canary-validator.gd /tmp/canary-proto/scripts/_ci_validate_all.gd
+          timeout 30 godot --headless --path /tmp/canary-proto -s scripts/_ci_validate_all.gd 2>&1 | tee /tmp/canary-broken.log || true
+          rm -f /tmp/canary-proto/scripts/_ci_validate_all.gd /tmp/canary-proto/scripts/_ci_validate_all.gd.uid
+
+          # Verify the validator ran
+          if ! grep -q "VALIDATE_RESULT\|VALIDATE_FAIL\|VALIDATE_OK" /tmp/canary-broken.log; then
+            echo "::error::Canary FAILED — validator did not produce any output"
+            cat /tmp/canary-broken.log
+            exit 1
+          fi
+
+          # Verify the broken script was specifically detected
+          if grep -q "VALIDATE_FAIL.*broken" /tmp/canary-broken.log; then
+            echo "Canary PASSED — broken.gd specifically detected:"
+            grep "VALIDATE_FAIL" /tmp/canary-broken.log
+          elif grep -q "VALIDATE_FAIL" /tmp/canary-broken.log; then
+            echo "Canary PASSED — script failure detected (validator caught a load error):"
+            grep "VALIDATE_FAIL" /tmp/canary-broken.log
           else
-            # Some Godot versions report the error without the filename in the
-            # same line. Check if any script error was raised at all.
-            ERRORS=$(grep -ciE "SCRIPT ERROR|Parse Error" /tmp/canary-broken.log | head -1 || echo 0)
-            if [ "$ERRORS" -gt 0 ]; then
-              echo "Canary PASSED — script error detected (not filename-specific):"
-              grep -iE "SCRIPT ERROR|Parse Error" /tmp/canary-broken.log
-            else
-              echo "::error::Canary FAILED — broken.gd was not detected during import"
-              echo "Full import log:"
-              cat /tmp/canary-broken.log
-              exit 1
-            fi
+            echo "::error::Canary FAILED — broken.gd was not detected by validator"
+            echo "Full validator log:"
+            cat /tmp/canary-broken.log
+            exit 1
           fi
 
       - name: Canary — clean prototype must pass after fix
@@ -263,14 +322,24 @@ jobs:
           rm -rf /tmp/canary-proto/.godot
 
           echo "=== Canary: re-importing after removing broken script ==="
-          godot --headless --path /tmp/canary-proto --import 2>&1 | tee /tmp/canary-fixed.log
-          ERRORS=$(grep -ciE "SCRIPT ERROR|Parse Error" /tmp/canary-fixed.log | head -1 || echo 0)
-          if [ "$ERRORS" -gt 0 ]; then
+          godot --headless --path /tmp/canary-proto --import 2>&1 | tee /tmp/canary-reimport2.log
+
+          echo "=== Canary: re-validating scripts ==="
+          cp /tmp/canary-validator.gd /tmp/canary-proto/scripts/_ci_validate_all.gd
+          timeout 30 godot --headless --path /tmp/canary-proto -s scripts/_ci_validate_all.gd 2>&1 | tee /tmp/canary-fixed.log
+          rm -f /tmp/canary-proto/scripts/_ci_validate_all.gd /tmp/canary-proto/scripts/_ci_validate_all.gd.uid
+
+          if ! grep -q "VALIDATE_RESULT" /tmp/canary-fixed.log; then
+            echo "::error::Canary FAILED — validator did not produce results after fix"
+            exit 1
+          fi
+          if grep -q "VALIDATE_FAIL" /tmp/canary-fixed.log; then
             echo "::error::Canary FAILED — errors persist after removing broken script"
-            grep -iE "SCRIPT ERROR|Parse Error" /tmp/canary-fixed.log
+            grep "VALIDATE_FAIL" /tmp/canary-fixed.log
             exit 1
           fi
           echo "Canary PASSED — prototype validates cleanly after broken script removed"
+          grep "VALIDATE_RESULT" /tmp/canary-fixed.log
 
       - name: Canary — missing resource must be detected
         run: |
@@ -282,7 +351,6 @@ jobs:
           SCENE
 
           echo "=== Canary: checking for missing resource detection ==="
-          # Scan the scene file for references and verify the missing one is flagged
           REFS=$(grep -oP 'res://[^"]+' /tmp/canary-proto/scenes/missing_ref.tscn)
           FOUND_MISSING=false
           for ref in $REFS; do
