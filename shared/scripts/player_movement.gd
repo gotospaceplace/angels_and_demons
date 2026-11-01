@@ -468,7 +468,9 @@ func _fly_move(delta: float) -> void:
 	var normal := collision.get_normal()
 	var slide := remainder.slide(normal)
 
-	velocity = velocity.slide(normal)
+	var jumping := velocity.y > 0.0
+	if not (jumping and normal.y >= MC.FLOOR_NORMAL_MIN):
+		velocity = velocity.slide(normal)
 	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
 		hit_steep = true
 		steep_normal = normal
@@ -480,7 +482,8 @@ func _fly_move(delta: float) -> void:
 	if slide.length() > 0.001:
 		var collision2 := move_and_collide(slide)
 		if collision2:
-			velocity = velocity.slide(collision2.get_normal())
+			if not (jumping and collision2.get_normal().y >= MC.FLOOR_NORMAL_MIN):
+				velocity = velocity.slide(collision2.get_normal())
 			if collision2.get_normal().y > 0.0 and collision2.get_normal().y < MC.FLOOR_NORMAL_MIN:
 				hit_steep = true
 				steep_normal = collision2.get_normal()
