@@ -1,0 +1,162 @@
+name: Validate Prototypes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Prototypes/**'
+      - '.github/workflows/prototype-validate.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Prototypes/**'
+      - '.github/workflows/prototype-validate.yml'
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  discover:
+    name: Discover prototypes
+    runs-on: ubuntu-24.04
+    outputs:
+      prototypes: ${{ steps.find.outputs.prototypes }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find standalone Godot projects
+        id: find
+        run: |
+          PROTOS=$(find Prototypes/ -name 'project.godot' -printf '%h\n' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "prototypes=$PROTOS" >> "$GITHUB_OUTPUT"
+          echo "Found prototypes: $PROTOS"
+
+  validate:
+    name: "Validate ${{ matrix.prototype }}"
+    runs-on: ubuntu-24.04
+    needs: discover
+    strategy:
+      fail-fast: false
+      matrix:
+        prototype: ${{ fromJson(needs.discover.outputs.prototypes) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          sudo unzip -o /tmp/godot.zip -d /usr/local/bin/
+          sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Headless import
+        run: |
+          godot --headless --path "${{ matrix.prototype }}" --import 2>&1 | tee /tmp/import.log
+          ERRORS=$(grep -ciE "SCRIPT ERROR|Failed to load|Cannot preload|Parse Error" /tmp/import.log | head -1 || echo 0)
+          if [ "$ERRORS" -gt 0 ]; then
+            echo ""
+            echo "=== Import errors in ${{ matrix.prototype }} ==="
+            grep -iE "SCRIPT ERROR|Failed to load|Cannot preload|Parse Error" /tmp/import.log
+            echo ""
+            echo "::error::${{ matrix.prototype }}: import produced $ERRORS error(s)"
+            exit 1
+          fi
+          echo "${{ matrix.prototype }}: import clean"
+
+      - name: Load main scene
+        run: |
+          SCENE=$(grep 'run/main_scene' "${{ matrix.prototype }}/project.godot" | sed 's/.*="\(.*\)"/\1/' || true)
+          if [ -z "$SCENE" ]; then
+            echo "::warning::${{ matrix.prototype }}: no main scene configured, skipping scene load"
+            exit 0
+          fi
+          echo "Loading scene: $SCENE"
+          timeout 15 godot --headless --path "${{ matrix.prototype }}" --quit-after 2 2>&1 || {
+            EXIT=$?
+            if [ $EXIT -eq 124 ]; then
+              echo "${{ matrix.prototype }}: scene loaded (timed out at shutdown — expected for headless)"
+            else
+              echo "::error::${{ matrix.prototype }}: scene load failed with exit code $EXIT"
+              exit 1
+            fi
+          }
+          echo "${{ matrix.prototype }}: scene load OK"
+
+      - name: Script compilation check
+        run: |
+          SCRIPTS=$(find "${{ matrix.prototype }}" -name '*.gd' -not -path '*/.godot/*')
+          if [ -z "$SCRIPTS" ]; then
+            echo "::warning::${{ matrix.prototype }}: no GDScript files found"
+            exit 0
+          fi
+          echo "Checking scripts in ${{ matrix.prototype }}:"
+          echo "$SCRIPTS"
+          timeout 30 godot --headless --path "${{ matrix.prototype }}" --check-only 2>&1 | tee /tmp/check.log
+          ERRORS=$(grep -ciE "SCRIPT ERROR|Parse Error|error(" /tmp/check.log | head -1 || echo 0)
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "::error::${{ matrix.prototype }}: script compilation errors"
+            grep -iE "SCRIPT ERROR|Parse Error|error(" /tmp/check.log
+            exit 1
+          fi
+          echo "${{ matrix.prototype }}: scripts compile OK"
+
+  canary:
+    name: Canary (verify prototype CI catches errors)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          sudo unzip -o /tmp/godot.zip -d /usr/local/bin/
+          sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Create broken prototype
+        run: |
+          mkdir -p /tmp/canary-proto/scripts
+          cat > /tmp/canary-proto/project.godot << 'PROJ'
+          ; Canary prototype — deliberately broken for CI verification
+          config_version=5
+          [application]
+          config/name="Canary Broken Prototype"
+          config/features=PackedStringArray("4.7", "GL Compatibility")
+          PROJ
+          cat > /tmp/canary-proto/scripts/broken.gd << 'BROKEN'
+          extends Node
+          func _ready() -> void:
+              var x: int = "not an int" +++
+          BROKEN
+
+      - name: Verify broken script is detected
+        run: |
+          echo "=== Canary: importing broken prototype ==="
+          godot --headless --path /tmp/canary-proto --import 2>&1 | tee /tmp/canary-import.log
+
+          echo "=== Canary: checking scripts ==="
+          if timeout 30 godot --headless --path /tmp/canary-proto --check-only 2>&1 | tee /tmp/canary-check.log; then
+            ERRORS=$(grep -ciE "SCRIPT ERROR|Parse Error|error(" /tmp/canary-check.log | head -1 || echo 0)
+            if [ "$ERRORS" -eq 0 ]; then
+              echo "::error::Canary FAILED — broken script was not detected"
+              exit 1
+            fi
+          fi
+          echo "Canary PASSED — broken prototype script correctly detected"

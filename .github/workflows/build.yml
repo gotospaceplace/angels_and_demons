@@ -65,7 +65,7 @@ jobs:
                         | sort -u \
                         | grep -v '\.godot/' \
                         | grep -v 'addons/' \
-                        | grep -v 'Angels_Demons_Character_Prototypes/'); do
+                        | grep -v 'Prototypes/'); do
             local_path="${ref#res://}"
             case "$ref" in uid://*) continue ;; esac
             CHECKED=$((CHECKED + 1))
