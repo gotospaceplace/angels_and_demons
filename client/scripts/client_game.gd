@@ -282,8 +282,14 @@ func _on_peer_packet(_peer_id: int, packet: PackedByteArray) -> void:
 func _handle_snapshot(packet: PackedByteArray) -> void:
 	var bases: Dictionary = {}
 	if snapshot_buffer.size() > 0:
-		var last: Dictionary = snapshot_buffer[snapshot_buffer.size() - 1]
-		for s in last["states"]:
+		var base_snap: Dictionary = snapshot_buffer[snapshot_buffer.size() - 1]
+		if packet.size() >= NetProtocol.HEADER_SIZE + 8 and packet[7] == 1:
+			var base_tick: int = packet[8] | (packet[9] << 8) | (packet[10] << 16) | (packet[11] << 24)
+			for i in range(snapshot_buffer.size() - 1, -1, -1):
+				if snapshot_buffer[i]["tick"] == base_tick:
+					base_snap = snapshot_buffer[i]
+					break
+		for s in base_snap["states"]:
 			bases[s.peer_id] = s
 
 	var result := NetProtocol.unpack_snapshot(packet, bases)

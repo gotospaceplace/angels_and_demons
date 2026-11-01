@@ -67,6 +67,7 @@ func _interpolate(rp: Dictionary, render_time: float) -> void:
 	if states.size() == 1:
 		var s: Dictionary = states[0]
 		rp["node"].apply_state(s["position"], s["yaw"], s["pitch"], s["is_ducked"])
+		rp["node"].visible = not s["is_dead"]
 		return
 
 	var a: Dictionary = {}
@@ -82,6 +83,7 @@ func _interpolate(rp: Dictionary, render_time: float) -> void:
 		if render_time < states[0]["time"]:
 			var s: Dictionary = states[0]
 			rp["node"].apply_state(s["position"], s["yaw"], s["pitch"], s["is_ducked"])
+			rp["node"].visible = not s["is_dead"]
 			return
 
 		a = states[states.size() - 2]
@@ -89,6 +91,7 @@ func _interpolate(rp: Dictionary, render_time: float) -> void:
 		var past: float = render_time - b["time"]
 		if past > NetConstants.INTERP_MAX_EXTRAPOLATE_MS / 1000.0:
 			rp["node"].apply_state(b["position"], b["yaw"], b["pitch"], b["is_ducked"])
+			rp["node"].visible = not b["is_dead"]
 			return
 
 	var duration: float = b["time"] - a["time"]
