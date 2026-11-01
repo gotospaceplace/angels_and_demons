@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 env:
   GODOT_VERSION: "4.7.2"
@@ -16,18 +17,60 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
       - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
-          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" -O /tmp/godot.zip
-          sudo unzip /tmp/godot.zip -d /usr/local/bin/
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          sudo unzip -o /tmp/godot.zip -d /usr/local/bin/
           sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
 
       - name: Import project
-        run: godot --headless --import
+        run: |
+          godot --headless --import 2>&1 | tee /tmp/import.log
+          if grep -qi "ERROR" /tmp/import.log; then
+            echo "::warning::Import produced errors (see log above)"
+          fi
 
-      - name: Validate scripts
-        run: godot --headless --check-only --script res://client/scripts/player_controller.gd
+      - name: Check for missing resources
+        run: |
+          echo "Scanning .tscn and .tres files for resource references..."
+          MISSING=0
+          for ref in $(grep -rhoP 'res://[^"]+' --include='*.tscn' --include='*.tres' --include='*.gd' \
+                        | sort -u \
+                        | grep -v '\.godot/' \
+                        | grep -v 'addons/'); do
+            local_path="${ref#res://}"
+            if [ ! -f "$local_path" ] && [ ! -d "$local_path" ]; then
+              echo "::warning::Missing resource: $ref"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          echo "Resource check complete: $MISSING missing reference(s)"
+
+      - name: Validate all GDScript files
+        run: |
+          ERRORS=0
+          for script in $(find . -name '*.gd' -not -path './.godot/*' -not -path './Angels_Demons_Character_Prototypes/*'); do
+            RES_PATH="res://${script#./}"
+            echo "Checking $RES_PATH"
+            if ! godot --headless --check-only --script "$RES_PATH" 2>&1; then
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+          echo ""
+          echo "=== Validated $(find . -name '*.gd' -not -path './.godot/*' -not -path './Angels_Demons_Character_Prototypes/*' | wc -l) scripts, $ERRORS error(s) ==="
+          if [ $ERRORS -gt 0 ]; then
+            echo "::error::$ERRORS GDScript file(s) failed validation"
+            exit 1
+          fi
 
   test:
     name: Run Tests
@@ -36,21 +79,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
       - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
-          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" -O /tmp/godot.zip
-          sudo unzip /tmp/godot.zip -d /usr/local/bin/
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          sudo unzip -o /tmp/godot.zip -d /usr/local/bin/
           sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
 
       - name: Import project
         run: godot --headless --import
 
+      - name: Network tests
+        run: timeout 30 godot --headless --path . -- --test-network
+
       - name: Movement tests
         run: timeout 30 godot --headless --path . -- --test
 
       - name: Combat tests
         run: timeout 30 godot --headless --path . -- --test-combat
+
+      - name: Validation tests
+        run: timeout 30 godot --headless --path . -- --test-validation
+
+      - name: Performance benchmark
+        run: timeout 60 godot --headless --path . -- --bench
 
   export-server:
     name: Export Linux Server
@@ -59,16 +119,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
       - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
-          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" -O /tmp/godot.zip
-          sudo unzip /tmp/godot.zip -d /usr/local/bin/
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          sudo unzip -o /tmp/godot.zip -d /usr/local/bin/
           sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
 
       - name: Install export templates
         run: |
-          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=export_templates.tpz&platform=templates" -O /tmp/templates.tpz
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -O /tmp/templates.tpz
           mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
           unzip /tmp/templates.tpz -d /tmp/tpl
           cp /tmp/tpl/templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
