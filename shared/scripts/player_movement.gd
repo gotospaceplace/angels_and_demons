@@ -476,7 +476,7 @@ func _fly_move(delta: float) -> void:
 		steep_normal = normal
 		if velocity.y > 0.0:
 			velocity.y = 0.0
-	if slide.y > 0.0:
+	if slide.y > 0.0 and not jumping:
 		slide.y = 0.0
 
 	if slide.length() > 0.001:
