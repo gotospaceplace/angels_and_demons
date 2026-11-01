@@ -1,6 +1,6 @@
 extends Node
 
-const POOL_SIZE := 8
+const POOL_SIZE := 16
 
 var sounds: Dictionary = {}
 var pool: Array[AudioStreamPlayer] = []
@@ -43,6 +43,14 @@ func play(sound_name: String, volume_db: float = 0.0, pitch: float = 1.0) -> voi
 			asp.pitch_scale = pitch
 			asp.play()
 			return
+	var oldest: AudioStreamPlayer = pool[0]
+	for i in range(1, pool.size()):
+		if pool[i].get_playback_position() > oldest.get_playback_position():
+			oldest = pool[i]
+	oldest.stream = sounds[sound_name]
+	oldest.volume_db = volume_db
+	oldest.pitch_scale = pitch
+	oldest.play()
 
 
 const WEAPON_SOUNDS := ["knife_slash", "usp_fire", "ak47_fire", "m4a1_fire", "awp_fire"]
