@@ -80,7 +80,7 @@ func _ready() -> void:
 	for w in weapons:
 		magazine.append(w.magazine_size)
 		reserve.append(w.reserve_ammo)
-	_equip(0)
+	_equip(2)
 	player.max_speed = current.max_speed
 
 

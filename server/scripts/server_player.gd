@@ -103,11 +103,11 @@ const WEAPON_COUNT := 5
 func _check_weapon_switch(cmd: NetInput) -> void:
 	var new_idx := -1
 	if cmd.has_button(NetInput.BIT_WEAPON1):
-		new_idx = 0
+		new_idx = 2  # primary (AK/M4/AWP)
 	elif cmd.has_button(NetInput.BIT_WEAPON2):
-		new_idx = 1
+		new_idx = 1  # pistol (USP)
 	elif cmd.has_button(NetInput.BIT_WEAPON3):
-		new_idx = 2
+		new_idx = 0  # knife
 	elif cmd.has_button(NetInput.BIT_WEAPON4):
 		new_idx = 3
 	elif cmd.has_button(NetInput.BIT_WEAPON5):
