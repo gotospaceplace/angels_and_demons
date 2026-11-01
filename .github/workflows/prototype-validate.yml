@@ -101,10 +101,13 @@ jobs:
                   if scr == null:
                       printerr("VALIDATE_FAIL: could not load " + path)
                       errors += 1
+                  elif scr is Script and not scr.can_instantiate():
+                      printerr("VALIDATE_FAIL: script has errors " + path)
+                      errors += 1
                   else:
                       print("VALIDATE_OK: " + path)
               if errors > 0:
-                  printerr("VALIDATE_RESULT: %d script(s) failed to load" % errors)
+                  printerr("VALIDATE_RESULT: %d script(s) failed" % errors)
               else:
                   print("VALIDATE_RESULT: all %d script(s) loaded successfully" % scripts.size())
               quit(errors)
@@ -218,6 +221,8 @@ jobs:
 
           # Shared validator script — same approach used by the validate job.
           # Loads every .gd file via Godot's resource system and reports results.
+          # Godot 4.7 load() returns non-null for broken scripts, so we also
+          # check can_instantiate() to detect parse errors.
           cat > /tmp/canary-validator.gd << 'VALIDATOR'
           extends SceneTree
           func _init() -> void:
@@ -230,10 +235,13 @@ jobs:
                   if scr == null:
                       printerr("VALIDATE_FAIL: could not load " + path)
                       errors += 1
+                  elif scr is Script and not scr.can_instantiate():
+                      printerr("VALIDATE_FAIL: script has errors " + path)
+                      errors += 1
                   else:
                       print("VALIDATE_OK: " + path)
               if errors > 0:
-                  printerr("VALIDATE_RESULT: %d script(s) failed to load" % errors)
+                  printerr("VALIDATE_RESULT: %d script(s) failed" % errors)
               else:
                   print("VALIDATE_RESULT: all %d script(s) loaded successfully" % scripts.size())
               quit(errors)
@@ -302,9 +310,9 @@ jobs:
             exit 1
           fi
 
-          # Verify the broken script was specifically detected
+          # Primary check: validator must report VALIDATE_FAIL for the broken script
           if grep -q "VALIDATE_FAIL.*broken" /tmp/canary-broken.log; then
-            echo "Canary PASSED — broken.gd specifically detected:"
+            echo "Canary PASSED — broken.gd specifically detected by validator:"
             grep "VALIDATE_FAIL" /tmp/canary-broken.log
           elif grep -q "VALIDATE_FAIL" /tmp/canary-broken.log; then
             echo "Canary PASSED — script failure detected (validator caught a load error):"
@@ -314,6 +322,15 @@ jobs:
             echo "Full validator log:"
             cat /tmp/canary-broken.log
             exit 1
+          fi
+
+          # Secondary check: Godot's own stderr must contain SCRIPT ERROR for the
+          # broken file — verifies the engine itself sees the parse failure even
+          # though load() returns non-null.
+          if grep -qiE "SCRIPT ERROR|Parse Error" /tmp/canary-broken.log; then
+            echo "Secondary check PASSED — Godot reported parse/script error in raw output"
+          else
+            echo "::warning::Secondary check — no SCRIPT ERROR in raw output (can_instantiate still caught it)"
           fi
 
       - name: Canary — clean prototype must pass after fix
