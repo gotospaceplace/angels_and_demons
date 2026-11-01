@@ -8,6 +8,7 @@ var pool: Array[AudioStreamPlayer] = []
 var footstep_timer: float = 0.0
 const FOOTSTEP_INTERVAL := 0.4
 const FOOTSTEP_RUN_INTERVAL := 0.32
+const FOOTSTEP_CROUCH_INTERVAL := 0.56
 const FOOTSTEP_SPEED_THRESHOLD := 0.5
 
 
@@ -80,7 +81,7 @@ func play_weapon_switch() -> void:
 	play("weapon_switch", -3.0)
 
 
-func update_footsteps(delta: float, on_ground: bool, speed: float, on_ladder: bool) -> void:
+func update_footsteps(delta: float, on_ground: bool, speed: float, on_ladder: bool, is_ducked: bool = false) -> void:
 	if not on_ground and not on_ladder:
 		footstep_timer = 0.0
 		return
@@ -89,6 +90,8 @@ func update_footsteps(delta: float, on_ground: bool, speed: float, on_ladder: bo
 		return
 
 	var interval := FOOTSTEP_RUN_INTERVAL if speed > 3.0 else FOOTSTEP_INTERVAL
+	if is_ducked:
+		interval = FOOTSTEP_CROUCH_INTERVAL
 	footstep_timer += delta
 	if footstep_timer >= interval:
 		footstep_timer -= interval

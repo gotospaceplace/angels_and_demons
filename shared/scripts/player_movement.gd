@@ -139,7 +139,7 @@ func simulate_tick(delta: float) -> void:
 
 	if is_local_client and not test_driven and has_node("/root/SoundManager"):
 		var h_speed := Vector3(velocity.x, 0, velocity.z).length()
-		SoundManager.update_footsteps(delta, on_ground, h_speed, on_ladder)
+		SoundManager.update_footsteps(delta, on_ground, h_speed, on_ladder, is_ducked)
 
 func _read_input() -> void:
 	if test_driven:
