@@ -200,7 +200,7 @@ func _sample_input() -> NetInput:
 	cmd.set_button(NetInput.BIT_BACK, Input.is_action_pressed("move_backward"))
 	cmd.set_button(NetInput.BIT_LEFT, Input.is_action_pressed("move_left"))
 	cmd.set_button(NetInput.BIT_RIGHT, Input.is_action_pressed("move_right"))
-	cmd.set_button(NetInput.BIT_JUMP, Input.is_action_pressed("jump"))
+	cmd.set_button(NetInput.BIT_JUMP, Input.is_action_pressed("jump") or (local_player and local_player.scroll_jump_queued))
 	cmd.set_button(NetInput.BIT_DUCK, Input.is_action_pressed("duck"))
 	cmd.set_button(NetInput.BIT_FIRE, Input.is_action_pressed("fire"))
 	cmd.set_button(NetInput.BIT_FIRE2, Input.is_action_pressed("fire_secondary"))
