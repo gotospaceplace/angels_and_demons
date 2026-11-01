@@ -19,6 +19,9 @@ var acked_snapshot_tick: int = 0
 
 var fire_pressed: bool = false
 var next_fire_tick: int = 0
+var is_reloading: bool = false
+var reload_finish_tick: int = 0
+var reload_pressed: bool = false
 
 var kills: int = 0
 var deaths: int = 0
@@ -88,7 +91,12 @@ func dequeue_input(current_tick: int) -> void:
 		body.simulate_tick(NetConstants.TICK_INTERVAL)
 		return
 
+	if is_reloading and current_tick >= reload_finish_tick:
+		is_reloading = false
+		ammo_mag = WEAPON_MAG_SIZES[weapon_idx]
+
 	_check_weapon_switch(cmd)
+	_check_reload(cmd, current_tick)
 
 	body.apply_network_input(cmd.yaw, cmd.pitch,
 		cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
@@ -98,6 +106,7 @@ func dequeue_input(current_tick: int) -> void:
 
 
 const WEAPON_MAG_SIZES := [0, 12, 30, 30, 10]  # knife, usp, ak47, m4a1, awp
+const WEAPON_RELOAD_TICKS := [0, 346, 314, 390, 320]  # reload_time * 128 tick/s
 const WEAPON_COUNT := 5
 
 func _check_weapon_switch(cmd: NetInput) -> void:
@@ -117,6 +126,22 @@ func _check_weapon_switch(cmd: NetInput) -> void:
 		ammo_mag = WEAPON_MAG_SIZES[new_idx]
 		fire_pressed = false
 		next_fire_tick = 0
+		is_reloading = false
+
+
+func _check_reload(cmd: NetInput, current_tick: int) -> void:
+	var wants_reload := cmd.has_button(NetInput.BIT_RELOAD)
+	if wants_reload and not reload_pressed and not is_reloading:
+		if weapon_idx > 0 and ammo_mag < WEAPON_MAG_SIZES[weapon_idx]:
+			is_reloading = true
+			reload_finish_tick = current_tick + WEAPON_RELOAD_TICKS[weapon_idx]
+	reload_pressed = wants_reload
+
+
+func start_reload(current_tick: int) -> void:
+	if weapon_idx > 0 and not is_reloading and ammo_mag < WEAPON_MAG_SIZES[weapon_idx]:
+		is_reloading = true
+		reload_finish_tick = current_tick + WEAPON_RELOAD_TICKS[weapon_idx]
 
 
 func get_snapshot(tick: int) -> NetSnapshot:
@@ -169,6 +194,7 @@ func die(current_tick: int) -> void:
 	hp = 0
 	deaths += 1
 	fire_pressed = false
+	is_reloading = false
 	respawn_tick = current_tick + int(NetConstants.RESPAWN_DELAY * float(NetConstants.TICK_RATE))
 	var collision := body.get_node_or_null("PlayerCollision")
 	if collision:
@@ -183,6 +209,8 @@ func respawn(spawn_pos: Vector3) -> void:
 	ammo_mag = 30
 	fire_pressed = false
 	next_fire_tick = 0
+	is_reloading = false
+	reload_pressed = false
 	input_buffer.clear()
 	body.global_position = spawn_pos
 	body.velocity = Vector3.ZERO

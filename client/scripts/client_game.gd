@@ -143,7 +143,9 @@ func _physics_process(_delta: float) -> void:
 			cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
 			cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
 			cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK))
+		local_player.test_driven = false
 		local_player.simulate_tick(NetConstants.TICK_INTERVAL)
+		local_player.test_driven = true
 		local_player.rotation.y = visual_yaw
 		local_player.get_node("Head").rotation.x = visual_pitch
 
