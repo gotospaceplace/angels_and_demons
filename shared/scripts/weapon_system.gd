@@ -33,6 +33,9 @@ var last_fire_time: float = 0.0
 var viewpunch := Vector2.ZERO
 var recoil_shots: int = 0
 var lateral_dir: float = 1.0
+var _recoil_decay_timer: float = 0.0
+const RECOIL_DECAY_DELAY := 0.35
+const RECOIL_DECAY_INTERVAL := 0.1
 
 # Weapon switching
 var prev_index: int = 0
@@ -80,7 +83,7 @@ func _ready() -> void:
 	for w in weapons:
 		magazine.append(w.magazine_size)
 		reserve.append(w.reserve_ammo)
-	_equip(0)
+	_equip(2)
 	player.max_speed = current.max_speed
 
 
@@ -121,6 +124,7 @@ func _physics_process(delta: float) -> void:
 	_decay_viewpunch(delta)
 	_apply_viewpunch()
 	_update_accuracy_recovery(delta, now)
+	_decay_recoil(delta, now)
 
 	while damage_time_log.size() > 0 and now - damage_time_log[0] > 5.0:
 		damage_time_log.remove_at(0)
@@ -447,6 +451,18 @@ func _get_recoil_params() -> PackedFloat64Array:
 	if player.is_ducked:
 		return current.recoil_crouching
 	return current.recoil_standing
+
+
+func _decay_recoil(delta: float, now: float) -> void:
+	if recoil_shots <= 0:
+		return
+	if now - last_fire_time > RECOIL_DECAY_DELAY:
+		_recoil_decay_timer += delta
+		if _recoil_decay_timer >= RECOIL_DECAY_INTERVAL:
+			_recoil_decay_timer -= RECOIL_DECAY_INTERVAL
+			recoil_shots = maxi(0, recoil_shots - 1)
+	else:
+		_recoil_decay_timer = 0.0
 
 
 func _decay_viewpunch(delta: float) -> void:

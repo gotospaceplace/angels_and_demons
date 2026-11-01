@@ -161,6 +161,10 @@ func _process_fire_commands() -> void:
 		var cmd: NetInput = sp.last_input
 		var wants_fire: bool = cmd.has_button(NetInput.BIT_FIRE)
 
+		if sp.is_reloading:
+			sp.fire_pressed = wants_fire
+			continue
+
 		var should_fire := false
 		var weapon = lag_comp.get_weapon(sp.weapon_idx)
 
@@ -181,6 +185,8 @@ func _process_fire_commands() -> void:
 
 		if not weapon.is_melee:
 			sp.ammo_mag -= 1
+			if sp.ammo_mag <= 0:
+				sp.start_reload(server_tick)
 
 		sp.next_fire_tick = server_tick + maxi(1, int(weapon.cycle_time * float(NetConstants.TICK_RATE)))
 

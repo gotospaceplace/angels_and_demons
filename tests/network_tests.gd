@@ -456,7 +456,7 @@ func test_weapon_switch_updates_ammo() -> void:
 	if sp.ammo_mag != 10:
 		_fail("ammo_mag: %d, expected 10 (AWP mag)" % sp.ammo_mag); return
 	cmd = NetInput.create(2, 0, 0.0, 0.0)
-	cmd.set_button(NetInput.BIT_WEAPON1, true)
+	cmd.set_button(NetInput.BIT_WEAPON3, true)
 	sp._check_weapon_switch(cmd)
 	if sp.weapon_idx != 0:
 		_fail("weapon_idx: %d, expected 0 (knife)" % sp.weapon_idx); return

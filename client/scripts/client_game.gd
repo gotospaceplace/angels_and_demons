@@ -143,7 +143,9 @@ func _physics_process(_delta: float) -> void:
 			cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
 			cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
 			cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK))
+		local_player.test_driven = false
 		local_player.simulate_tick(NetConstants.TICK_INTERVAL)
+		local_player.test_driven = true
 		local_player.rotation.y = visual_yaw
 		local_player.get_node("Head").rotation.x = visual_pitch
 
@@ -200,7 +202,7 @@ func _sample_input() -> NetInput:
 	cmd.set_button(NetInput.BIT_BACK, Input.is_action_pressed("move_backward"))
 	cmd.set_button(NetInput.BIT_LEFT, Input.is_action_pressed("move_left"))
 	cmd.set_button(NetInput.BIT_RIGHT, Input.is_action_pressed("move_right"))
-	cmd.set_button(NetInput.BIT_JUMP, Input.is_action_pressed("jump"))
+	cmd.set_button(NetInput.BIT_JUMP, Input.is_action_pressed("jump") or (local_player and local_player.scroll_jump_queued))
 	cmd.set_button(NetInput.BIT_DUCK, Input.is_action_pressed("duck"))
 	cmd.set_button(NetInput.BIT_FIRE, Input.is_action_pressed("fire"))
 	cmd.set_button(NetInput.BIT_FIRE2, Input.is_action_pressed("fire_secondary"))
@@ -282,8 +284,14 @@ func _on_peer_packet(_peer_id: int, packet: PackedByteArray) -> void:
 func _handle_snapshot(packet: PackedByteArray) -> void:
 	var bases: Dictionary = {}
 	if snapshot_buffer.size() > 0:
-		var last: Dictionary = snapshot_buffer[snapshot_buffer.size() - 1]
-		for s in last["states"]:
+		var base_snap: Dictionary = snapshot_buffer[snapshot_buffer.size() - 1]
+		if packet.size() >= NetProtocol.HEADER_SIZE + 8 and packet[7] == 1:
+			var base_tick: int = packet[8] | (packet[9] << 8) | (packet[10] << 16) | (packet[11] << 24)
+			for i in range(snapshot_buffer.size() - 1, -1, -1):
+				if snapshot_buffer[i]["tick"] == base_tick:
+					base_snap = snapshot_buffer[i]
+					break
+		for s in base_snap["states"]:
 			bases[s.peer_id] = s
 
 	var result := NetProtocol.unpack_snapshot(packet, bases)

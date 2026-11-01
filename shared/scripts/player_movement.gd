@@ -137,9 +137,10 @@ func simulate_tick(delta: float) -> void:
 
 	scroll_jump_queued = false
 
-	if is_local_client and has_node("/root/SoundManager"):
-		var h_speed := Vector3(velocity.x, 0, velocity.z).length()
-		SoundManager.update_footsteps(delta, on_ground, h_speed, on_ladder)
+	if is_local_client and not test_driven and has_node("/root/SoundManager"):
+		var has_input := wish_dir.length_squared() > 0.001
+		var h_speed := Vector3(velocity.x, 0, velocity.z).length() if has_input and not is_ducked else 0.0
+		SoundManager.update_footsteps(delta, on_ground, h_speed, on_ladder, false)
 
 func _read_input() -> void:
 	if test_driven:
@@ -467,19 +468,22 @@ func _fly_move(delta: float) -> void:
 	var normal := collision.get_normal()
 	var slide := remainder.slide(normal)
 
-	velocity = velocity.slide(normal)
+	var jumping := velocity.y > 0.0
+	if not (jumping and normal.y >= MC.FLOOR_NORMAL_MIN):
+		velocity = velocity.slide(normal)
 	if normal.y > 0.0 and normal.y < MC.FLOOR_NORMAL_MIN:
 		hit_steep = true
 		steep_normal = normal
 		if velocity.y > 0.0:
 			velocity.y = 0.0
-	if slide.y > 0.0:
+	if slide.y > 0.0 and not jumping:
 		slide.y = 0.0
 
 	if slide.length() > 0.001:
 		var collision2 := move_and_collide(slide)
 		if collision2:
-			velocity = velocity.slide(collision2.get_normal())
+			if not (jumping and collision2.get_normal().y >= MC.FLOOR_NORMAL_MIN):
+				velocity = velocity.slide(collision2.get_normal())
 			if collision2.get_normal().y > 0.0 and collision2.get_normal().y < MC.FLOOR_NORMAL_MIN:
 				hit_steep = true
 				steep_normal = collision2.get_normal()
