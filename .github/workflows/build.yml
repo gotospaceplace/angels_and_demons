@@ -57,15 +57,15 @@ jobs:
 
       - name: Check for missing resources
         run: |
-          # Scan scene, resource, and script files for res:// references.
-          # Fail on confirmed missing files.
+          # Scan production scene, resource, and script files for res:// references.
+          # Exclude Prototypes/ at the source-file level — their res:// paths are
+          # relative to their own project.godot, not the production root.
           MISSING=0
           CHECKED=0
-          for ref in $(grep -rhoP 'res://[^")\s]+' --include='*.tscn' --include='*.tres' --include='*.gd' \
-                        | sort -u \
-                        | grep -v '\.godot/' \
-                        | grep -v 'addons/' \
-                        | grep -v 'Angels_Demons_Character_Prototypes/'); do
+          for ref in $(grep -rhoP 'res://[^")\s]+' \
+                        --include='*.tscn' --include='*.tres' --include='*.gd' \
+                        --exclude-dir='Prototypes' --exclude-dir='.godot' --exclude-dir='addons' \
+                        | sort -u); do
             local_path="${ref#res://}"
             case "$ref" in uid://*) continue ;; esac
             CHECKED=$((CHECKED + 1))

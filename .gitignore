@@ -36,6 +36,9 @@ desktop.ini
 *.swo
 *~
 
+# Claude Code (machine-specific; see .claude/launch.json.example)
+.claude/launch.json
+
 # Docker
 infra/docker/.env
 

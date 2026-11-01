@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "godot-client",
+      "runtimeExecutable": "<path-to-godot-4.7.2-executable>",
+      "runtimeArgs": ["--path", ".", "--connect", "192.168.30.11:27050"],
+      "port": 0
+    },
+    {
+      "name": "godot-play",
+      "runtimeExecutable": "<path-to-godot-4.7.2-executable>",
+      "runtimeArgs": ["--path", ".", "--", "--play"],
+      "port": 0
+    }
+  ]
+}
