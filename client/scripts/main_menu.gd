@@ -28,6 +28,8 @@ func _ready() -> void:
 	NetworkManager.connection_succeeded.connect(_on_connected)
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
+	ip_input.text = "142.93.118.80"
+	port_input.text = "27050"
 	_build_options_ui()
 
 

@@ -138,6 +138,12 @@ func _update_status(cg: Node) -> void:
 				is_dead = s.get_flag(NetSnapshot.FLAG_IS_DEAD)
 				break
 
+	var ws_nodes := get_tree().get_nodes_in_group("weapon_system")
+	if ws_nodes.size() > 0:
+		var ws = ws_nodes[0]
+		ammo = ws.magazine[ws.current_index]
+		weapon_idx = ws.current_index
+
 	var weapon_names := ["Knife", "USP", "AK-47", "M4A1", "AWP"]
 	var wname: String = weapon_names[weapon_idx] if weapon_idx < weapon_names.size() else "???"
 
