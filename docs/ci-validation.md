@@ -8,11 +8,25 @@ GitHub Actions runs automated validation on every pull request to `main` and on 
 
 Run these from the project root using Godot 4.7.2.
 
-### GDScript syntax check (single file)
+### Validate all GDScript files (project-aware)
+
+```
+godot --headless --path . -- --validate-scripts
+```
+
+Compiles every `.gd` file inside the full Godot scene tree so autoload singletons
+(GameSettings, NetworkManager, etc.) are registered. Reports each file that fails
+compilation and exits non-zero if any errors are found.
+
+### GDScript syntax check (single file, no autoloads)
 
 ```
 godot --headless --check-only --script res://shared/scripts/player_movement.gd
 ```
+
+> **Note:** `--check-only --script` runs the file in isolation without autoloads.
+> Scripts that reference singletons will fail even if valid. Use `--validate-scripts`
+> above for full-project validation.
 
 ### Import project (regenerates .godot/imported/)
 
@@ -43,7 +57,7 @@ godot --headless --path . -- --test-validation
 
 1. Open the failed PR check on GitHub → click "Details"
 2. Each job has named steps. Look for the red X:
-   - **Validate all GDScript files** — a script has a parse error. The log shows which `res://` path failed.
+   - **Validate all GDScript files in project context** — a script has a compilation error. The log shows which `res://` path failed and the error code.
    - **Check for missing resources** — a `.tscn`, `.tres`, or `.gd` file references a `res://` path that doesn't exist. Warnings list each missing path.
    - **Movement/Combat/Network/Validation tests** — a test assertion failed. Look for `FAIL` lines in the output. The test name and expected vs actual values are printed.
    - **Export server** — the Godot export preset "Linux Server" couldn't build. Check `export_presets.cfg`.
