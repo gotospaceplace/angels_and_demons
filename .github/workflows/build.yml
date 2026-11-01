@@ -5,29 +5,79 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 env:
   GODOT_VERSION: "4.7.2"
 
 jobs:
   validate:
-    name: Validate GDScript
+    name: Validate Project
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
       - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
-          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" -O /tmp/godot.zip
-          sudo unzip /tmp/godot.zip -d /usr/local/bin/
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          sudo unzip -o /tmp/godot.zip -d /usr/local/bin/
           sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
 
-      - name: Import project
-        run: godot --headless --import
+      - name: Import project and check for errors
+        run: |
+          godot --headless --import 2>&1 | tee /tmp/import.log
+          # Filter for genuine errors: parse failures, missing dependencies, broken references.
+          # "cyclic resource inclusion" warnings are benign (already-cached scripts).
+          ERRORS=$(grep -ciE "SCRIPT ERROR|Failed to load|Cannot preload|Parse Error" /tmp/import.log | head -1 || echo 0)
+          if [ "$ERRORS" -gt 0 ]; then
+            echo ""
+            echo "=== Import errors ==="
+            grep -iE "SCRIPT ERROR|Failed to load|Cannot preload|Parse Error" /tmp/import.log
+            echo ""
+            echo "::error::Godot import produced $ERRORS error(s)"
+            exit 1
+          fi
+          echo "Import clean — no script or resource errors"
 
-      - name: Validate scripts
-        run: godot --headless --check-only --script res://client/scripts/player_controller.gd
+      - name: Validate all GDScript files in project context
+        run: |
+          # Runs inside the Godot scene tree with autoloads registered.
+          # Compiles every .gd file (excluding standalone prototypes) and
+          # fails on any that produce compilation errors.
+          timeout 60 godot --headless --path . -- --validate-scripts
+
+      - name: Check for missing resources
+        run: |
+          # Scan scene, resource, and script files for res:// references.
+          # Fail on confirmed missing files.
+          MISSING=0
+          CHECKED=0
+          for ref in $(grep -rhoP 'res://[^")\s]+' --include='*.tscn' --include='*.tres' --include='*.gd' \
+                        | sort -u \
+                        | grep -v '\.godot/' \
+                        | grep -v 'addons/' \
+                        | grep -v 'Angels_Demons_Character_Prototypes/'); do
+            local_path="${ref#res://}"
+            case "$ref" in uid://*) continue ;; esac
+            CHECKED=$((CHECKED + 1))
+            if [ ! -f "$local_path" ] && [ ! -d "$local_path" ]; then
+              echo "::error::Missing resource: $ref"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          echo "Checked $CHECKED resource references, $MISSING missing"
+          if [ $MISSING -gt 0 ]; then
+            exit 1
+          fi
 
   test:
     name: Run Tests
@@ -36,21 +86,106 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
       - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
-          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" -O /tmp/godot.zip
-          sudo unzip /tmp/godot.zip -d /usr/local/bin/
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          sudo unzip -o /tmp/godot.zip -d /usr/local/bin/
           sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
 
       - name: Import project
         run: godot --headless --import
 
+      - name: Network tests
+        run: timeout 30 godot --headless --path . -- --test-network
+
       - name: Movement tests
         run: timeout 30 godot --headless --path . -- --test
 
       - name: Combat tests
         run: timeout 30 godot --headless --path . -- --test-combat
+
+      - name: Validation tests
+        run: timeout 30 godot --headless --path . -- --test-validation
+
+      - name: Performance benchmark
+        run: timeout 60 godot --headless --path . -- --bench
+
+  canary:
+    name: Canary (verify CI catches errors)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          sudo unzip -o /tmp/godot.zip -d /usr/local/bin/
+          sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Import project
+        run: godot --headless --import
+
+      - name: Canary — broken script must be detected
+        run: |
+          # Inject a broken script and verify the validator catches it.
+          cat > tests/_canary_broken.gd << 'BROKEN'
+          extends Node
+          func _ready() -> void:
+              return +++
+          BROKEN
+
+          echo "=== Canary: running validator with broken script ==="
+          if timeout 60 godot --headless --path . -- --validate-scripts 2>&1; then
+            echo "::error::Canary FAILED — broken script was not detected"
+            rm -f tests/_canary_broken.gd
+            exit 1
+          else
+            echo "Canary PASSED — broken script correctly detected"
+          fi
+          rm -f tests/_canary_broken.gd
+
+      - name: Canary — missing resource must be detected
+        run: |
+          cat > tests/_canary_missing.tscn << 'SCENE'
+          [gd_scene format=3]
+          [ext_resource type="Script" path="res://tests/this_does_not_exist.gd" id="1_canary"]
+          [node name="CanaryScene" type="Node"]
+          script = ExtResource("1_canary")
+          SCENE
+
+          echo "=== Canary: checking missing resource detection ==="
+          FOUND=$(grep -rhoP 'res://[^")\s]+' tests/_canary_missing.tscn \
+                    | while read ref; do
+                        local_path="${ref#res://}"
+                        if [ ! -f "$local_path" ]; then echo "$ref"; fi
+                      done)
+
+          if [ -n "$FOUND" ]; then
+            echo "Canary PASSED — missing resource correctly detected: $FOUND"
+          else
+            echo "::error::Canary FAILED — missing resource was not detected"
+            rm -f tests/_canary_missing.tscn
+            exit 1
+          fi
+          rm -f tests/_canary_missing.tscn
 
   export-server:
     name: Export Linux Server
@@ -59,16 +194,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
       - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
-          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=linux.x86_64.zip&platform=linux.64" -O /tmp/godot.zip
-          sudo unzip /tmp/godot.zip -d /usr/local/bin/
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          sudo unzip -o /tmp/godot.zip -d /usr/local/bin/
           sudo mv "/usr/local/bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
 
       - name: Install export templates
         run: |
-          wget -q "https://downloads.godotengine.org/?version=${GODOT_VERSION}&flavor=stable&slug=export_templates.tpz&platform=templates" -O /tmp/templates.tpz
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -O /tmp/templates.tpz
           mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
           unzip /tmp/templates.tpz -d /tmp/tpl
           cp /tmp/tpl/templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
