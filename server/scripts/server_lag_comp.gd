@@ -6,7 +6,9 @@ const WR = preload("res://shared/scripts/weapon_registry.gd")
 
 const HISTORY_SIZE := 32
 const INTERP_TICKS := 13
-const HEAD_RADIUS := 0.15
+const HEAD_HALF := Vector3(0.10, 0.11, 0.10)
+const HEAD_STANDING := Vector3(0.0, 1.618, -0.022)
+const HEAD_CROUCHED := Vector3(0.0, 1.160, -0.141)
 const BODY_RADIUS := 0.35
 
 var history: Array = []
@@ -25,7 +27,8 @@ func store_tick(tick: int, players: Dictionary) -> void:
 			continue
 		entry["players"][pid] = {
 			"position": sp.body.global_position,
-			"is_ducked": sp.body.is_ducked,
+			"duck_fraction": sp.body.duck_fraction,
+			"yaw": sp.body.rotation.y,
 		}
 	history.append(entry)
 	if history.size() > HISTORY_SIZE:
@@ -52,9 +55,9 @@ func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
 	if state.is_empty():
 		return {}
 
-	var is_ducked: bool = shooter_sp.body.is_ducked
-	var view_offset: float = MC.VIEW_OFFSET_DUCKING if is_ducked else MC.VIEW_OFFSET_STANDING
-	var eye_pos: Vector3 = Vector3(shooter_sp.body.global_position) + Vector3(0, view_offset, 0)
+	var shooter_duck: float = shooter_sp.body.duck_fraction
+	var eye_offset: float = lerpf(MC.VIEW_OFFSET_STANDING, MC.VIEW_OFFSET_DUCKING, shooter_duck)
+	var eye_pos: Vector3 = shooter_sp.body.global_position + Vector3(0, eye_offset, 0)
 
 	var yaw_rad := deg_to_rad(cmd.yaw)
 	var pitch_rad := deg_to_rad(cmd.pitch)
@@ -94,32 +97,49 @@ func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
 
 		var ps: Dictionary = state["players"][pid]
 		var target_pos: Vector3 = ps["position"]
-		var target_ducked: bool = ps["is_ducked"]
-		var hull_h: float = MC.HULL_DUCKING_HEIGHT if target_ducked else MC.HULL_STANDING_HEIGHT
-		var head_off: float = MC.VIEW_OFFSET_DUCKING if target_ducked else MC.VIEW_OFFSET_STANDING
+		var duck_frac: float = ps["duck_fraction"]
+		var eased: float = duck_frac * duck_frac * (3.0 - 2.0 * duck_frac)
+		var target_yaw: float = ps["yaw"]
 
-		var t := _ray_capsule_vertical(eye_pos, direction, target_pos, hull_h, BODY_RADIUS)
-		if t <= 0 or t >= best_dist:
+		var hull_h: float = lerpf(MC.HULL_STANDING_HEIGHT, MC.HULL_DUCKING_HEIGHT, eased)
+		var feet_pos: Vector3 = target_pos - Vector3(0, hull_h * 0.5, 0)
+
+		var head_local: Vector3 = HEAD_STANDING.lerp(HEAD_CROUCHED, eased)
+		var yaw_basis := Basis(Vector3.UP, target_yaw)
+		var head_world: Vector3 = feet_pos + yaw_basis * head_local
+
+		var body_h: float = head_world.y - feet_pos.y - HEAD_HALF.y
+		var body_center: Vector3 = feet_pos + Vector3(0, body_h * 0.5, 0)
+
+		var head_t := _ray_box_hit(eye_pos, direction, head_world, HEAD_HALF)
+		var body_t := _ray_capsule_vertical(eye_pos, direction, body_center, body_h, BODY_RADIUS)
+
+		var t := -1.0
+		var headshot := false
+		var hitgroup := ""
+
+		if head_t > 0.0 and head_t < best_dist:
+			if body_t <= 0.0 or head_t <= body_t:
+				t = head_t
+				headshot = true
+				hitgroup = "head"
+			else:
+				t = body_t
+		elif body_t > 0.0 and body_t < best_dist:
+			t = body_t
+
+		if t <= 0.0 or t >= best_dist:
 			continue
 
-		var hit_y: float = eye_pos.y + direction.y * t
-		var rel_y: float = hit_y - target_pos.y
-		var head_threshold := head_off - HEAD_RADIUS
-
-		var hitgroup: String
-		var headshot: bool
-		if rel_y > head_threshold:
-			hitgroup = "head"
-			headshot = true
-		elif rel_y > 0.0:
-			hitgroup = "chest"
-			headshot = false
-		elif rel_y > -hull_h * 0.15:
-			hitgroup = "stomach"
-			headshot = false
-		else:
-			hitgroup = "legs"
-			headshot = false
+		if not headshot:
+			var hit_y: float = eye_pos.y + direction.y * t
+			var rel_y: float = hit_y - body_center.y
+			if rel_y > 0.0:
+				hitgroup = "chest"
+			elif rel_y > -body_h * 0.15:
+				hitgroup = "stomach"
+			else:
+				hitgroup = "legs"
 
 		best_dist = t
 		best_hit = {
@@ -151,6 +171,24 @@ func _find_closest_state(target_tick: int) -> Dictionary:
 			best_diff = diff
 			best = entry
 	return best
+
+
+static func _ray_box_hit(origin: Vector3, dir: Vector3,
+		center: Vector3, half: Vector3) -> float:
+	var lo := -INF
+	var hi := INF
+	for i in range(3):
+		if absf(dir[i]) < 0.0000001:
+			if absf(origin[i] - center[i]) > half[i]:
+				return -1.0
+		else:
+			var a: float = (center[i] - half[i] - origin[i]) / dir[i]
+			var b: float = (center[i] + half[i] - origin[i]) / dir[i]
+			lo = maxf(lo, minf(a, b))
+			hi = minf(hi, maxf(a, b))
+	if lo > hi or hi <= 0.001:
+		return -1.0
+	return lo if lo > 0.001 else hi
 
 
 static func _ray_capsule_vertical(origin: Vector3, dir: Vector3,

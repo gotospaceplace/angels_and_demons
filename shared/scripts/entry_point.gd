@@ -18,6 +18,10 @@ func _ready() -> void:
 		print("EntryPoint: launching script validator")
 		get_tree().change_scene_to_file.call_deferred("res://tests/script_validator_scene.tscn")
 		return
+	if "--test-lagcomp" in args:
+		print("EntryPoint: launching lag comp headshot tests")
+		get_tree().change_scene_to_file.call_deferred("res://tests/lag_comp_test_scene.tscn")
+		return
 	if "--test-validation" in args:
 		print("EntryPoint: launching validation test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/validation_test_scene.tscn")

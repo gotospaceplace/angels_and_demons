@@ -24,6 +24,8 @@ var is_local_client := false
 var is_ducked := false
 var wants_duck := false
 var duck_eye_progress := 0.0
+var duck_fraction: float:
+	get: return duck_eye_progress
 
 # Bhop tracking
 var hop_count := 0
