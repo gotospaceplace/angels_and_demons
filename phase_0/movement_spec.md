@@ -66,12 +66,12 @@ From `PM_PlayerMove()` (MOVETYPE_WALK, not in water, not on ladder):
 | Constant | Value | Source file | Notes |
 |----------|-------|-------------|-------|
 | `TIME_TO_DUCK` | 0.4 s | pm_shared.c:77 | Time to transition to ducked |
-| `VEC_HULL_MIN` | -36 | pm_shared.c:85 | Standing hull Z min |
-| `VEC_HULL_MAX` | 36 | pm_shared.c:86 | Standing hull Z max |
-| `VEC_DUCK_HULL_MIN` | -18 | pm_shared.c:78 | Ducked hull Z min |
-| `VEC_DUCK_HULL_MAX` | 18 | pm_shared.c:79 | Ducked hull Z max |
-| `VEC_VIEW` | 28 | pm_shared.c:87 | Standing eye height offset |
-| `VEC_DUCK_VIEW` | 12 | pm_shared.c:80 | Ducked eye height offset |
+| `VEC_HULL_MIN` | -36 | util.h / pm_shared.h | Standing hull Z min |
+| `VEC_HULL_MAX` | 36 | util.h / pm_shared.h | Standing hull Z max |
+| `VEC_DUCK_HULL_MIN` | -18 | util.h / pm_shared.h | Ducked hull Z min |
+| `VEC_DUCK_HULL_MAX` | **32** | util.h / pm_shared.h | Ducked hull Z max (**asymmetric**) |
+| `VEC_VIEW` | **17** | util.h / pm_shared.h | Standing eye height offset (CS 1.6, not HL1's 28) |
+| `VEC_DUCK_VIEW` | 12 | util.h / pm_shared.h | Ducked eye height offset |
 | `STOP_EPSILON` | 0.1 | pm_shared.c:88 | Velocity threshold for zeroing |
 | `MAX_CLIMB_SPEED` | 200 | pm_shared.c:82 | Ladder speed cap |
 | `PLAYER_DUCKING_MULTIPLIER` | 0.333 | pm_shared.c:123 | Input scaling while ducked |
@@ -84,10 +84,12 @@ From `PM_PlayerMove()` (MOVETYPE_WALK, not in water, not on ladder):
 
 | State | Width (X/Y) | Height (Z) | Hull index |
 |-------|-------------|------------|------------|
-| Standing | 32 × 32 | 72 (from -36 to 36) | 0 |
-| Ducking | 32 × 32 | 36 (from -18 to 18) | 1 |
+| Standing | 32 × 32 | 72 (from -36 to +36) | 0 |
+| Ducking | 32 × 32 | **50** (from -18 to **+32**) | 1 |
 
-Hull is axis-aligned bounding box, centered on player origin. Origin is at hull center vertically.
+Hull is axis-aligned bounding box. Standing hull is symmetric (origin at center). **Ducked hull is asymmetric** — origin is NOT at hull center (center is at Z=7, origin is at Z=0). This matters for eye offset calculations when converting to a symmetric capsule (see A&D implementation notes in `movement_constants.gd`).
+
+**Source correction (2026-11-02):** Previous values (ducked height 36u, VEC_VIEW 28u) were from the Half-Life 1 SDK `pm_shared.c`. The CS 1.6 values differ and are authoritative: `VEC_DUCK_HULL_MAX = 32` and `VEC_VIEW = 17`, confirmed in ReGameDLL `dlls/util.h` and `pm_shared/pm_shared.h`.
 
 **Confidence:** Verified (source constants)
 
@@ -221,7 +223,7 @@ oldbuttons |= IN_JUMP               // mark jump consumed
 
 **Jump height derivation:** `sqrt(2 * gravity * height)` = `sqrt(2 * 800 * 45)` ≈ 268.33 u/s upward. This produces a jump height of exactly 45 units at `sv_gravity 800`.
 
-**Duck-jump:** Same jump velocity. The clearance gain comes from the hull shrinking from 72 to 36 units tall, giving 18 additional units of head clearance (from hull min changing from -36 to -18).
+**Duck-jump:** Same jump velocity. The clearance gain comes from the hull shrinking from 72 to 50 units tall (22u reduction). The hull top drops by 22u relative to feet, allowing the player to fit through shorter openings at peak height.
 
 **Anti-pogo:** Jump requires the key to be released and re-pressed between jumps (`oldbuttons & IN_JUMP` check). Holding jump does NOT auto-jump.
 
@@ -255,7 +257,7 @@ velocity *= fraction                // aggressive crop
 
 **State machine:**
 1. **Start duck:** `IN_DUCK` pressed → set `flDuckTime = 1000`, `bInDuck = true`
-2. **Transition:** Over `TIME_TO_DUCK` (0.4s), view height interpolates from 28 to 12 via spline
+2. **Transition:** Over `TIME_TO_DUCK` (0.4s), view height interpolates from 17 to 12 via spline (GoldSrc raw offsets from origin)
 3. **Complete duck:** When `flDuckTime/1000 <= 0.6` (i.e., 0.4s elapsed) OR in air: immediately finish duck
 4. **Ducking in air:** Completes instantly (no transition delay)
 
@@ -268,7 +270,7 @@ cmd.upmove      *= PLAYER_DUCKING_MULTIPLIER
 
 This means ducked movement input is 1/3 of normal. With knife (maxspeed 250), ducked effective wish speed is ~83 u/s.
 
-**Hull change:** Standing hull 0 (72 tall) → ducked hull 1 (36 tall). When ducking on the ground, origin shifts down by the hull min difference to keep feet on the ground.
+**Hull change:** Standing hull 0 (72 tall) → ducked hull 1 (50 tall). When ducking on the ground, origin shifts down by 18u (hull min difference: -18 − (−36) = 18) to keep feet on the ground. The hull top drops from origin+36 to origin−18+32 = origin+14, a 22u reduction in total height.
 
 **Confidence:** Verified (source code, lines 1920–2057)
 
@@ -345,8 +347,8 @@ Peak ground speed observed: 262.7 u/s — acceleration overshoot of ~5% above ma
 
 - Upward velocity: `sqrt(2 * 800 * 45)` ≈ 268.33 u/s
 - **Measured peak height (M04): 45.0 units** — exact match to source derivation
-- Duck-jump clearance: 45 + 18 = **63 units total** (jump height + hull shrink from bottom)
-- **Duck-jump trajectory (M05):** Identical to regular jump. The hull change (72→36) raises feet 18 units, providing extra clearance without changing the arc.
+- Duck-jump hull clearance: 50u ducked hull vs 72u standing = **22u less height needed** at any point in the arc
+- **Duck-jump trajectory (M05):** Identical to regular jump. The hull change (72→50) reduces total height by 22 units, providing extra headroom without changing the arc.
 
 **Jump distance (M16):**
 
@@ -397,7 +399,7 @@ This is why CS 1.6 stair movement feels smoother than most modern games — asce
 
 ### 9.10 Crouch spam / hitbox manipulation
 
-**Measured (M19):** Rapidly toggling crouch changes the hull height (72↔36) with **zero horizontal speed penalty**. The `PLAYER_DUCKING_MULTIPLIER` (0.333) only scales input, not existing velocity — so a player running at 250 u/s who taps crouch maintains 250 u/s.
+**Measured (M19):** Rapidly toggling crouch changes the hull height (72↔50) with **zero horizontal speed penalty**. The `PLAYER_DUCKING_MULTIPLIER` (0.333) only scales input, not existing velocity — so a player running at 250 u/s who taps crouch maintains 250 u/s.
 
 - Fastest spam cycle: ~310–413ms
 - Time spent ducked per tap: 100–208ms (avg 141ms)

@@ -28,7 +28,7 @@
 | test_bhop_preserves_speed | PASS | 250 → 250 u/s (first hop) |
 | test_bhop_degradation | PASS | 250 → 0 u/s after 6 hops |
 | test_step_up | PASS | Stepped smoothly |
-| test_duck_hull_shrink | PASS | 0.914m (expected 0.914) |
+| test_duck_hull_shrink | PASS | 1.270m (expected 1.270) — corrected from 0.914m (was using HL1 value) |
 
 ## Movement range sections tested
 

@@ -38,16 +38,18 @@ const STEP_SIZE := 18.0 * METERS_PER_UNIT  # 0.457 m
 # --- Hull dimensions ---
 # GoldSrc: standing hull height = 72 u (from -36 to 36)
 const HULL_STANDING_HEIGHT := 72.0 * METERS_PER_UNIT  # 1.829 m
-# GoldSrc: ducked hull height = 36 u (from -18 to 18)
-const HULL_DUCKING_HEIGHT := 36.0 * METERS_PER_UNIT  # 0.914 m
+# GoldSrc CS 1.6: ducked hull = 50u (asymmetric: -18 to +32, per ReGameDLL util.h)
+const HULL_DUCKING_HEIGHT := 50.0 * METERS_PER_UNIT  # 1.270 m
 # GoldSrc: hull width = 32 u (radius 16)
 const HULL_RADIUS := 16.0 * METERS_PER_UNIT  # 0.406 m → use capsule radius 0.35
 
-# --- Eye heights (offset from hull center) ---
-# GoldSrc: VEC_VIEW = 28 u
-const VIEW_OFFSET_STANDING := 28.0 * METERS_PER_UNIT  # 0.711 m
-# GoldSrc: VEC_DUCK_VIEW = 12 u
-const VIEW_OFFSET_DUCKING := 12.0 * METERS_PER_UNIT  # 0.305 m
+# --- Eye heights (offset from capsule center) ---
+# GoldSrc CS 1.6: VEC_VIEW = 17u (ReGameDLL util.h; HL1 SDK used 28u)
+# Standing eye from feet: 36 + 17 = 53u
+const VIEW_OFFSET_STANDING := 17.0 * METERS_PER_UNIT  # 0.432 m
+# GoldSrc CS 1.6: VEC_DUCK_VIEW = 12u from GoldSrc origin = 30u from feet
+# Symmetric capsule center is 25u from feet (half of 50u hull), so offset = 30 - 25 = 5u
+const VIEW_OFFSET_DUCKING := 5.0 * METERS_PER_UNIT  # 0.127 m
 
 # --- Ducking ---
 # GoldSrc: TIME_TO_DUCK = 0.4 s

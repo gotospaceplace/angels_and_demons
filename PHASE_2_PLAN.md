@@ -38,15 +38,15 @@ Scale factor: `1 Godot unit = 39.37 GoldSrc units`
 | GoldSrc | Value | Godot equivalent | Notes |
 |---------|-------|-------------------|-------|
 | Standing hull height | 72 u | 1.829 m | Matches existing 1.8m capsule |
-| Ducked hull height | 36 u | 0.914 m | |
-| Standing eye height | 28 u | 0.711 m | Offset from hull center |
-| Ducked eye height | 12 u | 0.305 m | |
+| Ducked hull height | 50 u | 1.270 m | Asymmetric: -18 to +32 (ReGameDLL util.h) |
+| Standing eye height | 17 u | 0.432 m | Offset from hull center (CS 1.6, not HL1's 28) |
+| Ducked eye height | 5 u | 0.127 m | 30u eye-from-feet − 25u capsule half-height |
 | sv_gravity | 800 u/s² | 20.32 m/s² | project.godot has 20.0 — close enough, use 20.32 |
 | Knife maxspeed | 250 u/s | 6.35 m/s | |
 | AK maxspeed | 221 u/s | 5.61 m/s | |
 | Jump upward velocity | 268.33 u/s | 6.81 m/s | |
 | Jump height | 45 u | 1.143 m | |
-| Duck-jump clearance | 63 u | 1.600 m | |
+| Duck-jump hull height | 50 u | 1.270 m | 22u shorter than standing (72u) |
 | sv_stopspeed | 75 u/s | 1.905 m/s | |
 | sv_stepsize | 18 u | 0.457 m | |
 | Air wishspd cap | 30 u/s | 0.762 m/s | |
@@ -156,12 +156,12 @@ CharacterBody3D (Player)
 
 ### WB4: Ducking (laptop)
 - [x] `handle_duck()` — state machine: start, transition (0.4s ground, instant air), complete
-- [x] Hull swap: standing (1.83m) ↔ ducked (0.914m)
-- [x] Eye height interpolation: standing (0.711m offset) → ducked (0.305m offset)
+- [x] Hull swap: standing (1.83m) ↔ ducked (1.270m)
+- [x] Eye height interpolation: standing (0.432m offset) → ducked (0.127m offset)
 - [x] Input scaling: `PLAYER_DUCKING_MULTIPLIER` (0.333) on forward/side move
-- [x] Duck-jump: instant duck in air, +0.457m foot clearance from hull shrink
+- [x] Duck-jump: instant duck in air, hull 22u shorter than standing
 - [x] Crouch spam: no horizontal speed penalty on rapid toggle
-- [x] Validate: duck-jump clears 1.6m gaps
+- [x] Validate: duck-jump clears gaps with 50u ducked hull
 - [x] Validate: ducked speed is ~1/3 of standing (~2.11 m/s with knife)
 - **Owner:** laptop
 

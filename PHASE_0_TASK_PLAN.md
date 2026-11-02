@@ -90,7 +90,7 @@ phase_0/
 - **Stairs/steps:** test `sv_stepsize` (default 18). Walk into steps of various heights, confirm step-up threshold.
 - **Slopes:** test slope sliding behavior, speed changes on ramps, whether steep slopes block movement.
 - **Ladders:** document ladder attachment, speed, detach behavior.
-- **Collision hulls:** standing (32x32x72), ducking (32x32x36) — verify in source, test with tight gaps in-game.
+- **Collision hulls:** standing (32x32x72), ducking (32x32x50, asymmetric -18 to +32) — verify in source, test with tight gaps in-game.
 - **Edge cases:** ceiling duck-jump clearance, getting stuck in geometry, ramp jumps.
 
 ### 2.4 Movement spec consolidation

@@ -87,33 +87,33 @@ func test_standing_hull_radius() -> void:
 
 
 func test_ducked_hull_height() -> void:
-	var expected := 36.0 * MC.METERS_PER_UNIT
+	var expected := 50.0 * MC.METERS_PER_UNIT
 	if _approx(MC.HULL_DUCKING_HEIGHT, expected, 0.001):
 		_pass("test_ducked_hull_height",
-			"%.4fm (36 GoldSrc units)" % MC.HULL_DUCKING_HEIGHT)
+			"%.4fm (50 GoldSrc units, asymmetric -18 to +32)" % MC.HULL_DUCKING_HEIGHT)
 	else:
 		_fail("test_ducked_hull_height",
-			"%.4fm, expected %.4fm (36u)" % [MC.HULL_DUCKING_HEIGHT, expected])
+			"%.4fm, expected %.4fm (50u)" % [MC.HULL_DUCKING_HEIGHT, expected])
 
 
 func test_view_offset_standing() -> void:
-	var expected := 28.0 * MC.METERS_PER_UNIT
+	var expected := 17.0 * MC.METERS_PER_UNIT
 	if _approx(MC.VIEW_OFFSET_STANDING, expected, 0.001):
 		_pass("test_view_offset_standing",
-			"%.4fm (28 GoldSrc units)" % MC.VIEW_OFFSET_STANDING)
+			"%.4fm (17 GoldSrc units, CS 1.6 VEC_VIEW)" % MC.VIEW_OFFSET_STANDING)
 	else:
 		_fail("test_view_offset_standing",
-			"%.4fm, expected %.4fm (28u)" % [MC.VIEW_OFFSET_STANDING, expected])
+			"%.4fm, expected %.4fm (17u)" % [MC.VIEW_OFFSET_STANDING, expected])
 
 
 func test_view_offset_ducking() -> void:
-	var expected := 12.0 * MC.METERS_PER_UNIT
+	var expected := 5.0 * MC.METERS_PER_UNIT
 	if _approx(MC.VIEW_OFFSET_DUCKING, expected, 0.001):
 		_pass("test_view_offset_ducking",
-			"%.4fm (12 GoldSrc units)" % MC.VIEW_OFFSET_DUCKING)
+			"%.4fm (5u: 30u eye-from-feet − 25u capsule half-height)" % MC.VIEW_OFFSET_DUCKING)
 	else:
 		_fail("test_view_offset_ducking",
-			"%.4fm, expected %.4fm (12u)" % [MC.VIEW_OFFSET_DUCKING, expected])
+			"%.4fm, expected %.4fm (5u)" % [MC.VIEW_OFFSET_DUCKING, expected])
 
 
 # --- Hitbox exclusion tests ---
