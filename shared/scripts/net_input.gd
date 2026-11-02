@@ -25,6 +25,7 @@ const BIT_WEAPON3  := 11
 const BIT_WEAPON4  := 12
 const BIT_USE      := 13
 const BIT_WEAPON5  := 14
+const BIT_WALK     := 15
 
 var tick: int = 0
 var buttons: int = 0

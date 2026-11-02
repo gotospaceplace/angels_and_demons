@@ -19,6 +19,7 @@ var jump_was_pressed := false
 var scroll_jump_queued := false
 var test_driven := false
 var is_local_client := false
+var wants_walk := false
 
 # Ducking
 var is_ducked := false
@@ -96,6 +97,9 @@ func _physics_process(delta: float) -> void:
 func simulate_tick(delta: float) -> void:
 	_handle_ducking(delta)
 
+	if wants_walk:
+		wish_speed = minf(wish_speed, MC.WALK_SPEED_CAP)
+
 	if is_ducked:
 		wish_speed *= MC.DUCKING_MULTIPLIER
 
@@ -142,7 +146,7 @@ func simulate_tick(delta: float) -> void:
 	if is_local_client and not test_driven and has_node("/root/SoundManager"):
 		var has_input := wish_dir.length_squared() > 0.001
 		var h_speed := Vector3(velocity.x, 0, velocity.z).length() if has_input and not is_ducked else 0.0
-		SoundManager.update_footsteps(delta, on_ground, h_speed, on_ladder, false)
+		SoundManager.update_footsteps(delta, on_ground, h_speed, on_ladder, false, wants_walk)
 
 func _read_input() -> void:
 	if test_driven:
@@ -168,6 +172,7 @@ func _read_input() -> void:
 	jump_was_pressed = jump_pressed
 	jump_pressed = Input.is_action_pressed("jump")
 	wants_duck = Input.is_action_pressed("duck")
+	wants_walk = Input.is_action_pressed("walk")
 
 func _handle_ducking(delta: float) -> void:
 	if wants_duck and not is_ducked:
@@ -620,7 +625,7 @@ func _process(delta: float) -> void:
 
 func apply_network_input(yaw_deg: float, pitch_deg: float,
 		fwd: bool, back: bool, left: bool, right_btn: bool,
-		jump: bool, duck: bool) -> void:
+		jump: bool, duck: bool, walk: bool = false) -> void:
 	rotation.y = deg_to_rad(yaw_deg)
 	head.rotation.x = clampf(deg_to_rad(pitch_deg), -PI / 2.0, PI / 2.0)
 
@@ -649,3 +654,4 @@ func apply_network_input(yaw_deg: float, pitch_deg: float,
 	jump_was_pressed = jump_pressed
 	jump_pressed = jump
 	wants_duck = duck
+	wants_walk = walk
