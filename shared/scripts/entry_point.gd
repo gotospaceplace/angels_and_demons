@@ -34,6 +34,10 @@ func _ready() -> void:
 		print("EntryPoint: launching round lifecycle test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/round_lifecycle_test_scene.tscn")
 		return
+	if "--test-objective" in args:
+		print("EntryPoint: launching portal objective test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/objective_test_scene.tscn")
+		return
 	if "--test-spawn" in args:
 		print("EntryPoint: launching spawn system test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/spawn_test_scene.tscn")

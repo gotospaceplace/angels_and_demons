@@ -37,6 +37,10 @@ func can_player_fire(_peer_id: int) -> bool: return true
 func can_player_move(_peer_id: int) -> bool: return true
 func on_player_movement(_peer_id: int, _position: Vector3, _velocity: Vector3) -> void: pass
 
+# --- Use key interaction ---
+func on_player_use(_peer_id: int, _position: Vector3, _delta: float) -> void: pass
+func on_player_use_release(_peer_id: int) -> void: pass
+
 # --- Economy (raised by economy-aware plugins) ---
 func on_money_change(_peer_id: int, _old_amount: int, _new_amount: int) -> void: pass
 func can_purchase(_peer_id: int, _item: StringName, _price: int) -> bool: return true
