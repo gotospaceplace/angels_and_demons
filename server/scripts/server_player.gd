@@ -220,6 +220,17 @@ func respawn(spawn_pos: Vector3) -> void:
 		collision.disabled = false
 
 
+func teleport_to_spawn(spawn_pos: Vector3) -> void:
+	hp = 100
+	fire_pressed = false
+	next_fire_tick = 0
+	is_reloading = false
+	reload_pressed = false
+	input_buffer.clear()
+	body.global_position = spawn_pos
+	body.velocity = Vector3.ZERO
+
+
 func destroy() -> void:
 	if body and is_instance_valid(body):
 		body.queue_free()

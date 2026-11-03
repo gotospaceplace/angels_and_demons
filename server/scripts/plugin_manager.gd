@@ -52,6 +52,12 @@ func get_client_state() -> Dictionary:
 	return {}
 
 
+func set_map_spawns(angels_spawns: Array[Vector3], demons_spawns: Array[Vector3]) -> void:
+	for p in plugins:
+		if p.has_method("load_map_spawns"):
+			p.load_map_spawns(angels_spawns, demons_spawns)
+
+
 # --- Hook dispatch ---
 # Void hooks: all plugins called in load order
 # Bool hooks: all called, ANY false blocks the action
