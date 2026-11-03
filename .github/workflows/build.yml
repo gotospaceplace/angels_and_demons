@@ -130,6 +130,9 @@ jobs:
       - name: Buy menu tests
         run: timeout 30 godot --headless --path . -- --test-buymenu
 
+      - name: HUD tests
+        run: timeout 30 godot --headless --path . -- --test-hud
+
       - name: Validation tests
         run: timeout 30 godot --headless --path . -- --test-validation
 
