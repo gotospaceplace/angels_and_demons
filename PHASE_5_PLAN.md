@@ -2,40 +2,42 @@
 **Status:** Not started | **Version:** 1.0 | **Date:** 2026-11-02
 
 ## Scope
-Implement the full competitive match ruleset: two-team structure, objective-based rounds (bomb plant/defuse), economy and buy system, freeze/buy period, round lifecycle and win conditions, spectator mode, walk mechanic (MP-002), and match management — producing a complete, configurable, playable 5v5 match on a single gray-box map using the networking and combat systems from Phases 2–4.
+Implement the full competitive match ruleset: two-team structure, objective-based rounds (portal activation — catalyst/relic), economy and buy system, freeze/buy period, round lifecycle and win conditions, spectator mode, walk mechanic (MP-002), and match management — producing a complete, playable 5v5 match on a single gray-box map using the networking and combat systems from Phases 2–4. All servers are hosted by us; players create lobbies through the client.
 
 ### In scope
 - Two teams: Angels (defense) and Demons (attack), swappable per-map
 - Team selection flow: join screen or auto-assign at connect
 - MR12 format: first to 13 rounds, 12 per half, side switch at halftime
 - Round lifecycle: freeze time → buy time → live round → round end → reset
-- Bomb objective: plant site zones, plant/defuse interaction, bomb timer, detonation/defuse win
+- Portal objective: portal sites, catalyst activation/relic disruption, activation timer, portal open/sealed win
 - Economy system: starting money, round win/loss rewards, loss bonus escalation, kill rewards
 - Buy menu: weapon/grenade/armor purchasing during buy period within buy zone
 - Spawn system: per-team spawn zones, freeze during freeze time
 - **MP-002: Walk mechanic** — `+speed` key caps movement to ≤140 u/s for silent, accurate movement
 - Spectator mode: free-cam and first-person follow after death (team-only in competitive)
-- Win conditions: elimination, bomb detonation, bomb defuse, timer expiry
+- Win conditions: elimination, portal opened (attack), portal sealed (defense), timer expiry
 - Match lifecycle: warmup → half 1 → halftime → half 2 → overtime or match end
 - Round timer with HUD display
 - Kill rewards per weapon type (knife bonus, SMG bonus, AWP penalty)
-- Configurable match parameters (round time, freeze time, starting money, all economy values)
+- Server-side match parameters (round time, freeze time, starting money, all economy values)
 - Team-based scoreboard (extending Phase 4 scoreboard with teams, money, rounds won)
 - Chat system: team chat and all chat
 - Match state synchronization: all clients see consistent round state, economy, timers
+- Hosted-lobby model: players create lobbies from the client, we control all servers
+- Platform layer: global stats, rankings, anti-cheat telemetry, player reporting (always-on)
 - Regression tests for round lifecycle, economy, buy rules, walk mechanic
 
 ### Not in scope
 - Art models, character skins, buy menu UI polish (Phase 6)
-- Lore-specific objective items per map (Phase 6 — use generic "bomb" placeholder)
+- Lore-specific portal items per faction (Phase 6 — use placeholder catalyst/relic models)
 - Full map roster (Phase 6+)
-- Matchmaking, ELO, ranking (post-launch)
+- Matchmaking, ELO, ranking (post-launch — but hosted model enables this)
 - Competitive spectator restrictions (anti-ghosting, observer delay) — basic spectating only
 - Voice chat
-- Vote system (vote kick, vote map)
 - Overtime rules beyond simple extension (tournament configs deferred)
 - Bot AI for filling empty slots
 - Tournament/match server mode (GOTV equivalent)
+- Community-hosted servers (all servers are ours)
 
 ---
 
@@ -68,13 +70,13 @@ All timers are server-authoritative and broadcast to clients each snapshot.
 | Starting money | $800 | Classic CS, forces pistol round |
 | Max money | $16000 | CS 1.6 standard |
 | Round win (elimination) | $3250 | Slightly above CS 1.6's $3250 — standard |
-| Round win (bomb detonation) | $3500 | Attackers rewarded for completing objective |
-| Round win (bomb defuse) | $3500 | Defenders rewarded for completing objective |
+| Round win (portal opened) | $3500 | Attackers rewarded for completing objective |
+| Round win (portal sealed) | $3500 | Defenders rewarded for completing objective |
 | Round win (time expiry) | $3250 | Defense wins on timer |
 | Round loss (base) | $1400 | First consecutive loss |
 | Loss bonus escalation | +$500 per consecutive loss | $1400, $1900, $2400, $2900, $3400 (max) |
 | Loss bonus reset | On round win | Winning resets loss streak to 0 |
-| Bomb plant bonus | $800 (attacker team, all alive) | Reward for site take even if round lost |
+| Catalyst activation bonus | $800 (attacker team, all alive) | Reward for site take even if round lost |
 | Kill reward (rifle) | $300 | Standard |
 | Kill reward (SMG) | $600 | Incentivizes eco-round SMG buys |
 | Kill reward (sniper) | $100 | AWP economy penalty (CS-standard) |
@@ -92,23 +94,35 @@ All values are server-configurable. MR12's shorter halves mean economy pressure 
 - Cannot buy enemy team's exclusive weapons (attack rifle on defense, etc.)
 - Cannot buy if insufficient funds
 - Cannot buy duplicate weapons in same slot (replaces current)
+- Relic (defense only, $400): reduces portal seal time from 10s to 5s
 - Dropped weapons can be picked up (use key on ground weapon)
 - Weapons persist across rounds if player survives; reset to knife + starter pistol on death
 - Armor persists across rounds if player survives; can "top up" armor in buy menu
 
-### Decision 4: Bomb objective
+### Decision 4: Portal objective (catalyst / relic)
 
-- Two bomb sites per map (A and B), marked with Area3D trigger zones
-- One attacker spawns with the bomb (random selection per round, configurable)
-- Plant interaction: hold use key for 3.5s while in bomb site zone and on ground
-- Cannot plant while jumping, on ladder, or in air
-- Bomb timer: 40s from plant to detonation (configurable)
-- Defuse interaction: hold use key for 10s (5s with defuse kit, configurable)
-- Cannot defuse while jumping or in air
-- Bomb dropped on carrier death — any attacker can pick it up
-- If bomb is planted, round timer is paused — round ends on detonation or defuse
-- Bomb visual: placeholder cube with blinking light
-- Bomb audio: beeping that accelerates as timer approaches zero (placeholder)
+The objective replaces CS's bomb mechanic with portal activation. The attack team carries a **catalyst** to a portal site to open a portal; the defense team guards a **relic** that can seal the portal. Mechanically similar to plant/defuse, but thematically tied to the Angels vs Demons fiction.
+
+**Faction items (not final, but direction):**
+| Faction | Catalyst (attack) | Relic (defense) |
+|---------|-------------------|-----------------|
+| Angels | Divine Seal | The Last Rites |
+| Demons | Infernal Skull | Black Grimoire |
+
+The catalyst and relic should be simple, visually distinct objects that read clearly on the ground and are easy to model.
+
+**Mechanics:**
+- Two portal sites per map (A and B), marked with Area3D trigger zones
+- One attacker spawns with the catalyst (random selection per round)
+- Activate interaction: hold use key for 3.5s while in portal site zone and on ground
+- Cannot activate while jumping, on ladder, or in air
+- Portal timer: 40s from activation to portal opening (configurable)
+- Seal interaction: hold use key for 10s (5s with relic equipped, configurable)
+- Cannot seal while jumping or in air
+- Catalyst dropped on carrier death — any attacker can pick it up
+- If catalyst is activated, round timer is paused — round ends on portal open or sealed
+- Catalyst visual: placeholder glowing cube (faction-specific model in Phase 6)
+- Catalyst audio: pulsing sound that accelerates as timer approaches zero (placeholder)
 
 ### Decision 5: Walk mechanic (MP-002) — `+speed` as walk toggle
 
@@ -164,16 +178,30 @@ Duck-walking already stays below 140 u/s (ducked = 0.333× maxspeed ≈ 83 u/s f
 
 ### Design goals
 
-The core engine provides **primitives only**: movement, combat, networking, player lifecycle, and a plugin API. All game mode logic — deathmatch, competitive, PUG, custom modes — lives in server-side plugins. This means:
+The core engine provides **primitives only**: movement, combat, networking, player lifecycle, and a plugin API. All game mode logic — deathmatch, competitive, PUG — lives in server-side plugins. This means:
 
 - **No hardcoded game modes** in the engine. The current deathmatch behavior in `server_game.gd` is extracted into `plugin_deathmatch.gd`.
-- **Competitive rules** (rounds, economy, bomb, teams) are `plugin_competitive.gd`, not engine code.
+- **Competitive rules** (rounds, economy, portal objective, teams) are `plugin_competitive.gd`, not engine code.
 - **Cross-cutting features** (voting, admin tools, chat moderation) are independent plugins that work with any mode.
-- **Server operators** pick a mode plugin + optional feature plugins via config. Community can write custom plugins in GDScript.
+- **All servers are hosted by us.** Players create lobbies from the client — pick a mode, pick a map, invite friends or go public. No community servers, no server binaries to distribute.
+
+### Three-tier architecture
+
+| Tier | Multiplicity | Controlled by | Examples |
+|------|-------------|---------------|----------|
+| **Platform** | Always-on, mandatory | Us (baked into server) | Global stats, rankings, anti-cheat, player reporting, analytics |
+| **Mode** | Exactly one per lobby | Player picks at lobby creation | Deathmatch, competitive, PUG |
+| **Feature** | Zero or more per lobby | Toggled in lobby settings | Vote, admin tools, chat |
+
+**Platform layer** is not a plugin — it's core server infrastructure that runs on every lobby. It has full access to all combat hooks for anti-cheat analysis (kill rate vs fire rate, aim snap detection, headshot % over rolling windows, pre-aim tracking through walls). Since we host all servers, the platform layer has ground truth on every player at 128 Hz. Stats accumulate across lobbies for global rankings and cross-lobby suspicious behavior detection.
+
+**Mode plugins** use the same `GamePlugin` base class and hook system described below, but exactly one must be active. The player selects the mode when creating a lobby.
+
+**Feature plugins** stack on top of any mode. Lobby settings expose toggles for optional features (vote system, etc.).
 
 ### Analogy
 
-Like CS 1.6's architecture: the HL engine provides physics/rendering/networking, `cstrike` is the game mode DLL, and AMX Mod X plugins hook into both. Here, the engine is the Godot project (Phases 1–4), game mode plugins replace the `cstrike` DLL, and feature plugins replace AMXX.
+Like CS 1.6's architecture: the HL engine provides physics/rendering/networking, `cstrike` is the game mode DLL, and AMX Mod X plugins hook into both. Here, the engine is the Godot project (Phases 1–4), game mode plugins replace the `cstrike` DLL, and feature plugins replace AMXX. The platform layer is like VAC — always present, not optional.
 
 ### Plugin base class
 
@@ -192,8 +220,8 @@ func on_unload() -> void: pass
 func on_map_load(map_name: String) -> void: pass
 func on_tick(tick: int, delta: float) -> void: pass
 
-# --- Cvar registration (called once at load) ---
-func register_cvars(cvar: CvarRegistry) -> void: pass
+# --- Settings registration (called once at load) ---
+func register_settings(config: MatchConfig) -> void: pass
 
 # --- Player lifecycle ---
 func on_player_connect(peer_id: int) -> bool: return true       # false = deny
@@ -219,14 +247,14 @@ func on_money_change(peer_id: int, old_amount: int, new_amount: int) -> void: pa
 func can_purchase(peer_id: int, item: StringName, price: int) -> bool: return true
 func on_purchase(peer_id: int, item: StringName, price: int) -> void: pass
 
-# --- Bomb (raised by bomb-aware plugins) ---
-func on_bomb_plant_start(peer_id: int, site: StringName) -> bool: return true  # false = block
-func on_bomb_planted(peer_id: int, site: StringName, position: Vector3) -> void: pass
-func on_bomb_defuse_start(peer_id: int) -> bool: return true
-func on_bomb_defused(peer_id: int) -> void: pass
-func on_bomb_detonated(position: Vector3) -> void: pass
-func on_bomb_dropped(position: Vector3) -> void: pass
-func on_bomb_picked_up(peer_id: int) -> void: pass
+# --- Portal objective (raised by objective-aware plugins) ---
+func on_catalyst_activate_start(peer_id: int, site: StringName) -> bool: return true  # false = block
+func on_catalyst_activated(peer_id: int, site: StringName, position: Vector3) -> void: pass
+func on_portal_seal_start(peer_id: int) -> bool: return true
+func on_portal_sealed(peer_id: int) -> void: pass
+func on_portal_opened(position: Vector3) -> void: pass
+func on_catalyst_dropped(position: Vector3) -> void: pass
+func on_catalyst_picked_up(peer_id: int) -> void: pass
 
 # --- Round lifecycle (raised by round-based plugins) ---
 func on_round_start(round_number: int) -> void: pass
@@ -257,10 +285,10 @@ func get_client_state() -> Dictionary: return {}  # custom state broadcast to cl
 class_name PluginManager extends Node
 
 var plugins: Array[GamePlugin] = []
-var cvar_registry: CvarRegistry
+var match_config: MatchConfig
 
 func load_plugin(plugin: GamePlugin) -> void:
-    plugin.register_cvars(cvar_registry)
+    plugin.register_settings(match_config)
     plugin.on_load(self)
     plugins.append(plugin)
 
@@ -277,18 +305,20 @@ func unload_plugin(plugin: GamePlugin) -> void:
 - **Modifier hooks** (`on_player_damage` → returns damage): plugins chain — output of one feeds into the next. Load order matters here (mode plugin first, then modifiers).
 - **Provider hooks** (`get_spawn_position`): first non-default return wins. Mode plugin should be first in load order.
 
-### Cvar system
+### Match settings
 
-Server-configurable variables (like CS's `mp_roundtime`, `mp_freezetime`, etc.) that plugins register and the server operator overrides via config file or console.
+Since we host all servers, there is no `server.cfg`. Mode plugins define their own defaults, and a small subset of settings are exposed to the lobby creator through the client UI.
+
+Each mode plugin registers its settings at load time. The server reads the lobby configuration (mode, map, player-facing overrides) from the lobby creation request — not from a file.
 
 ```gdscript
-# shared/scripts/cvar_registry.gd
-class_name CvarRegistry extends RefCounted
+# server/scripts/match_config.gd
+class_name MatchConfig extends RefCounted
 
-var _cvars: Dictionary = {}   # name → {value, default, type, description, plugin}
+var _settings: Dictionary = {}   # name → {value, default, type, description, plugin}
 
 func register(name: String, default_value: Variant, description: String, plugin: StringName) -> void:
-    _cvars[name] = {
+    _settings[name] = {
         "value": default_value,
         "default": default_value,
         "type": typeof(default_value),
@@ -297,8 +327,8 @@ func register(name: String, default_value: Variant, description: String, plugin:
     }
 
 func get_value(name: String) -> Variant:
-    if _cvars.has(name):
-        return _cvars[name]["value"]
+    if _settings.has(name):
+        return _settings[name]["value"]
     return null
 
 func get_int(name: String) -> int: return int(get_value(name))
@@ -306,48 +336,32 @@ func get_float(name: String) -> float: return float(get_value(name))
 func get_bool(name: String) -> bool: return bool(get_value(name))
 
 func set_value(name: String, value: Variant) -> bool:
-    if not _cvars.has(name):
+    if not _settings.has(name):
         return false
-    _cvars[name]["value"] = value
+    _settings[name]["value"] = value
     return true
 
-func load_config(path: String) -> void:
-    # Load from server.cfg: "mp_roundtime 115" per line
-    var file := FileAccess.open(path, FileAccess.READ)
-    if not file: return
-    while not file.eof_reached():
-        var line := file.get_line().strip_edges()
-        if line.is_empty() or line.begins_with("#") or line.begins_with("//"):
-            continue
-        var parts := line.split(" ", false, 1)
-        if parts.size() == 2 and _cvars.has(parts[0]):
-            _apply_typed(parts[0], parts[1])
+func apply_lobby_overrides(overrides: Dictionary) -> void:
+    # Apply player-selected settings from lobby creation
+    for key in overrides:
+        if _settings.has(key):
+            _settings[key]["value"] = overrides[key]
 
-func list_cvars() -> Array[Dictionary]:
-    # For console "cvarlist" command
+func list_settings() -> Array[Dictionary]:
     var result: Array[Dictionary] = []
-    for name in _cvars:
-        result.append({"name": name, "value": _cvars[name]["value"],
-            "default": _cvars[name]["default"], "description": _cvars[name]["description"]})
+    for name in _settings:
+        result.append({"name": name, "value": _settings[name]["value"],
+            "default": _settings[name]["default"], "description": _settings[name]["description"]})
     return result
 ```
 
-**Server config file** (`server.cfg`):
-```
-# Game mode plugin (only one active)
-game_plugin competitive
-
-# Optional feature plugins (loaded in order after mode plugin)
-plugin vote
-plugin admin_tools
-
-# Cvar overrides
-mp_roundtime 115
-mp_freezetime 5
-mp_startmoney 800
-mp_maxrounds 24
-mp_buytime 15
-```
+**Lobby creation flow:**
+1. Player opens "Create Lobby" in client
+2. Picks mode (Deathmatch / Competitive / PUG)
+3. Picks map
+4. Optionally adjusts exposed settings (round time, friendly fire, max players)
+5. Lobby visibility: Private (invite-only) or Public (listed in browser)
+6. Client sends lobby request → our servers spin up an instance with that config
 
 ### How server_game.gd changes
 
@@ -369,6 +383,7 @@ Before (hardcoded FFA):
 
 After (plugin-driven):
   on_kill → plugin_manager.on_player_kill(killer, victim, weapon, headshot)
+    → platform layer: records kill stats, anti-cheat analysis
     → deathmatch plugin: just counts kills
     → competitive plugin: awards kill money, checks elimination win
 ```
@@ -381,7 +396,7 @@ After (plugin-driven):
 | `_process_respawns()` | `can_player_respawn()` | Block respawn during live rounds |
 | `_process_fire_commands()` → damage | `on_player_damage()` | Friendly fire rules, armor |
 | `_process_fire_commands()` → kill | `on_player_kill()`, `on_player_death()` | Economy rewards, elimination check |
-| `_physics_process()` tick | `on_tick()` | Round timer, freeze timer, bomb timer |
+| `_physics_process()` tick | `on_tick()` | Round timer, freeze timer, portal timer |
 | `_on_console_command()` | `on_console_command()` | Mode-specific commands |
 
 ### Client-side mode loading
@@ -400,13 +415,13 @@ Mode "competitive" → client loads:
   - Round timer HUD
   - Money display
   - Buy menu
-  - Bomb status indicators
+  - Portal status indicators
   - Spectator camera
   - Team selection screen
   - Freeze-time overlay
 ```
 
-The server broadcasts custom match state (round number, timer, bomb state, team scores) via a new reliable event type (`EVT_MATCH_STATE`). Client UI modules read this — they don't need to know the plugin internals.
+The server broadcasts custom match state (round number, timer, portal state, team scores) via a new reliable event type (`EVT_MATCH_STATE`). Client UI modules read this — they don't need to know the plugin internals.
 
 ```gdscript
 # New event subtype
@@ -414,23 +429,33 @@ const EVT_MATCH_STATE := 7
 
 # Broadcast by competitive plugin every state change
 # Format: match_state(u8) + round_number(u8) + round_timer(f32) +
-#          angels_score(u8) + demons_score(u8) + bomb_state(u8) + bomb_timer(f32)
+#          angels_score(u8) + demons_score(u8) + portal_state(u8) + portal_timer(f32)
 ```
 
 ### Built-in plugins
 
-**Shipped with the game (in `plugins/` directory):**
-
-| Plugin | Type | Description |
+| Plugin | Tier | Description |
 |--------|------|-------------|
+| Platform layer (core) | Platform | Global stats, rankings, anti-cheat telemetry, player reporting, analytics — always on, not a plugin file |
 | `plugin_deathmatch.gd` | Mode | FFA respawn, frag limit, time limit — extracts current Phase 4 behavior |
-| `plugin_competitive.gd` | Mode | MR12 rounds, teams, economy, bomb, freeze/buy, spectator |
+| `plugin_competitive.gd` | Mode | MR12 rounds, teams, economy, portal objective, freeze/buy, spectator |
 | `plugin_pug.gd` | Mode | Extends competitive: ready-up, captain pick, map vote, knife round |
 | `plugin_vote.gd` | Feature | Generic vote system (kick, map, restart, pause) — any mode |
-| `plugin_admin.gd` | Feature | Admin commands (slap, slay, ban, team swap) — any mode |
 | `plugin_chat.gd` | Feature | Team/all chat, dead chat rules, rate limiting |
 
-**Only one mode plugin active at a time.** Feature plugins stack on top of any mode.
+**Only one mode plugin active at a time.** Feature plugins stack on top of any mode. The platform layer runs on every lobby regardless of mode.
+
+### Anti-cheat (platform layer)
+
+The platform layer sits on the same combat hooks as plugins but runs before them and cannot be disabled. Since we host all servers, it has ground truth at 128 Hz:
+
+- **Kill rate vs weapon fire rate** — a scout ace 3 seconds into a round is physically impossible
+- **Headshot percentage** — rolling window across rounds and lobbies; 100% over 20 rounds is a signal
+- **Aim snap speed** — inhuman flick between two kills (crosshair velocity between `on_player_kill` events)
+- **Pre-aim through walls** — crosshair tracking a player before they are visible (comparing aim direction with enemy positions from snapshots)
+- **Cross-lobby accumulation** — flagged in multiple separate lobbies is a stronger signal than one weird round
+
+Data feeds into a central service for review and automated action (shadow bans, restrictions, permanent bans).
 
 ### Plugin-to-plugin communication
 
@@ -463,52 +488,61 @@ func on_load(manager: PluginManager) -> void:
 plugins/
 ├── game_plugin.gd             # Base class (shared/scripts/)
 ├── plugin_manager.gd          # Manager (server/scripts/)
-├── cvar_registry.gd           # Cvar system (shared/scripts/)
+├── match_config.gd            # Match settings registry (server/scripts/)
 ├── modes/
 │   ├── plugin_deathmatch.gd   # FFA deathmatch (extracted from server_game.gd)
 │   └── plugin_competitive.gd  # Competitive MR12
 │       ├── competitive_economy.gd    # Economy calculations (internal module)
 │       ├── competitive_rounds.gd     # Round state machine (internal module)
-│       ├── competitive_bomb.gd       # Bomb logic (internal module)
+│       ├── competitive_objective.gd  # Portal activation logic (internal module)
 │       ├── competitive_teams.gd      # Team management (internal module)
 │       └── competitive_spawns.gd     # Team-based spawning (internal module)
 └── features/
     ├── plugin_vote.gd          # Vote system
-    ├── plugin_admin.gd         # Admin tools
     └── plugin_chat.gd          # Chat system
+
+server/scripts/
+└── platform/
+    ├── platform_stats.gd       # Global stats collection, ranking feed
+    ├── platform_anticheat.gd   # Combat analysis, aim snap detection, cross-lobby flagging
+    └── platform_reporting.gd   # Player report handling, feedback loop
 ```
 
 The competitive plugin uses **internal modules** for organization, but they are not independent plugins — they're helper classes that `plugin_competitive.gd` owns and orchestrates. This keeps the competitive ruleset cohesive while the code stays navigable.
 
-### Cvar reference (competitive plugin)
+The platform layer lives in `server/scripts/platform/` — it's core infrastructure, not a plugin. It hooks into the same dispatch as plugins but runs first and cannot be unloaded.
 
-| Cvar | Default | Description |
-|------|---------|-------------|
-| `mp_roundtime` | 115 | Round time in seconds (1:55) |
-| `mp_freezetime` | 5 | Freeze time in seconds |
-| `mp_buytime` | 15 | Buy period in seconds from round start |
-| `mp_startmoney` | 800 | Starting money |
-| `mp_maxmoney` | 16000 | Maximum money cap |
-| `mp_maxrounds` | 24 | Total rounds (MR12 = 24) |
-| `mp_halftime` | 12 | Round to trigger halftime |
-| `mp_win_reward_elimination` | 3250 | Reward for elimination win |
-| `mp_win_reward_bomb` | 3500 | Reward for bomb detonation/defuse win |
-| `mp_win_reward_time` | 3250 | Reward for timer expiry win |
-| `mp_loss_base` | 1400 | First consecutive loss reward |
-| `mp_loss_escalation` | 500 | Per-loss bonus increase |
-| `mp_loss_max` | 3400 | Maximum loss bonus |
-| `mp_bomb_timer` | 40 | Bomb detonation timer in seconds |
-| `mp_plant_time` | 3.5 | Plant interaction time in seconds |
-| `mp_defuse_time` | 10.0 | Defuse time without kit |
-| `mp_defuse_time_kit` | 5.0 | Defuse time with kit |
-| `mp_bomb_plant_reward` | 800 | Plant bonus for surviving attackers |
-| `mp_friendlyfire` | 0 | Friendly fire enabled (0/1) |
-| `mp_autoteambalance` | 1 | Auto team balance (0/1) |
-| `mp_warmup_time` | 60 | Warmup duration in seconds |
-| `mp_min_players` | 2 | Minimum players to start match |
+### Match settings reference (competitive plugin)
 
-| Cvar | Default | Description |
-|------|---------|-------------|
+These are the mode's internal defaults. A small subset (marked with ★) are exposed to the lobby creator in the client UI.
+
+| Setting | Default | Lobby-exposed | Description |
+|---------|---------|:---:|-------------|
+| `mp_roundtime` | 115 | ★ | Round time in seconds (1:55) |
+| `mp_freezetime` | 5 | | Freeze time in seconds |
+| `mp_buytime` | 15 | | Buy period in seconds from round start |
+| `mp_startmoney` | 800 | | Starting money |
+| `mp_maxmoney` | 16000 | | Maximum money cap |
+| `mp_maxrounds` | 24 | ★ | Total rounds (MR12 = 24) |
+| `mp_halftime` | 12 | | Round to trigger halftime |
+| `mp_win_reward_elimination` | 3250 | | Reward for elimination win |
+| `mp_win_reward_objective` | 3500 | | Reward for portal open/sealed win |
+| `mp_win_reward_time` | 3250 | | Reward for timer expiry win |
+| `mp_loss_base` | 1400 | | First consecutive loss reward |
+| `mp_loss_escalation` | 500 | | Per-loss bonus increase |
+| `mp_loss_max` | 3400 | | Maximum loss bonus |
+| `mp_portal_timer` | 40 | | Portal activation timer in seconds |
+| `mp_activate_time` | 3.5 | | Catalyst activation time in seconds |
+| `mp_seal_time` | 10.0 | | Seal time without relic |
+| `mp_seal_time_relic` | 5.0 | | Seal time with relic equipped |
+| `mp_catalyst_reward` | 800 | | Activation bonus for surviving attackers |
+| `mp_friendlyfire` | 0 | ★ | Friendly fire enabled (0/1) |
+| `mp_autoteambalance` | 1 | | Auto team balance (0/1) |
+| `mp_warmup_time` | 60 | | Warmup duration in seconds |
+| `mp_min_players` | 2 | ★ | Minimum players to start match |
+
+| Setting | Default | Description |
+|---------|---------|-------------|
 | `mp_kill_reward_rifle` | 300 | Kill reward: rifle |
 | `mp_kill_reward_smg` | 600 | Kill reward: SMG |
 | `mp_kill_reward_sniper` | 100 | Kill reward: sniper |
@@ -516,11 +550,11 @@ The competitive plugin uses **internal modules** for organization, but they are 
 | `mp_kill_reward_knife` | 1500 | Kill reward: knife |
 | `mp_kill_reward_grenade` | 300 | Kill reward: grenade |
 
-| Cvar (deathmatch) | Default | Description |
-|------|---------|-------------|
-| `dm_fraglimit` | 50 | Frag limit to win |
-| `dm_timelimit` | 600 | Time limit in seconds |
-| `dm_respawn_delay` | 3.0 | Respawn delay in seconds |
+| Setting (deathmatch) | Default | Lobby-exposed | Description |
+|------|---------|:---:|-------------|
+| `dm_fraglimit` | 50 | ★ | Frag limit to win |
+| `dm_timelimit` | 600 | ★ | Time limit in seconds |
+| `dm_respawn_delay` | 3.0 | | Respawn delay in seconds |
 
 ---
 
@@ -534,15 +568,15 @@ Server (server_match.gd):
   round_number: int
   rounds_won: {team_angels: int, team_demons: int}
   round_timer: float
-  bomb_state: enum {CARRIED, DROPPED, PLANTING, PLANTED, DEFUSING, DETONATED, DEFUSED}
-  bomb_timer: float
+  portal_state: enum {CATALYST_CARRIED, CATALYST_DROPPED, ACTIVATING, ACTIVATED, SEALING, PORTAL_OPENED, PORTAL_SEALED}
+  portal_timer: float
   economy: Dictionary[int, PlayerEconomy]  # peer_id → money, loss_streak
 
   _physics_process(delta):
     match match_state:
       WARMUP: check player count, transition to FREEZE when ready
       FREEZE: tick freeze timer, allow buying
-      LIVE: tick round timer, process bomb state, check win conditions
+      LIVE: tick round timer, process portal state, check win conditions
       ROUND_OVER: tick celebration timer, compute economy, transition
       HALFTIME: swap teams, reset economy, transition to FREEZE
       MATCH_OVER: broadcast final scores
@@ -553,34 +587,38 @@ Server (server_match.gd):
 ```
 shared/scripts/
 ├── game_plugin.gd             # Base class for all server plugins
-├── cvar_registry.gd           # Server-configurable variable system
+├── match_config.gd            # Match settings registry (replaces cvar_registry)
 ├── team.gd                    # Team enum, team utilities
-└── bomb.gd                    # Bomb entity (plant/defuse interaction, timer)
+└── catalyst.gd                # Catalyst/relic entity (activate/seal interaction, timer)
 
 server/scripts/
-├── plugin_manager.gd          # Loads plugins, dispatches hooks, manages cvars
+├── plugin_manager.gd          # Loads plugins, dispatches hooks, manages match config
 ├── server_game.gd             # Thin shell: drives plugin hooks at each decision point (refactored)
-└── server_console.gd          # Console I/O (existing, extended with cvarlist/plugin cmds)
+├── server_console.gd          # Console I/O (existing, extended with settings/plugin cmds)
+└── platform/                  # Always-on platform layer (not plugins)
+    ├── platform_stats.gd          # Global stats, ranking feed
+    ├── platform_anticheat.gd      # Combat analysis, aim detection, cross-lobby flagging
+    └── platform_reporting.gd      # Player reports, feedback loop
 
 plugins/modes/
 ├── plugin_deathmatch.gd       # FFA deathmatch (extracted from current server_game.gd)
 └── plugin_competitive.gd      # MR12 competitive mode — orchestrates internal modules:
     ├── competitive_economy.gd     # Economy: money, rewards, loss bonus, purchase validation
     ├── competitive_rounds.gd      # Round state machine: freeze/live/over/halftime/match
-    ├── competitive_bomb.gd        # Bomb plant/defuse, timer, win conditions
+    ├── competitive_objective.gd   # Portal activation/sealing, timer, win conditions
     ├── competitive_teams.gd       # Team assignment, balance, halftime swap
     └── competitive_spawns.gd      # Per-team spawn zones, equipment persistence
 
 plugins/features/
 ├── plugin_vote.gd             # Vote system (kick, map, restart, pause)
-├── plugin_admin.gd            # Admin commands (slap, slay, ban, team swap)
 └── plugin_chat.gd             # Team/all chat, dead chat rules, rate limiting
 
 client/scripts/
+├── client_lobby.gd            # Lobby creation UI (mode, map, settings, visibility)
 ├── client_mode_loader.gd      # Reads mode from server, loads correct UI modules
 ├── client_buy_menu.gd         # Buy menu UI (functional placeholder)
 ├── client_spectator.gd        # Spectator camera, follow mode, free-cam
-├── client_match_hud.gd        # Round timer, team scores, money display, bomb status
+├── client_match_hud.gd        # Round timer, team scores, money display, portal status
 ├── client_team_select.gd      # Team selection screen
 └── client_chat.gd             # Team and all chat input/display
 ```
@@ -623,8 +661,8 @@ PlayerState (Phase 4 format, extended):
   + team:         u8   (0=unassigned, 1=angels, 2=demons, 3=spectator)
   + money:        u16  (0–16000)
   + is_walking:   1 bit (flag)
-  + has_bomb:     1 bit (flag)
-  + has_defuse_kit: 1 bit (flag)
+  + has_catalyst: 1 bit (flag)
+  + has_relic:    1 bit (flag)
 
 MatchState (new, broadcast reliable on state change):
   match_state:    u8
@@ -632,9 +670,9 @@ MatchState (new, broadcast reliable on state change):
   round_timer:    f32
   angels_score:   u8
   demons_score:   u8
-  bomb_state:     u8
-  bomb_timer:     f32  (only when planted)
-  bomb_position:  Vector3 (only when dropped/planted)
+  portal_state:   u8
+  portal_timer:   f32  (only when activated)
+  catalyst_position: Vector3 (only when dropped/activated)
 ```
 
 ### Buy menu weapon/equipment pricing
@@ -652,7 +690,7 @@ MatchState (new, broadcast reliable on state change):
 | Heavy SMG | $1500 | Primary | Both |
 | Kevlar vest | $650 | Armor | Both |
 | Kevlar + helmet | $1000 | Armor | Both |
-| Defuse kit | $400 | Equipment | Defense |
+| Relic | $400 | Equipment | Defense |
 | HE grenade | $300 | Grenade | Both |
 | Flashbang | $200 | Grenade | Both |
 | Smoke grenade | $300 | Grenade | Both |
@@ -681,11 +719,11 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 
 ### WB2: Plugin system foundation + team utilities (laptop)
 - [ ] Create `shared/scripts/game_plugin.gd`: base class with all virtual hook methods
-- [ ] Create `shared/scripts/cvar_registry.gd`: server-configurable variable system
-  - `register()`, `get_value()`, `set_value()`, `load_config()`, `list_cvars()`
+- [ ] Create `server/scripts/match_config.gd`: match settings registry
+  - `register()`, `get_value()`, `set_value()`, `apply_lobby_overrides()`, `list_settings()`
   - Type-safe getters: `get_int()`, `get_float()`, `get_bool()`
-  - Load from `server.cfg` format: `cvar_name value` per line
-- [ ] Create `server/scripts/plugin_manager.gd`: plugin loading, hook dispatch, cvar ownership
+  - Mode plugins register defaults; lobby overrides applied at startup
+- [ ] Create `server/scripts/plugin_manager.gd`: plugin loading, hook dispatch
   - `load_plugin()`, `unload_plugin()`, `get_plugin(name)`
   - Hook dispatch: iterate plugins in load order, handle bool/modifier/provider return types
   - `plugin_event` signal for decoupled plugin-to-plugin communication
@@ -694,6 +732,9 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
   - Opposing team lookup
   - Team color constants (blue, red)
   - Team name strings
+- [ ] Stub `server/scripts/platform/` layer: platform_stats, platform_anticheat, platform_reporting
+  - Hook into plugin_manager dispatch (runs before mode/feature plugins)
+  - Placeholder implementations — full anti-cheat logic is post-Phase 5
 - [ ] Refactor `server_game.gd`: insert plugin hooks at all decision points
   - Player spawn → `on_player_pre_spawn()`, `get_spawn_position()`
   - Respawn → `can_player_respawn()`
@@ -701,45 +742,44 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
   - Kill → `on_player_kill()`, `on_player_death()`
   - Tick → `on_tick()`
   - Console → `on_console_command()`
-  - Add `cvarlist` and `plugin` console commands
 - [ ] Create `plugins/modes/plugin_deathmatch.gd`: extract current FFA behavior
   - `can_player_respawn()` → true (after delay)
   - `get_spawn_position()` → random from map spawns
-  - Register cvars: `dm_fraglimit`, `dm_timelimit`, `dm_respawn_delay`
+  - Register settings: `dm_fraglimit`, `dm_timelimit`, `dm_respawn_delay`
   - `get_client_mode()` → `&"deathmatch"`
-- [ ] Server loads plugin from config (`game_plugin` line in `server.cfg`)
+- [ ] Server loads mode plugin based on lobby config (passed at server startup)
 - [ ] Add `EVT_MATCH_STATE` event type to `net_protocol.gd`
 - [ ] Client `client_mode_loader.gd`: read mode from server, load appropriate UI modules
 - [ ] Test: server starts with deathmatch plugin, existing gameplay unchanged (regression)
-- [ ] Test: cvar system loads config, console can query/change values
+- [ ] Test: match config system registers defaults, lobby overrides apply correctly
 - **Owner:** laptop
 
 ### WB3: Competitive economy module (laptop)
 - [ ] Create `plugins/modes/competitive_economy.gd` (internal module of competitive plugin):
   - Per-player money tracking (Dictionary[peer_id, int])
-  - `award_round_win(team)`: distribute win reward (reads cvars)
+  - `award_round_win(team)`: distribute win reward (reads match_config)
   - `award_round_loss(team)`: distribute loss reward with streak bonus
-  - `award_kill(killer_id, weapon_type)`: per-weapon kill reward (reads cvars)
-  - `award_bomb_plant(team)`: plant bonus to surviving attackers
+  - `award_kill(killer_id, weapon_type)`: per-weapon kill reward (reads match_config)
+  - `award_catalyst_activation(team)`: activation bonus to surviving attackers
   - `purchase(peer_id, item, price)`: validate and deduct money
   - `reset_economy()`: halftime reset (all to starting money)
   - Loss streak tracking per team
-  - All values read from cvar_registry (no hardcoded constants)
+  - All values read from match_config (no hardcoded constants)
 - [ ] Create `shared/scripts/economy_helpers.gd`:
   - Shared economy calculation helpers (for client-side buy menu validation)
   - Client reads own money from snapshot; helpers validate "can I afford this?"
 - [ ] Test: loss bonus escalation ($1400 → $1900 → $2400 → $2900 → $3400 cap)
 - [ ] Test: win resets loss streak
-- [ ] Test: bomb plant awards $800 to all surviving attackers
+- [ ] Test: catalyst activation awards $800 to all surviving attackers
 - [ ] Test: cannot spend more money than available
-- [ ] Test: changing cvars at runtime changes economy behavior
+- [ ] Test: changing settings at runtime changes economy behavior
 - **Owner:** laptop
 
 ### WB4: Competitive plugin — round lifecycle (laptop + vm-prime)
 - [ ] Create `plugins/modes/plugin_competitive.gd`:
-  - Orchestrates internal modules (economy, rounds, bomb, teams, spawns)
+  - Orchestrates internal modules (economy, rounds, portal objective, teams, spawns)
   - Implements `GamePlugin` hooks: all combat, player, tick, team hooks
-  - Register all competitive cvars (see Plugin Architecture → Cvar reference)
+  - Register all competitive match settings (see Plugin Architecture → Match settings reference)
   - `get_client_mode()` → `&"competitive"`
   - `get_client_state()` → match state dict for client HUD
 - [ ] Create `plugins/modes/competitive_rounds.gd` (internal module):
@@ -764,7 +804,7 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 - [ ] Test: server loads competitive plugin, round cycle WARMUP → FREEZE → LIVE → ROUND_OVER
 - [ ] Test: halftime triggers at round 12, teams swap
 - [ ] Test: match ends when one team reaches 13 wins
-- [ ] Test: switching `game_plugin` from competitive to deathmatch works
+- [ ] Test: server can start with either competitive or deathmatch mode
 - **Owner:** laptop + vm-prime
 
 ### WB5: Competitive plugin — spawn system (laptop)
@@ -785,27 +825,27 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 - [ ] Update test map: add two team spawn areas (A-side, B-side) as named Node3D groups
 - **Owner:** laptop
 
-### WB6: Competitive plugin — bomb objective (laptop)
-- [ ] Create `shared/scripts/bomb.gd`:
-  - Bomb entity: RigidBody3D (placeholder cube)
-  - States: CARRIED, DROPPED, PLANTING, PLANTED, DEFUSING, DETONATED, DEFUSED
-  - Bomb timer: countdown from configurable value (reads `mp_bomb_timer` cvar)
-  - Visual: blinking light, increasing blink rate
-  - Audio: beep timer (placeholder sound)
-- [ ] Create `plugins/modes/competitive_bomb.gd` (internal module):
-  - Plant validation: player in bomb site, on ground, not moving, hold use for `mp_plant_time`
-  - Defuse validation: player in bomb radius, on ground, hold use for `mp_defuse_time` / `mp_defuse_time_kit`
-  - Plant interrupted: taking damage or moving cancels plant
-  - Defuse interrupted: taking damage, moving, or dying cancels defuse
-  - Bomb drop: spawns at death position, any attacker can pick up
-  - Bomb detonation: instant kill in lethal radius, calls `on_round_end(attacker, &"bomb_detonated")`
-  - Defuse success: calls `on_round_end(defender, &"bomb_defused")`
-  - All timers read from cvars, not hardcoded
+### WB6: Competitive plugin — portal objective (laptop)
+- [ ] Create `shared/scripts/catalyst.gd`:
+  - Catalyst entity: RigidBody3D (placeholder glowing cube)
+  - States: CARRIED, DROPPED, ACTIVATING, ACTIVATED, SEALING, PORTAL_OPENED, PORTAL_SEALED
+  - Portal timer: countdown from configurable value (reads `mp_portal_timer` setting)
+  - Visual: pulsing glow, increasing pulse rate
+  - Audio: pulsing sound (placeholder)
+- [ ] Create `plugins/modes/competitive_objective.gd` (internal module):
+  - Activate validation: player in portal site, on ground, not moving, hold use for `mp_activate_time`
+  - Seal validation: player in catalyst radius, on ground, hold use for `mp_seal_time` / `mp_seal_time_relic`
+  - Activation interrupted: taking damage or moving cancels activation
+  - Seal interrupted: taking damage, moving, or dying cancels seal
+  - Catalyst drop: spawns at death position, any attacker can pick up
+  - Portal opened: energy burst in lethal radius, calls `on_round_end(attacker, &"portal_opened")`
+  - Portal sealed: calls `on_round_end(defender, &"portal_sealed")`
+  - All timers read from match_config, not hardcoded
 - [ ] Plugin hooks wired:
-  - `on_bomb_plant_start()`, `on_bomb_planted()`, `on_bomb_defused()`, `on_bomb_detonated()`
-  - Other plugins (vote, admin) can hook into bomb events
-- [ ] Create two bomb site zones in test map (Area3D)
-- [ ] HUD indicators: bomb carrier icon, bomb site markers (client-side, reads EVT_MATCH_STATE)
+  - `on_catalyst_activate_start()`, `on_catalyst_activated()`, `on_portal_sealed()`, `on_portal_opened()`
+  - Other plugins (vote, chat) can hook into objective events
+- [ ] Create two portal site zones in test map (Area3D)
+- [ ] HUD indicators: catalyst carrier icon, portal site markers (client-side, reads EVT_MATCH_STATE)
 - **Owner:** laptop
 
 ### WB7: Buy menu (laptop)
@@ -818,6 +858,7 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
   - Purchase sends buy request to server (reliable channel, new `MSG_BUY` or admin subtype)
   - Keyboard shortcuts: number keys for quick-buy (B → 4 → 2 = AK, etc.)
   - Only loaded when `client_mode_loader` receives `&"competitive"` mode
+  - Relic purchase: defense team can buy relic ($400) for faster portal sealing
 - [ ] Competitive plugin buy validation (via `can_purchase()` hook):
   - Check: buy period active, player in buy zone, sufficient funds, valid item
   - On success: deduct money via economy module, spawn weapon/equipment on player
@@ -849,7 +890,7 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 - [ ] Create `plugins/modes/competitive_teams.gd` (internal module):
   - Team assignment validation via `on_team_assign()` hook
   - Auto-assign: place on team with fewer players
-  - Balance enforcement: configurable max difference (reads `mp_autoteambalance` cvar)
+  - Balance enforcement: configurable max difference (reads `mp_autoteambalance` setting)
   - Halftime swap: all players swap team assignment
   - `get_player_team(peer_id)` → returns team for any plugin to query
 - [ ] Team-colored player indicators (placeholder: colored capsule tint)
@@ -861,7 +902,7 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
   - Top: round timer (mm:ss), team scores (Angels | X — Y | Demons)
   - Bottom: money display, buy period indicator
   - Center: round start announcement ("Round 5"), win announcement
-  - Bomb status: "BOMB HAS BEEN PLANTED" with timer
+  - Portal status: "CATALYST ACTIVATED" with timer
   - Kill feed: extends Phase 4 with team colors
   - Freeze-time overlay: "FREEZE TIME — Buy weapons"
   - Match over screen: "ANGELS WIN" / "DEMONS WIN" with final score
@@ -875,7 +916,7 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 ### WB11: Chat plugin (laptop)
 - [ ] Create `plugins/features/plugin_chat.gd` (feature plugin):
   - Implements `on_chat_message()` hook: team filtering, dead chat rules
-  - Register cvars: `sv_alltalk` (0/1), `sv_deadtalk` (0/1), `sv_chat_rate` (msgs/sec)
+  - Register settings: `sv_alltalk` (0/1), `sv_deadtalk` (0/1), `sv_chat_rate` (msgs/sec)
   - Dead players: all-chat only when `sv_deadtalk` is 0 (cannot team-chat to alive teammates)
   - Rate limiting: configurable max messages per second (anti-spam)
   - Team filtering: queries `get_player_team()` from mode plugin
@@ -892,13 +933,13 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 ### WB12: Competitive test map update (laptop)
 - [ ] Extend `mp_testmap.tscn` for competitive play:
   - Two team spawn areas (Angels spawn, Demons spawn)
-  - Two bomb sites (A, B) with Area3D zones and visible markers
+  - Two portal sites (A, B) with Area3D zones and visible markers
   - Buy zones near each spawn
   - Basic competitive geometry: mid, long, short, site approaches
   - Remain gray-box (CSGBox3D) — no art needed
   - 5 spawn points per team (10 total)
   - Cover and sightlines appropriate for competitive play
-- [ ] Add bomb site markers (floating text labels or simple icons)
+- [ ] Add portal site markers (floating text labels or simple icons)
 - [ ] Add buy zone boundary indicators (visible area edges)
 - **Owner:** laptop
 
@@ -919,10 +960,10 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
   - test_round_timer_expiry: defense wins when timer runs out
   - test_halftime_swap: teams swap sides at round 12
   - test_match_end: match ends at 13 round wins
-  - test_bomb_plant_time: planting takes 3.5s
-  - test_bomb_defuse_time: defusing takes 10s (5s with kit)
-  - test_bomb_interrupt: moving during plant cancels it
-  - test_bomb_timer: detonation at 40s after plant
+  - test_catalyst_activate_time: activation takes 3.5s
+  - test_portal_seal_time: sealing takes 10s (5s with relic)
+  - test_activation_interrupt: moving during activation cancels it
+  - test_portal_timer: portal opens at 40s after activation
   - test_team_balance: cannot join team that exceeds balance limit
   - test_equipment_persistence: alive player keeps weapons next round
   - test_dead_player_resets: dead player spawns with default loadout
@@ -959,7 +1000,7 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 | Loss bonus cap | Lose 6+ rounds | Stays at $3400 |
 | Win resets streak | Win after 3 losses, lose again | Next loss gives $1400 (reset) |
 | Kill rewards | Kill with rifle/SMG/sniper/knife | $300/$600/$100/$1500 |
-| Bomb plant bonus | Plant bomb, lose round | All surviving attackers get +$800 |
+| Catalyst activation bonus | Activate catalyst, lose round | All surviving attackers get +$800 |
 | Max money | Win repeatedly | Caps at $16000 |
 | Buy validation | Try to buy with $0 | Purchase denied |
 
@@ -972,8 +1013,8 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 | Buy zone | Buy inside/outside zone | Only works inside zone |
 | Round timer | Wait full round time | Defense wins on expiry |
 | Elimination win | Kill all enemies | Round ends immediately |
-| Bomb plant win | Plant, wait 40s | Attackers win on detonation |
-| Bomb defuse win | Plant, defuse | Defenders win on defuse |
+| Portal open win | Activate catalyst, wait 40s | Attackers win on portal opening |
+| Portal sealed win | Activate, then seal | Defenders win on portal sealed |
 | Halftime | Complete 12 rounds | Teams swap, economy resets |
 | Match end | One team reaches 13 | Match over screen |
 | Equipment persist | Survive round with AK | Have AK next round |
@@ -986,7 +1027,7 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 | Full 5v5 match (recruit testers) | Match completes all rounds without manual intervention |
 | Economy flow | Pistol round → eco → full buy cycle feels natural |
 | Walk peek | Hold shift, peek corner — no footsteps, accurate first shot |
-| Bomb plant + defuse | Full objective cycle works end to end |
+| Catalyst activate + seal | Full portal objective cycle works end to end |
 | Clutch round | 1vN scenario, spectate teammates, execute play |
 | Disconnect mid-round | Reconnect preserves team/money, dead until next round |
 | Halftime swap | Teams swap cleanly, money resets, spawns swap |
@@ -1000,7 +1041,7 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 | Round state desync between clients | High | High | Single server-authoritative state machine; broadcast all transitions reliably; clients only display what server tells them |
 | Economy edge cases (overtime, ties) | Medium | Medium | Keep economy logic simple and tested; overtime rules minimal (extend by 3 rounds) |
 | Buy menu UX too clunky without art | Medium | Low | Focus on keyboard shortcuts for fast buying; art is Phase 6 |
-| Bomb interaction conflicts with movement/shooting input | Medium | Medium | Use separate "use" action; plant requires hold, not toggle; interrupt on any other action |
+| Catalyst interaction conflicts with movement/shooting input | Medium | Medium | Use separate "use" action; activation requires hold, not toggle; interrupt on any other action |
 | Spectator camera through walls | Medium | Medium | Use camera collision (simple raycast clamp); accept minor clipping for Phase 5 |
 | Walk mechanic feels too slow or useless | Low | Medium | 140 u/s is the CS 1.6 verified threshold; tune if play-feel differs |
 | Team balance with small player count | Medium | Low | Auto-assign; allow override in warmup; competitive mode requires minimum players |
@@ -1027,8 +1068,8 @@ Each WB is committed independently. If Phase 5 needs to be paused:
 - WB1 (walk) landed independently — movement feature with no match system dependency ✓
 - WB2 (plugin system) is safe — deathmatch plugin preserves all existing behavior; server_game.gd refactoring is backward-compatible because deathmatch plugin replicates the original logic
 - WB3 (economy module) is data-only — no gameplay impact until wired to WB4's competitive plugin
-- WB4 (competitive plugin) is the critical integration point — this is where the game becomes round-based, but only when `game_plugin competitive` is set; `game_plugin deathmatch` always works
-- The plugin system itself is the safety net: reverting to deathmatch mode is a one-line config change
+- WB4 (competitive plugin) is the critical integration point — this is where the game becomes round-based, but only when competitive mode is selected; deathmatch mode always works
+- The plugin system itself is the safety net: reverting to deathmatch mode is a lobby setting change
 
 ---
 
@@ -1055,14 +1096,14 @@ After WB1 is working:
 5. Walk peek a corner, counter-strafe, fire — this is the competitive pattern
 - **Goal:** feel why walk is a core competitive mechanic
 
-### E3: Bomb round flow
+### E3: Portal objective flow
 After WB4 + WB6 are working:
-1. Play a full round as attacker: buy → execute → plant → defend plant → win
-2. Play as defender: hold site → retake → defuse → win
-3. Try planting while moving (should fail)
-4. Try defusing — get killed mid-defuse — observe interrupt
-5. Let bomb timer run out — observe detonation win
-- **Goal:** feel the tension of the bomb timer and objective pressure
+1. Play a full round as attacker: buy → execute → activate catalyst → defend portal → win
+2. Play as defender: hold site → retake → seal portal → win
+3. Try activating while moving (should fail)
+4. Try sealing — get killed mid-seal — observe interrupt
+5. Let portal timer run out — observe portal open win
+- **Goal:** feel the tension of the portal timer and objective pressure
 
 ### E4: Full match pacing
 After all WBs complete:
@@ -1077,13 +1118,13 @@ After all WBs complete:
 ## Acceptance checklist (gate criteria)
 
 ### Plugin architecture
-- [ ] Plugin base class, plugin manager, and cvar registry are implemented and tested
-- [ ] Server loads game mode from `server.cfg` (`game_plugin competitive` or `game_plugin deathmatch`)
+- [ ] Plugin base class, plugin manager, and match config are implemented and tested
+- [ ] Server loads mode plugin from lobby config (competitive or deathmatch)
+- [ ] Platform layer (stats, anti-cheat, reporting) stubs are in place and hook into dispatch
 - [ ] Deathmatch plugin reproduces all Phase 4 gameplay with zero regressions
 - [ ] Competitive plugin runs a full match with all rules enforced
 - [ ] Feature plugins (chat, vote) load alongside any mode plugin
-- [ ] Cvars are readable/writable via server console (`cvarlist`, `set mp_roundtime 120`)
-- [ ] Switching `game_plugin` between deathmatch and competitive works without restart
+- [ ] Lobby overrides apply correctly to match settings
 - [ ] Client loads correct UI modules based on server-reported mode
 
 ### Gameplay (via competitive plugin)
@@ -1094,14 +1135,14 @@ After all WBs complete:
 - [ ] Round lifecycle: freeze → buy → live → round over, all timers correct
 - [ ] Economy: starting money, win/loss rewards, loss bonus escalation, kill rewards all correct
 - [ ] Buy menu: functional weapon/equipment purchasing during buy period in buy zone
-- [ ] Bomb objective: plant, defuse, detonation timer, drop on death, all win conditions
+- [ ] Portal objective: catalyst activation, sealing, portal timer, drop on death, all win conditions
 - [ ] Spectator mode: first-person follow and free-cam after death
-- [ ] Match HUD: round timer, team scores, money, bomb status, announcements
+- [ ] Match HUD: round timer, team scores, money, portal status, announcements
 - [ ] Scoreboard: team-sorted, kills/deaths/money/ping
 - [ ] Chat: team and all chat functional (via chat plugin)
 - [ ] Equipment persistence: survivors keep gear, dead players reset
 - [ ] A full 5v5 session completes without manual intervention
-- [ ] All gameplay rules are server-configurable via cvars
+- [ ] All gameplay rules are configurable via match settings
 - [ ] All Phase 2 movement + Phase 3 combat + Phase 4 network + Phase 5 match tests pass in CI
 - [ ] No regression in movement, combat, or networking feel
 - [ ] Deathmatch mode from Phase 4 is preserved as a plugin
@@ -1110,12 +1151,12 @@ After all WBs complete:
 
 ## Suggested work order
 1. **WB1** (walk mechanic / MP-002) — **DONE** ✓ standalone movement feature, landed in PR #4
-2. **WB2** (plugin system + deathmatch extraction) — the foundation: base class, cvar system, plugin manager, refactor server_game.gd, extract deathmatch plugin. Must land before any other WB. Proves the architecture by running existing gameplay through the plugin layer with zero regressions.
+2. **WB2** (plugin system + deathmatch extraction) — the foundation: base class, match config, plugin manager, platform stubs, refactor server_game.gd, extract deathmatch plugin. Must land before any other WB. Proves the architecture by running existing gameplay through the plugin layer with zero regressions.
 3. **WB3** (competitive economy module) — standalone calculation logic, testable without round system. Internal module of the competitive plugin.
 4. **WB4** (competitive plugin + round lifecycle) — core integration: this is where the game becomes round-based. Wires economy, teams, and rounds together.
 5. **WB5** (competitive spawn system) — per-team spawns, freeze time, equipment persistence
-6. **WB6** (bomb objective) — adds primary win condition
-7. **WB12** (test map update) — needed for bomb sites and team spawns (can start as a shell early)
+6. **WB6** (portal objective) — adds primary win condition
+7. **WB12** (test map update) — needed for portal sites and team spawns (can start as a shell early)
 8. **WB7** (buy menu) — economy integrated into gameplay
 9. **WB9** (team selection) — player-facing team management
 10. **WB10** (match HUD) — visibility into match state (extend incrementally alongside features)
@@ -1128,6 +1169,6 @@ After all WBs complete:
 ## Immediate next steps
 1. **Laptop:** ~~WB1 (walk mechanic)~~ — **DONE** ✓ PR #4
 2. **Laptop:** WB2 (plugin system foundation) — the critical path. Establishes the architecture that every subsequent WB depends on. Key deliverable: existing deathmatch gameplay runs through the plugin layer with zero regressions.
-3. **Laptop:** WB3 (economy module) — pure logic, fully testable in isolation against the cvar system
+3. **Laptop:** WB3 (economy module) — pure logic, fully testable in isolation against the match config system
 4. **Phase 4 dependency:** WB4+ requires Phase 4 networking to be functional — plan accordingly
-5. **Key milestone:** Two teams buying weapons, playing a round with bomb objective, spectating after death — this validates the entire competitive ruleset AND the plugin architecture
+5. **Key milestone:** Two teams buying weapons, playing a round with portal objective, spectating after death — this validates the entire competitive ruleset AND the plugin architecture
