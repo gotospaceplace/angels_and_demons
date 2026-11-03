@@ -89,11 +89,14 @@ func play_weapon_switch() -> void:
 	play("weapon_switch", -3.0)
 
 
-func update_footsteps(delta: float, on_ground: bool, speed: float, on_ladder: bool, is_ducked: bool = false) -> void:
+func update_footsteps(delta: float, on_ground: bool, speed: float, on_ladder: bool, is_ducked: bool = false, is_walking: bool = false) -> void:
 	if not on_ground and not on_ladder:
 		footstep_timer = 0.0
 		return
 	if speed < FOOTSTEP_SPEED_THRESHOLD:
+		footstep_timer = 0.0
+		return
+	if is_walking:
 		footstep_timer = 0.0
 		return
 

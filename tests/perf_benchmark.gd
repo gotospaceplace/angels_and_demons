@@ -168,7 +168,8 @@ func _bench_prediction_replay() -> void:
 			body.apply_network_input(cmd.yaw, cmd.pitch,
 				cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
 				cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
-				cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK))
+				cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK),
+				cmd.has_button(NetInput.BIT_WALK))
 			body.simulate_tick(NetConstants.TICK_INTERVAL)
 	var elapsed := Time.get_ticks_usec() - start
 	var avg_us := float(elapsed) / float(iterations)

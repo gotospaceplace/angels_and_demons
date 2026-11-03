@@ -142,7 +142,8 @@ func _physics_process(_delta: float) -> void:
 		local_player.apply_network_input(cmd.yaw, cmd.pitch,
 			cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
 			cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
-			cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK))
+			cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK),
+			cmd.has_button(NetInput.BIT_WALK))
 		local_player.test_driven = false
 		local_player.simulate_tick(NetConstants.TICK_INTERVAL)
 		local_player.test_driven = true
@@ -204,6 +205,7 @@ func _sample_input() -> NetInput:
 	cmd.set_button(NetInput.BIT_RIGHT, Input.is_action_pressed("move_right"))
 	cmd.set_button(NetInput.BIT_JUMP, Input.is_action_pressed("jump") or (local_player and local_player.scroll_jump_queued))
 	cmd.set_button(NetInput.BIT_DUCK, Input.is_action_pressed("duck"))
+	cmd.set_button(NetInput.BIT_WALK, Input.is_action_pressed("walk"))
 	cmd.set_button(NetInput.BIT_FIRE, Input.is_action_pressed("fire"))
 	cmd.set_button(NetInput.BIT_FIRE2, Input.is_action_pressed("fire_secondary"))
 	cmd.set_button(NetInput.BIT_RELOAD, Input.is_action_pressed("reload"))
@@ -362,7 +364,8 @@ func _try_reconcile(snapshot_result: Dictionary) -> void:
 		local_player.apply_network_input(cmd.yaw, cmd.pitch,
 			cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
 			cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
-			cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK))
+			cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK),
+			cmd.has_button(NetInput.BIT_WALK))
 		local_player.simulate_tick(NetConstants.TICK_INTERVAL)
 
 	local_player.test_driven = saved_test_driven

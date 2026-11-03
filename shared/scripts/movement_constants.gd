@@ -92,6 +92,8 @@ const SPEED_AWP_ZOOMED := 150.0 * METERS_PER_UNIT # 3.81 m/s
 # --- Gameplay thresholds ---
 # GoldSrc: 140 u/s movement inaccuracy threshold
 const INACCURACY_SPEED_THRESHOLD := 140.0 * METERS_PER_UNIT  # 3.556 m/s
+# Walk (+speed) caps wish_speed to stay at or below the accuracy threshold
+const WALK_SPEED_CAP := INACCURACY_SPEED_THRESHOLD
 
 # --- Ground detection ---
 const GROUND_TRACE_DIST := 2.0 * METERS_PER_UNIT  # 0.051 m

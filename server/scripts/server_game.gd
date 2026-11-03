@@ -12,6 +12,7 @@ var snapshot_bytes_total: int = 0
 var snapshot_count: int = 0
 var lag_comp: ServerLagComp
 var console: Node
+var plugin_manager: PluginManager
 
 var peer_tokens: Dictionary = {}
 var disconnected_players: Dictionary = {}
@@ -47,11 +48,16 @@ func _ready() -> void:
 		spawn_points = map.spawn_points
 
 	var port := NetworkManager.DEFAULT_PORT
+	var mode_name := "deathmatch"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--port="):
 			port = arg.get_slice("=", 1).to_int()
+		elif arg.begins_with("--mode="):
+			mode_name = arg.get_slice("=", 1)
 
 	lag_comp = ServerLagComp.new()
+
+	_init_plugins(mode_name)
 
 	var err := NetworkManager.host_server(port)
 	if err != OK:
@@ -70,10 +76,28 @@ func _ready() -> void:
 	console = console_node
 	console.command_received.connect(_on_console_command)
 
-	print("[Server] Running at %d Hz, listening on port %d" % [NetConstants.TICK_RATE, port])
+	print("[Server] Running at %d Hz, listening on port %d, mode: %s" % [
+		NetConstants.TICK_RATE, port, mode_name])
 
 
-func _physics_process(_delta: float) -> void:
+func _init_plugins(mode_name: String) -> void:
+	plugin_manager = PluginManager.new()
+
+	plugin_manager.load_plugin(PlatformStats.new())
+	plugin_manager.load_plugin(PlatformAnticheat.new())
+	plugin_manager.load_plugin(PlatformReporting.new())
+
+	var mode_plugin: GamePlugin
+	match mode_name:
+		"deathmatch":
+			mode_plugin = PluginDeathmatch.new()
+		_:
+			push_warning("Unknown mode '%s', falling back to deathmatch" % mode_name)
+			mode_plugin = PluginDeathmatch.new()
+	plugin_manager.load_plugin(mode_plugin)
+
+
+func _physics_process(delta: float) -> void:
 	server_tick += 1
 
 	_process_pending_peers()
@@ -85,6 +109,8 @@ func _physics_process(_delta: float) -> void:
 	_process_fire_commands()
 	_process_respawns()
 	lag_comp.store_tick(server_tick, players)
+
+	plugin_manager.dispatch_on_tick(server_tick, delta)
 
 	if server_tick % 2 == 0:
 		_broadcast_snapshots()
@@ -98,6 +124,7 @@ func _on_peer_connected(peer_id: int) -> void:
 func _on_peer_disconnected(peer_id: int) -> void:
 	pending_peers.erase(peer_id)
 	if players.has(peer_id):
+		plugin_manager.dispatch_on_player_disconnect(peer_id)
 		var sp = players[peer_id]
 		var token: int = peer_tokens.get(peer_id, 0)
 		if token > 0:
@@ -183,6 +210,9 @@ func _process_fire_commands() -> void:
 		if not should_fire:
 			continue
 
+		if not plugin_manager.dispatch_can_player_fire(peer_id):
+			continue
+
 		if not weapon.is_melee:
 			sp.ammo_mag -= 1
 			if sp.ammo_mag <= 0:
@@ -198,10 +228,15 @@ func _process_fire_commands() -> void:
 		if not players.has(victim_id):
 			continue
 		var victim_sp = players[victim_id]
-		victim_sp.take_damage(hit["damage"])
+
+		var final_damage: float = plugin_manager.dispatch_on_player_damage(
+			peer_id, victim_id, hit["damage"], sp.weapon_idx, hit["hitgroup"])
+		if final_damage <= 0.0:
+			continue
+		victim_sp.take_damage(final_damage)
 
 		var hit_packet := NetProtocol.pack_hit_event(
-			victim_id, int(hit["damage"]), hit["headshot"])
+			victim_id, int(final_damage), hit["headshot"])
 		multiplayer.send_bytes(hit_packet, peer_id,
 			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 			NetConstants.CHANNEL_EVENTS)
@@ -209,6 +244,8 @@ func _process_fire_commands() -> void:
 		if victim_sp.is_dead:
 			victim_sp.die(server_tick)
 			sp.kills += 1
+			plugin_manager.dispatch_on_player_kill(peer_id, victim_id, sp.weapon_idx, hit["headshot"])
+			plugin_manager.dispatch_on_player_death(victim_id, peer_id)
 			var kill_packet := NetProtocol.pack_kill_event(
 				peer_id, victim_id, sp.weapon_idx, hit["headshot"])
 			for pid in players:
@@ -216,7 +253,7 @@ func _process_fire_commands() -> void:
 					MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 					NetConstants.CHANNEL_EVENTS)
 			print("[Server] KILL: Player %d → Player %d (%s, dmg=%.1f) [K:%d D:%d]" % [
-				peer_id, victim_id, hit["hitgroup"], hit["damage"],
+				peer_id, victim_id, hit["hitgroup"], final_damage,
 				sp.kills, victim_sp.deaths])
 
 
@@ -228,8 +265,14 @@ func _process_respawns() -> void:
 		if sp.respawn_tick <= 0 or server_tick < sp.respawn_tick:
 			continue
 
-		var spawn_pos := spawn_points[randi() % spawn_points.size()]
+		if not plugin_manager.dispatch_can_player_respawn(peer_id):
+			continue
+
+		var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)
+		if spawn_pos == Vector3.ZERO:
+			spawn_pos = spawn_points[randi() % spawn_points.size()]
 		sp.respawn(spawn_pos)
+		plugin_manager.dispatch_on_player_spawn(peer_id, spawn_pos)
 
 		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
 		for pid in players:
@@ -294,15 +337,22 @@ func _spawn_new_player(peer_id: int) -> void:
 		return
 	pending_peers.erase(peer_id)
 
+	if not plugin_manager.dispatch_on_player_pre_spawn(peer_id):
+		return
+
 	var token := next_token
 	next_token += 1
 
+	var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)
+	if spawn_pos == Vector3.ZERO:
+		spawn_pos = spawn_points[next_spawn % spawn_points.size()]
+		next_spawn += 1
+
 	var sp = ServerPlayer.new()
-	var spawn_pos := spawn_points[next_spawn % spawn_points.size()]
-	next_spawn += 1
 	sp.create(peer_id, spawn_pos, world_node)
 	players[peer_id] = sp
 	peer_tokens[peer_id] = token
+	plugin_manager.dispatch_on_player_spawn(peer_id, spawn_pos)
 
 	var session_packet := NetProtocol.pack_session_event(token)
 	multiplayer.send_bytes(session_packet, peer_id,
@@ -373,6 +423,9 @@ func _process_disconnect_timeouts() -> void:
 
 
 func _on_console_command(cmd: String, args: String) -> void:
+	if plugin_manager.dispatch_on_console_command(cmd, args):
+		return
+
 	match cmd:
 		"status":
 			_cmd_status()
@@ -382,12 +435,17 @@ func _on_console_command(cmd: String, args: String) -> void:
 			_cmd_say(args)
 		"quit":
 			_cmd_quit()
+		"plugins":
+			_cmd_plugins()
+		"settings":
+			_cmd_settings()
 		_:
 			print("[Console] Unknown command: %s" % cmd)
 
 
 func _cmd_status() -> void:
 	print("[Console] === Server Status (tick %d) ===" % server_tick)
+	print("[Console] Mode: %s" % plugin_manager.get_client_mode())
 	print("[Console] Players: %d / %d" % [players.size(), NetConstants.MAX_PLAYERS])
 	print("[Console] Pending connections: %d" % pending_peers.size())
 	print("[Console] Disconnected (saved): %d" % disconnected_players.size())
@@ -440,5 +498,28 @@ func _cmd_quit() -> void:
 	if console:
 		console.stop()
 	get_tree().quit()
+
+
+func _cmd_plugins() -> void:
+	print("[Console] === Loaded Plugins ===")
+	var mode: GamePlugin = plugin_manager.get_mode_plugin()
+	for p in plugin_manager.plugins:
+		var tag := ""
+		if p == mode:
+			tag = " [MODE]"
+		print("[Console]   %s v%s%s — %s" % [
+			p.get_plugin_name(), p.get_plugin_version(), tag, p.get_description()])
+	print("[Console] Total: %d plugin(s)" % plugin_manager.plugins.size())
+
+
+func _cmd_settings() -> void:
+	print("[Console] === Match Settings ===")
+	var settings: Array = plugin_manager.match_config.list_settings()
+	if settings.is_empty():
+		print("[Console] No settings registered")
+		return
+	for s in settings:
+		print("[Console]   %s = %s  (default: %s, from: %s)" % [
+			s["name"], str(s["value"]), str(s["default"]), s["plugin"]])
 
 
