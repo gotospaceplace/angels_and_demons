@@ -45,6 +45,14 @@ func _ready() -> void:
 	_test_scoreboard_match_state_update()
 	_test_scoreboard_roster_sorting()
 
+	# Spectator
+	_test_spectator_initial_state()
+	_test_spectator_deathcam_enter()
+	_test_spectator_follow_enter()
+	_test_spectator_freecam_toggle()
+	_test_spectator_exit()
+	_test_spectator_team_filter()
+
 	print("[HudTests] Done: %d passed, %d failed out of %d" % [pass_count, fail_count, total])
 	if fail_count > 0:
 		get_tree().quit(1)
@@ -534,3 +542,78 @@ func _test_scoreboard_roster_sorting() -> void:
 	_assert(sorted.size() == 2, "sorted_size_2")
 	_assert(sorted[0]["id"] == 2, "sorted_top_fragger_first",
 		"expected player 2 (10 kills) first, got player %d" % sorted[0]["id"])
+
+
+# --- Spectator tests ---
+
+func _test_spectator_initial_state() -> void:
+	var spec := ClientSpectator.new()
+	add_child(spec)
+	_assert(spec.mode == ClientSpectator.Mode.ALIVE, "spec_starts_alive")
+	_assert(not spec.is_spectating(), "spec_not_spectating_initially")
+	_assert(spec.spectate_target == 0, "spec_no_target_initially")
+	spec.queue_free()
+
+
+func _test_spectator_deathcam_enter() -> void:
+	var spec := ClientSpectator.new()
+	add_child(spec)
+	spec.enter_deathcam(Vector3(5, 2, 3), 1.5, -0.3)
+	_assert(spec.mode == ClientSpectator.Mode.DEATHCAM, "spec_deathcam_mode")
+	_assert(spec.is_spectating(), "spec_is_spectating_after_death")
+	_assert(spec.camera.current, "spec_camera_current_on_deathcam")
+	_assert(spec.global_position.is_equal_approx(Vector3(5, 2, 3)), "spec_deathcam_position",
+		"expected (5,2,3), got %s" % spec.global_position)
+	spec.queue_free()
+
+
+func _test_spectator_follow_enter() -> void:
+	var spec := ClientSpectator.new()
+	add_child(spec)
+	spec.enter_deathcam(Vector3.ZERO, 0.0, 0.0)
+	spec._deathcam_timer = 0.0
+	spec._process(0.1)
+	_assert(spec.mode == ClientSpectator.Mode.FREECAM or spec.mode == ClientSpectator.Mode.FOLLOW,
+		"spec_transitions_from_deathcam",
+		"expected FOLLOW or FREECAM, got %d" % spec.mode)
+	spec.queue_free()
+
+
+func _test_spectator_freecam_toggle() -> void:
+	var spec := ClientSpectator.new()
+	add_child(spec)
+	spec.enter_deathcam(Vector3.ZERO, 0.0, 0.0)
+	spec._enter_freecam()
+	_assert(spec.mode == ClientSpectator.Mode.FREECAM, "spec_freecam_mode")
+	_assert(spec.spectate_target == 0, "spec_freecam_no_target")
+	spec.queue_free()
+
+
+func _test_spectator_exit() -> void:
+	var spec := ClientSpectator.new()
+	add_child(spec)
+	spec.enter_deathcam(Vector3.ZERO, 0.0, 0.0)
+	_assert(spec.is_spectating(), "spec_spectating_before_exit")
+	spec.exit_spectator()
+	_assert(not spec.is_spectating(), "spec_not_spectating_after_exit")
+	_assert(spec.mode == ClientSpectator.Mode.ALIVE, "spec_alive_after_exit")
+	_assert(not spec.camera.current, "spec_camera_not_current_after_exit")
+	spec.queue_free()
+
+
+func _test_spectator_team_filter() -> void:
+	var spec := ClientSpectator.new()
+	add_child(spec)
+	spec.game_mode = &"competitive"
+	spec.my_team = Team.Id.ANGELS
+	spec.update_roster([
+		{"id": 10, "team": Team.Id.ANGELS, "alive": true},
+		{"id": 20, "team": Team.Id.DEMONS, "alive": true},
+		{"id": 30, "team": Team.Id.ANGELS, "alive": false},
+	])
+	_assert(spec._is_valid_target(10), "spec_alive_teammate_valid")
+	_assert(not spec._is_valid_target(20), "spec_enemy_filtered",
+		"enemy player should not be valid spectate target")
+	_assert(not spec._is_valid_target(30), "spec_dead_teammate_filtered",
+		"dead teammate should not be valid spectate target")
+	spec.queue_free()

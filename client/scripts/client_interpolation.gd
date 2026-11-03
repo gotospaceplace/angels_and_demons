@@ -37,6 +37,12 @@ func on_snapshot(snapshot_result: Dictionary, p_my_peer_id: int) -> void:
 			"is_ducked": state.get_flag(NetSnapshot.FLAG_IS_DUCKED),
 			"is_dead": state.get_flag(NetSnapshot.FLAG_IS_DEAD),
 		})
+		rp["latest_snapshot"] = {
+			"hp": state.hp,
+			"armor": state.armor,
+			"weapon_idx": state.weapon_idx,
+			"ammo_mag": state.ammo_mag,
+		}
 		if rp["states"].size() > STATE_BUFFER_SIZE:
 			rp["states"].pop_front()
 
@@ -113,7 +119,7 @@ func _spawn_remote(pid: int) -> void:
 	node.set_script(RemotePlayer)
 	node.create(pid)
 	add_child(node)
-	remote_players[pid] = {"node": node, "states": []}
+	remote_players[pid] = {"node": node, "states": [], "latest_snapshot": {}}
 	print("[Interp] Spawned remote player %d" % pid)
 
 
