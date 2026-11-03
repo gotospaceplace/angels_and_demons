@@ -91,6 +91,8 @@ func _init_plugins(mode_name: String) -> void:
 	match mode_name:
 		"deathmatch":
 			mode_plugin = PluginDeathmatch.new()
+		"competitive":
+			mode_plugin = PluginCompetitive.new()
 		_:
 			push_warning("Unknown mode '%s', falling back to deathmatch" % mode_name)
 			mode_plugin = PluginDeathmatch.new()

@@ -118,6 +118,9 @@ jobs:
       - name: Economy tests
         run: timeout 30 godot --headless --path . -- --test-economy
 
+      - name: Round lifecycle tests
+        run: timeout 30 godot --headless --path . -- --test-round
+
       - name: Validation tests
         run: timeout 30 godot --headless --path . -- --test-validation
 
