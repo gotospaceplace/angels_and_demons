@@ -2,6 +2,7 @@ class_name PluginCompetitive
 extends GamePlugin
 
 var server_match: ServerMatch
+var spawns: CompetitiveSpawns
 var _next_team: int = Team.Id.ANGELS
 
 
@@ -14,6 +15,9 @@ func get_client_mode() -> StringName: return &"competitive"
 func on_load(_manager) -> void:
 	super.on_load(_manager)
 	server_match = ServerMatch.new()
+	spawns = CompetitiveSpawns.new()
+	server_match.round_started.connect(_on_round_started)
+	server_match.halftime_started.connect(_on_halftime)
 
 
 func register_settings(config) -> void:
@@ -25,7 +29,11 @@ func on_map_load(_map_name: String) -> void:
 		server_match.apply_settings(manager.match_config)
 
 
-func on_tick(tick: int, delta: float) -> void:
+func load_map_spawns(angels_spawns: Array[Vector3], demons_spawns: Array[Vector3]) -> void:
+	spawns.load_spawns(angels_spawns, demons_spawns)
+
+
+func on_tick(_tick: int, delta: float) -> void:
 	var player_count := 0
 	for peer_id in server_match.get_team_players():
 		if Team.is_playing_team(server_match.get_team(peer_id)):
@@ -60,6 +68,13 @@ func get_player_team(peer_id: int) -> int:
 	return server_match.get_team(peer_id)
 
 
+func get_spawn_position(peer_id: int) -> Vector3:
+	var team := server_match.get_team(peer_id)
+	if not Team.is_playing_team(team):
+		return Vector3.ZERO
+	return spawns.get_spawn_for_team(team)
+
+
 func get_client_state() -> Dictionary:
 	return {
 		"state": server_match.get_state_name(),
@@ -83,6 +98,16 @@ func on_console_command(cmd: String, _args: String) -> bool:
 			server_match.get_remaining_time()])
 		return true
 	return false
+
+
+func _on_round_started(_round_number: int) -> void:
+	spawns.reset_indices()
+	if manager != null:
+		manager.plugin_event.emit(&"round_reset", {})
+
+
+func _on_halftime() -> void:
+	spawns.swap_sides()
 
 
 func _pick_team() -> int:

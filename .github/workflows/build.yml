@@ -121,6 +121,9 @@ jobs:
       - name: Round lifecycle tests
         run: timeout 30 godot --headless --path . -- --test-round
 
+      - name: Spawn system tests
+        run: timeout 30 godot --headless --path . -- --test-spawn
+
       - name: Validation tests
         run: timeout 30 godot --headless --path . -- --test-validation
 

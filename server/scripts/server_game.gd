@@ -58,6 +58,10 @@ func _ready() -> void:
 	lag_comp = ServerLagComp.new()
 
 	_init_plugins(mode_name)
+	plugin_manager.plugin_event.connect(_on_plugin_event)
+
+	if map.get("angels_spawns") and map.get("demons_spawns"):
+		plugin_manager.set_map_spawns(map.angels_spawns, map.demons_spawns)
 
 	var err := NetworkManager.host_server(port)
 	if err != OK:
@@ -523,5 +527,30 @@ func _cmd_settings() -> void:
 	for s in settings:
 		print("[Console]   %s = %s  (default: %s, from: %s)" % [
 			s["name"], str(s["value"]), str(s["default"]), s["plugin"]])
+
+
+func _on_plugin_event(event_name: StringName, _data: Dictionary) -> void:
+	if event_name == &"round_reset":
+		_reset_round_players()
+
+
+func _reset_round_players() -> void:
+	for peer_id in players:
+		var sp = players[peer_id]
+		var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)
+		if spawn_pos == Vector3.ZERO:
+			spawn_pos = spawn_points[randi() % spawn_points.size()]
+
+		if sp.is_dead:
+			sp.respawn(spawn_pos)
+		else:
+			sp.teleport_to_spawn(spawn_pos)
+
+		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
+		for pid in players:
+			multiplayer.send_bytes(spawn_packet, pid,
+				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+				NetConstants.CHANNEL_EVENTS)
+	print("[Server] Round reset: %d players respawned" % players.size())
 
 

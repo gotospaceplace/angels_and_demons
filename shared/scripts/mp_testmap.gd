@@ -11,6 +11,22 @@ var spawn_points: Array[Vector3] = [
 	Vector3(17, 1, 0),
 ]
 
+var angels_spawns: Array[Vector3] = [
+	Vector3(-8, 1, -18),
+	Vector3(-4, 1, -18),
+	Vector3(0, 1, -18),
+	Vector3(4, 1, -18),
+	Vector3(8, 1, -18),
+]
+
+var demons_spawns: Array[Vector3] = [
+	Vector3(-8, 1, 18),
+	Vector3(-4, 1, 18),
+	Vector3(0, 1, 18),
+	Vector3(4, 1, 18),
+	Vector3(8, 1, 18),
+]
+
 
 func _ready() -> void:
 	_build_floor()
