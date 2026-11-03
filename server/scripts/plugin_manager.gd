@@ -148,6 +148,46 @@ func dispatch_can_player_move(peer_id: int) -> bool:
 	return true
 
 
+func dispatch_can_purchase(peer_id: int, item: StringName, price: int, position: Vector3) -> bool:
+	for p in plugins:
+		if not p.can_purchase(peer_id, item, price, position):
+			return false
+	return true
+
+
+func dispatch_on_purchase(peer_id: int, item: StringName, price: int) -> void:
+	for p in plugins:
+		p.on_purchase(peer_id, item, price)
+
+
+func dispatch_on_money_change(peer_id: int, old_amount: int, new_amount: int) -> void:
+	for p in plugins:
+		p.on_money_change(peer_id, old_amount, new_amount)
+
+
+func dispatch_get_player_money(peer_id: int) -> int:
+	for p in plugins:
+		var money := p.get_player_money(peer_id)
+		if money >= 0:
+			return money
+	return 0
+
+
+func dispatch_get_attack_team() -> int:
+	for p in plugins:
+		var team := p.get_attack_team()
+		if team >= 0:
+			return team
+	return -1
+
+
+func dispatch_deduct_money(peer_id: int, amount: int) -> bool:
+	for p in plugins:
+		if p.deduct_money(peer_id, amount):
+			return true
+	return false
+
+
 func dispatch_on_console_command(cmd: String, args: String) -> bool:
 	for p in plugins:
 		if p.on_console_command(cmd, args):

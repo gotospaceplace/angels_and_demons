@@ -15,9 +15,13 @@ const EVT_SERVER_MSG := 4
 const EVT_HIT        := 5
 const EVT_SESSION     := 6
 const EVT_MATCH_STATE := 7
+const EVT_BUY_RESULT  := 8
+const EVT_BUY_REQUEST := 9
 
 # Admin subtypes (MSG_ADMIN payload)
 const ADMIN_REJOIN   := 1
+const ADMIN_BUY      := 2
+const ADMIN_REQUEST  := 3
 
 # Packet header: version (1) + msg_type (1) = 2 bytes
 const HEADER_SIZE := 2
@@ -274,4 +278,49 @@ static func pack_rejoin_request(token: int) -> PackedByteArray:
 	buf[4] = (token >> 8) & 0xFF
 	buf[5] = (token >> 16) & 0xFF
 	buf[6] = (token >> 24) & 0xFF
+	return buf
+
+
+static func pack_buy_request(item_index: int) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 2)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_ADMIN
+	buf[2] = ADMIN_BUY
+	buf[3] = item_index & 0xFF
+	return buf
+
+
+static func pack_weapon_request(item_index: int) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 2)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_ADMIN
+	buf[2] = ADMIN_REQUEST
+	buf[3] = item_index & 0xFF
+	return buf
+
+
+static func pack_buy_result_event(success: bool, item_index: int, money: int) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 5)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_BUY_RESULT
+	buf[3] = 1 if success else 0
+	buf[4] = item_index & 0xFF
+	buf[5] = money & 0xFF
+	buf[6] = (money >> 8) & 0xFF
+	return buf
+
+
+static func pack_buy_request_event(requester_id: int, item_index: int) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 4)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_BUY_REQUEST
+	buf[3] = requester_id & 0xFF
+	buf[4] = (requester_id >> 8) & 0xFF
+	buf[5] = item_index & 0xFF
 	return buf

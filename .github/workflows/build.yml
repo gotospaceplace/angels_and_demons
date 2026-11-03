@@ -127,6 +127,9 @@ jobs:
       - name: Portal objective tests
         run: timeout 30 godot --headless --path . -- --test-objective
 
+      - name: Buy menu tests
+        run: timeout 30 godot --headless --path . -- --test-buymenu
+
       - name: Validation tests
         run: timeout 30 godot --headless --path . -- --test-validation
 

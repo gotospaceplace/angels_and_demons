@@ -42,6 +42,16 @@ func swap_sides() -> void:
 	print("[Spawns] Sides swapped (swapped=%s)" % _swapped)
 
 
+func get_spawn_center(team: int) -> Vector3:
+	var team_spawns := _get_team_spawns(team)
+	if team_spawns.is_empty():
+		return Vector3.ZERO
+	var sum := Vector3.ZERO
+	for sp in team_spawns:
+		sum += sp
+	return sum / float(team_spawns.size())
+
+
 func _get_team_spawns(team: int) -> Array[Vector3]:
 	var effective := _get_effective_team(team)
 	if effective == Team.Id.ANGELS:

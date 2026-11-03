@@ -362,6 +362,86 @@ func _handle_admin_packet(peer_id: int, packet: PackedByteArray) -> void:
 			_restore_player(peer_id, token)
 		else:
 			_spawn_new_player(peer_id)
+	elif admin_type == NetProtocol.ADMIN_BUY:
+		if packet.size() < 4:
+			return
+		var item_index: int = packet[3]
+		_handle_buy(peer_id, item_index)
+	elif admin_type == NetProtocol.ADMIN_REQUEST:
+		if packet.size() < 4:
+			return
+		var item_index: int = packet[3]
+		_handle_weapon_request(peer_id, item_index)
+
+
+func _handle_buy(peer_id: int, item_index: int) -> void:
+	if not players.has(peer_id):
+		return
+	var sp = players[peer_id]
+	if sp.is_dead:
+		_send_buy_result(peer_id, false, item_index)
+		return
+
+	var item := BuyCatalog.get_item(item_index)
+	if item.is_empty():
+		_send_buy_result(peer_id, false, item_index)
+		return
+
+	var team := plugin_manager.dispatch_get_player_team(peer_id)
+	var attack_team := plugin_manager.dispatch_get_attack_team()
+	var money := plugin_manager.dispatch_get_player_money(peer_id)
+	var check := BuyCatalog.can_buy(item_index, money, team, attack_team,
+		sp.weapon_idx, sp.armor)
+	if not check["ok"]:
+		_send_buy_result(peer_id, false, item_index)
+		return
+
+	if not plugin_manager.dispatch_can_purchase(
+			peer_id, item["id"], item["price"], sp.body.global_position):
+		_send_buy_result(peer_id, false, item_index)
+		return
+
+	if not plugin_manager.dispatch_deduct_money(peer_id, item["price"]):
+		_send_buy_result(peer_id, false, item_index)
+		return
+
+	var slot: int = item["slot"]
+	if slot == BuyCatalog.Slot.ARMOR:
+		sp.armor = item.get("armor_value", 0)
+	else:
+		sp.set_weapon(item["weapon_idx"])
+
+	var new_money := plugin_manager.dispatch_get_player_money(peer_id)
+	plugin_manager.dispatch_on_purchase(peer_id, item["id"], item["price"])
+	_send_buy_result(peer_id, true, item_index)
+	print("[Server] Player %d bought %s ($%d → $%d)" % [
+		peer_id, item["id"], item["price"], new_money])
+
+
+func _handle_weapon_request(peer_id: int, item_index: int) -> void:
+	if not players.has(peer_id):
+		return
+	var item := BuyCatalog.get_item(item_index)
+	if item.is_empty():
+		return
+	var team := plugin_manager.dispatch_get_player_team(peer_id)
+	var packet := NetProtocol.pack_buy_request_event(peer_id, item_index)
+	for pid in players:
+		if pid == peer_id:
+			continue
+		if plugin_manager.dispatch_get_player_team(pid) == team:
+			multiplayer.send_bytes(packet, pid,
+				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+				NetConstants.CHANNEL_EVENTS)
+	print("[Server] Player %d requested %s from teammates" % [peer_id, item["id"]])
+
+
+func _send_buy_result(peer_id: int, success: bool, item_index: int) -> void:
+	var money := plugin_manager.dispatch_get_player_money(peer_id)
+	var packet := NetProtocol.pack_buy_result_event(success, item_index, money)
+	multiplayer.send_bytes(packet, peer_id,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_EVENTS)
 
 
 func _spawn_new_player(peer_id: int) -> void:
@@ -397,6 +477,7 @@ func _spawn_new_player(peer_id: int) -> void:
 			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 			NetConstants.CHANNEL_EVENTS)
 
+	_send_match_state_to(peer_id)
 	print("[Server] New player %d spawned at %s (token=%d, total: %d)" % [
 		peer_id, spawn_pos, token, players.size()])
 
@@ -558,6 +639,34 @@ func _cmd_settings() -> void:
 func _on_plugin_event(event_name: StringName, _data: Dictionary) -> void:
 	if event_name == &"round_reset":
 		_reset_round_players()
+		_broadcast_match_state()
+
+
+func _broadcast_match_state() -> void:
+	var mode := plugin_manager.get_client_mode()
+	if mode == &"":
+		return
+	var state := plugin_manager.get_client_state()
+	for peer_id in players:
+		state["my_team"] = plugin_manager.dispatch_get_player_team(peer_id)
+		state["money"] = plugin_manager.dispatch_get_player_money(peer_id)
+		var packet := NetProtocol.pack_match_state_event(mode, state)
+		multiplayer.send_bytes(packet, peer_id,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+
+
+func _send_match_state_to(peer_id: int) -> void:
+	var mode := plugin_manager.get_client_mode()
+	if mode == &"":
+		return
+	var state := plugin_manager.get_client_state()
+	state["my_team"] = plugin_manager.dispatch_get_player_team(peer_id)
+	state["money"] = plugin_manager.dispatch_get_player_money(peer_id)
+	var packet := NetProtocol.pack_match_state_event(mode, state)
+	multiplayer.send_bytes(packet, peer_id,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_EVENTS)
 
 
 func _reset_round_players() -> void:

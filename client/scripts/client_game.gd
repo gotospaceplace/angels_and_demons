@@ -1,6 +1,7 @@
 extends Node
 
 const ClientInterpolation = preload("res://client/scripts/client_interpolation.gd")
+const ClientBuyMenuScene = preload("res://client/scripts/client_buy_menu.gd")
 
 var client_tick: int = 0
 var server_tick: int = 0
@@ -24,6 +25,8 @@ var snapshots_received: int = 0
 var my_peer_id: int = 0
 var interpolation: Node = null
 var player_stats: Dictionary = {}
+var buy_menu: ClientBuyMenu
+var mode_loader: ClientModeLoader
 
 var session_token: int = 0
 var server_address: String = "127.0.0.1"
@@ -63,6 +66,14 @@ func _ready() -> void:
 	interp_node.set_script(ClientInterpolation)
 	add_child(interp_node)
 	interpolation = interp_node
+
+	mode_loader = ClientModeLoader.new()
+
+	buy_menu = ClientBuyMenu.new()
+	buy_menu.name = "BuyMenu"
+	add_child(buy_menu)
+	buy_menu.buy_requested.connect(_on_buy_requested)
+	buy_menu.weapon_requested.connect(_on_weapon_requested)
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
@@ -420,6 +431,16 @@ func _handle_event(packet: PackedByteArray) -> void:
 				if packet.size() >= 5 + msg_len:
 					var msg := packet.slice(5, 5 + msg_len).get_string_from_utf8()
 					print("[Server] %s" % msg)
+		NetProtocol.EVT_MATCH_STATE:
+			var ms := NetProtocol.unpack_match_state_event(packet)
+			if not ms.is_empty():
+				mode_loader.apply_match_state(ms["mode"], ms["state"])
+				var st: Dictionary = ms["state"]
+				var my_team: int = st.get("my_team", 0)
+				var atk_team: int = st.get("attack_team", 0)
+				var my_money: int = st.get("money", 0)
+				buy_menu.update_money(my_money)
+				buy_menu.update_state(my_team, atk_team, 0, 0)
 		NetProtocol.EVT_SPAWN:
 			if packet.size() >= 17:
 				var spawned_id := packet[3] | (packet[4] << 8)
@@ -433,6 +454,24 @@ func _handle_event(packet: PackedByteArray) -> void:
 					prediction_buffer.clear()
 					snapshot_buffer.clear()
 				print("[Client] SPAWN: Player %d at %s" % [spawned_id, pos])
+		NetProtocol.EVT_BUY_RESULT:
+			if packet.size() >= 7:
+				var success := packet[3] != 0
+				var item_idx := packet[4]
+				var new_money := packet[5] | (packet[6] << 8)
+				buy_menu.update_money(new_money)
+				var item := BuyCatalog.get_item(item_idx)
+				if success and not item.is_empty():
+					print("[Client] Bought %s (money: $%d)" % [item["name"], new_money])
+				elif not item.is_empty():
+					print("[Client] Buy failed: %s" % item["name"])
+		NetProtocol.EVT_BUY_REQUEST:
+			if packet.size() >= 6:
+				var requester_id := packet[3] | (packet[4] << 8)
+				var item_idx := packet[5]
+				buy_menu.show_request(requester_id, item_idx)
+				if not buy_menu.is_open:
+					buy_menu.open_menu()
 
 
 func set_local_player(player: CharacterBody3D) -> void:
@@ -489,6 +528,20 @@ func _start_reconnect() -> void:
 	reconnect_label.text = "Reconnecting..."
 	NetworkManager.disconnect_from_server()
 	print("[Client] Starting reconnect (token=%d)" % session_token)
+
+
+func _on_buy_requested(item_index: int) -> void:
+	var packet := NetProtocol.pack_buy_request(item_index)
+	multiplayer.send_bytes(packet, 1,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_ADMIN)
+
+
+func _on_weapon_requested(item_index: int) -> void:
+	var packet := NetProtocol.pack_weapon_request(item_index)
+	multiplayer.send_bytes(packet, 1,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_ADMIN)
 
 
 func _attempt_reconnect() -> void:
