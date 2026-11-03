@@ -13,7 +13,8 @@ const EVT_SPAWN      := 2
 const EVT_CHAT       := 3
 const EVT_SERVER_MSG := 4
 const EVT_HIT        := 5
-const EVT_SESSION    := 6
+const EVT_SESSION     := 6
+const EVT_MATCH_STATE := 7
 
 # Admin subtypes (MSG_ADMIN payload)
 const ADMIN_REJOIN   := 1
@@ -228,6 +229,39 @@ static func pack_server_msg_event(message: String) -> PackedByteArray:
 	buf[4] = (msg_bytes.size() >> 8) & 0xFF
 	buf.append_array(msg_bytes)
 	return buf
+
+
+static func pack_match_state_event(mode: String, state: Dictionary) -> PackedByteArray:
+	var mode_bytes := mode.to_utf8_buffer()
+	var state_bytes := var_to_bytes(state)
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 1)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_MATCH_STATE
+	var mode_len := PackedByteArray()
+	mode_len.resize(2)
+	mode_len[0] = mode_bytes.size() & 0xFF
+	mode_len[1] = (mode_bytes.size() >> 8) & 0xFF
+	buf.append_array(mode_len)
+	buf.append_array(mode_bytes)
+	buf.append_array(state_bytes)
+	return buf
+
+
+static func unpack_match_state_event(buf: PackedByteArray) -> Dictionary:
+	if buf.size() < HEADER_SIZE + 5:
+		return {}
+	var mode_len: int = buf[3] | (buf[4] << 8)
+	if buf.size() < HEADER_SIZE + 3 + mode_len:
+		return {}
+	var mode_bytes := buf.slice(5, 5 + mode_len)
+	var mode := mode_bytes.get_string_from_utf8()
+	var state_start := 5 + mode_len
+	var state: Dictionary = {}
+	if buf.size() > state_start:
+		state = bytes_to_var(buf.slice(state_start))
+	return {"mode": mode, "state": state}
 
 
 static func pack_rejoin_request(token: int) -> PackedByteArray:
