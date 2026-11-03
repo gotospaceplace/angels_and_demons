@@ -33,6 +33,9 @@ func _ready() -> void:
 		&"test_bhop_degradation",
 		&"test_step_up",
 		&"test_duck_hull_shrink",
+		&"test_walk_speed_cap",
+		&"test_walk_with_duck",
+		&"test_walk_air_no_effect",
 	]
 
 	print("=== Movement Regression Tests ===")
@@ -72,12 +75,13 @@ func _reset_player(pos: Vector3, yaw: float = -PI / 2.0) -> void:
 	player.ground_time = 0.0
 	player.ground_normal = Vector3.UP
 	player.on_ladder = false
+	player.wants_walk = false
 	player.wish_dir = Vector3.ZERO
 	player.wish_speed = 0.0
 	player.max_speed = MC.SPEED_KNIFE
 	player.rotation = Vector3(0, yaw, 0)
 
-func _set_input(forward: float, right: float = 0.0, jump: bool = false, duck: bool = false) -> void:
+func _set_input(forward: float, right: float = 0.0, jump: bool = false, duck: bool = false, walk: bool = false) -> void:
 	var dir := Vector3.ZERO
 	var basis := player.global_transform.basis
 	var fwd := -basis.z
@@ -97,6 +101,7 @@ func _set_input(forward: float, right: float = 0.0, jump: bool = false, duck: bo
 	player.jump_was_pressed = player.jump_pressed
 	player.jump_pressed = jump
 	player.wants_duck = duck
+	player.wants_walk = walk
 
 func _h_speed() -> float:
 	return Vector3(player.velocity.x, 0, player.velocity.z).length()
@@ -383,6 +388,55 @@ func test_duck_hull_shrink() -> void:
 			_pass("ducked hull height %.3f (expected %.3f)" % [capsule.height, expected])
 		else:
 			_fail("ducked hull height %.3f, expected %.3f" % [capsule.height, expected])
+
+func test_walk_speed_cap() -> void:
+	# Walk forward with walk key held, verify speed caps at 140 u/s
+	_set_input(1.0, 0.0, false, false, true)
+
+	if tick >= 128:
+		var speed := _h_speed_gsrc()
+		if absf(speed - 140.0) < 5.0:
+			_pass("walk speed %.1f u/s (expected ~140)" % speed)
+		else:
+			_fail("walk speed %.1f u/s, expected ~140" % speed)
+
+func test_walk_with_duck() -> void:
+	# Walk + duck: walk caps wish_speed to 140, then duck multiplies by 0.333 → ~46.6 u/s
+	_set_input(1.0, 0.0, false, true, true)
+
+	if tick >= 128:
+		var speed := _h_speed_gsrc()
+		var expected := 140.0 * MC.DUCKING_MULTIPLIER
+		if absf(speed - expected) < 5.0:
+			_pass("walk+duck speed %.1f u/s (expected ~%.0f)" % [speed, expected])
+		else:
+			_fail("walk+duck speed %.1f u/s, expected ~%.0f" % [speed, expected])
+
+func test_walk_air_no_effect() -> void:
+	# Jump while walking, verify air speed is not capped by walk
+	if tick < 128:
+		_set_input(1.0, 0.0, false, false, false)
+		return
+
+	if not test_state.has("jumped"):
+		if player.on_ground:
+			test_state["jumped"] = true
+			test_state["pre_jump_speed"] = _h_speed_gsrc()
+			_set_input(1.0, 0.0, true, false, true)
+		return
+
+	if not player.on_ground:
+		_set_input(1.0, 0.0, false, false, true)
+		var speed := _h_speed_gsrc()
+		if speed > 145.0:
+			_pass("walk in air: speed %.1f u/s (not capped to 140)" % speed)
+			return
+	elif test_state.has("jumped"):
+		_fail("landed before measuring air speed")
+		return
+
+	if tick > 400:
+		_fail("timed out")
 
 func _find_player() -> CharacterBody3D:
 	var players := get_tree().get_nodes_in_group("player")
