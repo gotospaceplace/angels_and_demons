@@ -5,6 +5,9 @@ var server_match: ServerMatch
 var spawns: CompetitiveSpawns
 var objective: CompetitiveObjective
 var _next_team: int = Team.Id.ANGELS
+var player_colors: Dictionary = {}
+var _next_color: Dictionary = {}
+var _player_alive: Dictionary = {}
 const BUY_ZONE_RADIUS := 15.0
 
 
@@ -22,6 +25,7 @@ func on_load(_manager) -> void:
 	server_match.round_started.connect(_on_round_started)
 	server_match.round_ended.connect(_on_round_ended)
 	server_match.halftime_started.connect(_on_halftime)
+	server_match.state_changed.connect(_on_state_changed)
 	objective.catalyst_activated.connect(_on_catalyst_activated)
 	objective.portal_opened.connect(_on_portal_opened)
 	objective.portal_sealed.connect(_on_portal_sealed)
@@ -58,12 +62,21 @@ func on_tick(_tick: int, delta: float) -> void:
 func on_player_connect(peer_id: int) -> bool:
 	var team := _pick_team()
 	server_match.set_team(peer_id, team)
-	print("[Competitive] Player %d assigned to %s" % [peer_id, Team.get_name(team)])
+	var color_idx: int = _next_color.get(team, 0) % Team.PLAYER_COLORS.size()
+	player_colors[peer_id] = color_idx
+	_next_color[team] = color_idx + 1
+	_player_alive[peer_id] = true
+	print("[Competitive] Player %d assigned to %s (color %d)" % [
+		peer_id, Team.get_name(team), color_idx])
 	return true
 
 
 func on_player_disconnect(peer_id: int) -> void:
 	server_match.remove_player(peer_id)
+	player_colors.erase(peer_id)
+	_player_alive.erase(peer_id)
+	if manager:
+		manager.plugin_event.emit(&"roster_changed", {})
 
 
 func on_player_damage(attacker_id: int, victim_id: int, damage: float,
@@ -74,6 +87,9 @@ func on_player_damage(attacker_id: int, victim_id: int, damage: float,
 
 func on_player_kill(killer_id: int, victim_id: int, weapon_idx: int, _headshot: bool) -> void:
 	server_match.report_kill(killer_id, victim_id, weapon_idx)
+	_player_alive[victim_id] = false
+	if manager:
+		manager.plugin_event.emit(&"roster_changed", {})
 	if objective.carrier_id == victim_id and objective.carrier_id != -1:
 		objective.on_carrier_killed(manager.last_death_position)
 	if objective.sealer_id == victim_id and objective.sealer_id != -1:
@@ -133,6 +149,14 @@ func on_player_use_release(peer_id: int) -> void:
 
 
 func get_client_state() -> Dictionary:
+	var roster_data: Array = []
+	for pid in server_match.get_team_players():
+		roster_data.append({
+			"id": pid,
+			"team": server_match.get_team(pid),
+			"alive": _player_alive.get(pid, false),
+			"color": player_colors.get(pid, 0),
+		})
 	return {
 		"state": server_match.get_state_name(),
 		"round": server_match.round_number,
@@ -144,6 +168,7 @@ func get_client_state() -> Dictionary:
 		"portal_timer": objective.portal_timer,
 		"catalyst_carrier": objective.carrier_id,
 		"catalyst_position": objective.catalyst_position,
+		"roster": roster_data,
 	}
 
 
@@ -161,8 +186,15 @@ func on_console_command(cmd: String, _args: String) -> bool:
 	return false
 
 
+func _on_state_changed(_old: int, _new: int) -> void:
+	if manager:
+		manager.plugin_event.emit(&"match_state_changed", {})
+
+
 func _on_round_started(_round_number: int) -> void:
 	spawns.reset_indices()
+	for pid in server_match.get_team_players():
+		_player_alive[pid] = true
 
 	var attackers: Array[int] = []
 	for peer_id in server_match.get_team_players():

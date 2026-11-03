@@ -640,6 +640,8 @@ func _on_plugin_event(event_name: StringName, _data: Dictionary) -> void:
 	if event_name == &"round_reset":
 		_reset_round_players()
 		_broadcast_match_state()
+	elif event_name == &"roster_changed" or event_name == &"match_state_changed":
+		_broadcast_match_state()
 
 
 func _broadcast_match_state() -> void:

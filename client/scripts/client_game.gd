@@ -26,6 +26,7 @@ var interpolation: Node = null
 var player_stats: Dictionary = {}
 var buy_menu: ClientBuyMenu
 var mode_loader: ClientModeLoader
+var hud: ClientHud
 
 var session_token: int = 0
 var server_address: String = "127.0.0.1"
@@ -73,6 +74,10 @@ func _ready() -> void:
 	add_child(buy_menu)
 	buy_menu.buy_requested.connect(_on_buy_requested)
 	buy_menu.weapon_requested.connect(_on_weapon_requested)
+
+	hud = ClientHud.new()
+	hud.name = "HUD"
+	add_child(hud)
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
@@ -324,6 +329,12 @@ func _handle_snapshot(packet: PackedByteArray) -> void:
 		tick_synced = true
 		print("[Client] Tick synced: server=%d client=%d (lead=%d)" % [server_tick, client_tick, lead])
 
+	if my_peer_id > 0 and hud:
+		for s in result["states"]:
+			if s.peer_id == my_peer_id:
+				hud.update_from_snapshot(s.hp, s.armor, s.weapon_idx, s.ammo_mag)
+				break
+
 	# Reconciliation: compare server state to our prediction
 	if local_player and my_peer_id > 0:
 		_pending_reconcile = result
@@ -440,6 +451,9 @@ func _handle_event(packet: PackedByteArray) -> void:
 				var my_money: int = st.get("money", 0)
 				buy_menu.update_money(my_money)
 				buy_menu.update_state(my_team, atk_team, 0, 0)
+				if hud:
+					hud.my_peer_id = my_peer_id
+					hud.update_from_match_state(st)
 		NetProtocol.EVT_SPAWN:
 			if packet.size() >= 17:
 				var spawned_id := packet[3] | (packet[4] << 8)
