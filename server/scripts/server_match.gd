@@ -37,6 +37,9 @@ var halftime_time: float = 15.0
 var warmup_min_players: int = 2
 
 var economy: ServerEconomy
+var round_timer_paused: bool = false
+var catalyst_activated: bool = false
+
 var _team_players: Dictionary = {}
 var _alive_count: Dictionary = {Team.Id.ANGELS: 0, Team.Id.DEMONS: 0}
 var _round_winner: int = Team.Id.UNASSIGNED
@@ -159,9 +162,10 @@ func _tick_freeze(delta: float) -> void:
 
 
 func _tick_live(delta: float) -> void:
-	round_timer -= delta
-	if round_timer <= 0.0:
-		_end_round(defense_team, &"time_expired")
+	if not round_timer_paused:
+		round_timer -= delta
+		if round_timer <= 0.0:
+			_end_round(defense_team, &"time_expired")
 
 
 func _tick_round_over(delta: float) -> void:
@@ -183,6 +187,8 @@ func _tick_halftime(delta: float) -> void:
 
 func _start_round() -> void:
 	round_number += 1
+	round_timer_paused = false
+	catalyst_activated = false
 	_change_state(State.FREEZE)
 	state_timer = freeze_time
 	_count_alive_players()
@@ -255,10 +261,15 @@ func _check_elimination() -> void:
 		return
 	var angels_alive: int = _alive_count.get(Team.Id.ANGELS, 0)
 	var demons_alive: int = _alive_count.get(Team.Id.DEMONS, 0)
-	if angels_alive <= 0 and demons_alive > 0:
-		_end_round(Team.Id.DEMONS, &"elimination")
-	elif demons_alive <= 0 and angels_alive > 0:
-		_end_round(Team.Id.ANGELS, &"elimination")
+
+	if catalyst_activated:
+		if _alive_count.get(defense_team, 0) <= 0 and _alive_count.get(attack_team, 0) > 0:
+			_end_round(attack_team, &"elimination")
+	else:
+		if angels_alive <= 0 and demons_alive > 0:
+			_end_round(Team.Id.DEMONS, &"elimination")
+		elif demons_alive <= 0 and angels_alive > 0:
+			_end_round(Team.Id.ANGELS, &"elimination")
 
 
 func _count_alive_players() -> void:

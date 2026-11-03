@@ -27,6 +27,11 @@ var demons_spawns: Array[Vector3] = [
 	Vector3(8, 1, 18),
 ]
 
+var portal_sites: Dictionary = {
+	&"A": Vector3(-10, 1, -8),
+	&"B": Vector3(10, 1, -8),
+}
+
 
 func _ready() -> void:
 	_build_floor()

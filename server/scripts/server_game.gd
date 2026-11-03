@@ -18,6 +18,7 @@ var peer_tokens: Dictionary = {}
 var disconnected_players: Dictionary = {}
 var pending_peers: Dictionary = {}
 var next_token: int = 1
+var _use_state: Dictionary = {}
 
 const PENDING_TIMEOUT_TICKS := 64
 
@@ -62,6 +63,8 @@ func _ready() -> void:
 
 	if map.get("angels_spawns") and map.get("demons_spawns"):
 		plugin_manager.set_map_spawns(map.angels_spawns, map.demons_spawns)
+	if map.get("portal_sites"):
+		plugin_manager.set_map_portal_sites(map.portal_sites)
 
 	var err := NetworkManager.host_server(port)
 	if err != OK:
@@ -114,6 +117,7 @@ func _physics_process(delta: float) -> void:
 
 	_process_fire_commands()
 	_process_respawns()
+	_process_use_commands(delta)
 	lag_comp.store_tick(server_tick, players)
 
 	plugin_manager.dispatch_on_tick(server_tick, delta)
@@ -250,6 +254,7 @@ func _process_fire_commands() -> void:
 		if victim_sp.is_dead:
 			victim_sp.die(server_tick)
 			sp.kills += 1
+			plugin_manager.last_death_position = victim_sp.body.global_position
 			plugin_manager.dispatch_on_player_kill(peer_id, victim_id, sp.weapon_idx, hit["headshot"])
 			plugin_manager.dispatch_on_player_death(victim_id, peer_id)
 			var kill_packet := NetProtocol.pack_kill_event(
@@ -286,6 +291,27 @@ func _process_respawns() -> void:
 				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 				NetConstants.CHANNEL_EVENTS)
 		print("[Server] Player %d respawned at %s" % [peer_id, spawn_pos])
+
+
+func _process_use_commands(delta: float) -> void:
+	for peer_id in players:
+		var sp = players[peer_id]
+		if sp.is_dead:
+			if _use_state.get(peer_id, false):
+				plugin_manager.dispatch_on_player_use_release(peer_id)
+				_use_state[peer_id] = false
+			continue
+
+		var cmd: NetInput = sp.last_input
+		var wants_use: bool = cmd.has_button(NetInput.BIT_USE)
+		var was_using: bool = _use_state.get(peer_id, false)
+
+		if wants_use:
+			plugin_manager.dispatch_on_player_use(peer_id, sp.body.global_position, delta)
+		elif was_using:
+			plugin_manager.dispatch_on_player_use_release(peer_id)
+
+		_use_state[peer_id] = wants_use
 
 
 func _broadcast_snapshots() -> void:

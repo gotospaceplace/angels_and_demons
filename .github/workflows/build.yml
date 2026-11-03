@@ -124,6 +124,9 @@ jobs:
       - name: Spawn system tests
         run: timeout 30 godot --headless --path . -- --test-spawn
 
+      - name: Portal objective tests
+        run: timeout 30 godot --headless --path . -- --test-objective
+
       - name: Validation tests
         run: timeout 30 godot --headless --path . -- --test-validation
 

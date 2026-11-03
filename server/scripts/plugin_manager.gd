@@ -6,6 +6,7 @@ signal plugin_event(event_name: StringName, data: Dictionary)
 var plugins: Array[GamePlugin] = []
 var match_config: MatchConfig
 var _mode_plugin: GamePlugin
+var last_death_position: Vector3 = Vector3.ZERO
 
 
 func _init() -> void:
@@ -13,8 +14,8 @@ func _init() -> void:
 
 
 func load_plugin(plugin: GamePlugin) -> void:
-	plugin.register_settings(match_config)
 	plugin.on_load(self)
+	plugin.register_settings(match_config)
 	plugins.append(plugin)
 	if plugin.get_client_mode() != &"":
 		_mode_plugin = plugin
@@ -56,6 +57,12 @@ func set_map_spawns(angels_spawns: Array[Vector3], demons_spawns: Array[Vector3]
 	for p in plugins:
 		if p.has_method("load_map_spawns"):
 			p.load_map_spawns(angels_spawns, demons_spawns)
+
+
+func set_map_portal_sites(sites: Dictionary) -> void:
+	for p in plugins:
+		if p.has_method("load_map_portal_sites"):
+			p.load_map_portal_sites(sites)
 
 
 # --- Hook dispatch ---
@@ -195,6 +202,16 @@ func dispatch_on_match_end(winner_team: int) -> void:
 
 
 # --- Portal objective dispatch ---
+
+func dispatch_on_player_use(peer_id: int, position: Vector3, delta: float) -> void:
+	for p in plugins:
+		p.on_player_use(peer_id, position, delta)
+
+
+func dispatch_on_player_use_release(peer_id: int) -> void:
+	for p in plugins:
+		p.on_player_use_release(peer_id)
+
 
 func dispatch_on_catalyst_activate_start(peer_id: int, site: StringName) -> bool:
 	for p in plugins:
