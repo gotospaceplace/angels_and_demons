@@ -17,6 +17,8 @@ func _load_mode(mode: StringName) -> void:
 	match mode:
 		&"deathmatch":
 			print("[Client] Mode: deathmatch")
+		&"competitive":
+			print("[Client] Mode: competitive")
 		_:
 			push_warning("Unknown mode '%s'" % mode)
 

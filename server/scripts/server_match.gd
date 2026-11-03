@@ -32,6 +32,7 @@ var rounds_to_win: int = 13
 
 var round_time: float = 115.0
 var freeze_time: float = 5.0
+var buy_time: float = 15.0
 var round_over_time: float = 5.0
 var halftime_time: float = 15.0
 var warmup_min_players: int = 2
@@ -52,6 +53,7 @@ func _init() -> void:
 func register_settings(config: MatchConfig) -> void:
 	config.register("mp_roundtime", round_time, "Round time in seconds", &"competitive")
 	config.register("mp_freezetime", freeze_time, "Freeze time in seconds", &"competitive")
+	config.register("mp_buytime", buy_time, "Total buy period in seconds from round start", &"competitive")
 	config.register("mp_round_over_time", round_over_time, "Round over celebration time", &"competitive")
 	config.register("mp_halftime", halftime_time, "Halftime duration in seconds", &"competitive")
 	config.register("mp_rounds_per_half", rounds_per_half, "Rounds per half", &"competitive")
@@ -61,6 +63,7 @@ func register_settings(config: MatchConfig) -> void:
 func apply_settings(config: MatchConfig) -> void:
 	round_time = config.get_float("mp_roundtime")
 	freeze_time = config.get_float("mp_freezetime")
+	buy_time = config.get_float("mp_buytime")
 	round_over_time = config.get_float("mp_round_over_time")
 	halftime_time = config.get_float("mp_halftime")
 	rounds_per_half = config.get_int("mp_rounds_per_half")
@@ -130,6 +133,16 @@ func get_state_name() -> String:
 		State.HALFTIME: return "HALFTIME"
 		State.MATCH_OVER: return "MATCH_OVER"
 		_: return "UNKNOWN"
+
+
+func is_buy_period() -> bool:
+	if state == State.FREEZE:
+		return true
+	if state == State.LIVE:
+		var live_elapsed := round_time - round_timer
+		var live_buy_window := buy_time - freeze_time
+		return live_buy_window > 0.0 and live_elapsed < live_buy_window
+	return false
 
 
 func get_remaining_time() -> float:

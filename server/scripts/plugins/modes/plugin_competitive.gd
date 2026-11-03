@@ -5,6 +5,7 @@ var server_match: ServerMatch
 var spawns: CompetitiveSpawns
 var objective: CompetitiveObjective
 var _next_team: int = Team.Id.ANGELS
+const BUY_ZONE_RADIUS := 15.0
 
 
 func get_plugin_name() -> StringName: return &"competitive"
@@ -96,6 +97,27 @@ func get_spawn_position(peer_id: int) -> Vector3:
 	if not Team.is_playing_team(team):
 		return Vector3.ZERO
 	return spawns.get_spawn_for_team(team)
+
+
+func get_player_money(peer_id: int) -> int:
+	return server_match.economy.get_money(peer_id)
+
+
+func get_attack_team() -> int:
+	return server_match.attack_team
+
+
+func deduct_money(peer_id: int, amount: int) -> bool:
+	return server_match.economy.purchase(peer_id, amount)
+
+
+func can_purchase(peer_id: int, _item: StringName, _price: int, position: Vector3) -> bool:
+	if not server_match.is_buy_period():
+		return false
+	var team := server_match.get_team(peer_id)
+	var center := spawns.get_spawn_center(team)
+	var flat_dist := Vector2(position.x - center.x, position.z - center.z).length()
+	return flat_dist <= BUY_ZONE_RADIUS
 
 
 func on_player_use(peer_id: int, position: Vector3, delta: float) -> void:

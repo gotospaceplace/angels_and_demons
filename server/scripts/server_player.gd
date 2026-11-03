@@ -220,6 +220,16 @@ func respawn(spawn_pos: Vector3) -> void:
 		collision.disabled = false
 
 
+func set_weapon(new_weapon_idx: int) -> void:
+	if new_weapon_idx < 0 or new_weapon_idx >= WEAPON_COUNT:
+		return
+	weapon_idx = new_weapon_idx
+	ammo_mag = WEAPON_MAG_SIZES[new_weapon_idx]
+	fire_pressed = false
+	next_fire_tick = 0
+	is_reloading = false
+
+
 func teleport_to_spawn(spawn_pos: Vector3) -> void:
 	hp = 100
 	fire_pressed = false

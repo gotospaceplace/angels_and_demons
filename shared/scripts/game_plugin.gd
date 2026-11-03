@@ -43,8 +43,11 @@ func on_player_use_release(_peer_id: int) -> void: pass
 
 # --- Economy (raised by economy-aware plugins) ---
 func on_money_change(_peer_id: int, _old_amount: int, _new_amount: int) -> void: pass
-func can_purchase(_peer_id: int, _item: StringName, _price: int) -> bool: return true
+func can_purchase(_peer_id: int, _item: StringName, _price: int, _position: Vector3) -> bool: return true
 func on_purchase(_peer_id: int, _item: StringName, _price: int) -> void: pass
+func get_player_money(_peer_id: int) -> int: return -1
+func get_attack_team() -> int: return -1
+func deduct_money(_peer_id: int, _amount: int) -> bool: return false
 
 # --- Portal objective (raised by objective-aware plugins) ---
 func on_catalyst_activate_start(_peer_id: int, _site: StringName) -> bool: return true
