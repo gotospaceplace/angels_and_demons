@@ -8,6 +8,10 @@ var _next_team: int = Team.Id.ANGELS
 var player_colors: Dictionary = {}
 var _next_color: Dictionary = {}
 var _player_alive: Dictionary = {}
+var _player_stats: Dictionary = {}
+var _round_damage: Dictionary = {}
+var _round_history: Array = []
+var _last_objective_detail: StringName = &""
 const BUY_ZONE_RADIUS := 15.0
 
 
@@ -66,6 +70,7 @@ func on_player_connect(peer_id: int) -> bool:
 	player_colors[peer_id] = color_idx
 	_next_color[team] = color_idx + 1
 	_player_alive[peer_id] = true
+	_player_stats[peer_id] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
 	print("[Competitive] Player %d assigned to %s (color %d)" % [
 		peer_id, Team.get_name(team), color_idx])
 	return true
@@ -75,6 +80,10 @@ func on_player_disconnect(peer_id: int) -> void:
 	server_match.remove_player(peer_id)
 	player_colors.erase(peer_id)
 	_player_alive.erase(peer_id)
+	_player_stats.erase(peer_id)
+	_round_damage.erase(peer_id)
+	for vid in _round_damage:
+		_round_damage[vid].erase(peer_id)
 	if manager:
 		manager.plugin_event.emit(&"roster_changed", {})
 
@@ -82,12 +91,26 @@ func on_player_disconnect(peer_id: int) -> void:
 func on_player_damage(attacker_id: int, victim_id: int, damage: float,
 		_weapon_idx: int, _hitgroup: String) -> float:
 	objective.on_player_damaged(victim_id)
+	if _player_stats.has(attacker_id):
+		_player_stats[attacker_id]["damage"] += int(damage)
+	if not _round_damage.has(victim_id):
+		_round_damage[victim_id] = {}
+	_round_damage[victim_id][attacker_id] = _round_damage[victim_id].get(attacker_id, 0) + int(damage)
 	return damage
 
 
 func on_player_kill(killer_id: int, victim_id: int, weapon_idx: int, _headshot: bool) -> void:
 	server_match.report_kill(killer_id, victim_id, weapon_idx)
 	_player_alive[victim_id] = false
+	if _player_stats.has(killer_id):
+		_player_stats[killer_id]["kills"] += 1
+	if _player_stats.has(victim_id):
+		_player_stats[victim_id]["deaths"] += 1
+	if _round_damage.has(victim_id):
+		for aid in _round_damage[victim_id]:
+			if aid != killer_id and aid != victim_id and _player_stats.has(aid):
+				_player_stats[aid]["assists"] += 1
+	_round_damage.erase(victim_id)
 	if manager:
 		manager.plugin_event.emit(&"roster_changed", {})
 	if objective.carrier_id == victim_id and objective.carrier_id != -1:
@@ -151,11 +174,17 @@ func on_player_use_release(peer_id: int) -> void:
 func get_client_state() -> Dictionary:
 	var roster_data: Array = []
 	for pid in server_match.get_team_players():
+		var stats: Dictionary = _player_stats.get(pid, {})
 		roster_data.append({
 			"id": pid,
 			"team": server_match.get_team(pid),
 			"alive": _player_alive.get(pid, false),
 			"color": player_colors.get(pid, 0),
+			"kills": stats.get("kills", 0),
+			"deaths": stats.get("deaths", 0),
+			"assists": stats.get("assists", 0),
+			"damage": stats.get("damage", 0),
+			"money": server_match.economy.get_money(pid),
 		})
 	return {
 		"state": server_match.get_state_name(),
@@ -168,6 +197,9 @@ func get_client_state() -> Dictionary:
 		"portal_timer": objective.portal_timer,
 		"catalyst_carrier": objective.carrier_id,
 		"catalyst_position": objective.catalyst_position,
+		"round_history": _round_history,
+		"loss_streak_angels": server_match.economy.get_loss_streak(Team.Id.ANGELS),
+		"loss_streak_demons": server_match.economy.get_loss_streak(Team.Id.DEMONS),
 		"roster": roster_data,
 	}
 
@@ -193,6 +225,7 @@ func _on_state_changed(_old: int, _new: int) -> void:
 
 func _on_round_started(_round_number: int) -> void:
 	spawns.reset_indices()
+	_round_damage.clear()
 	for pid in server_match.get_team_players():
 		_player_alive[pid] = true
 
@@ -211,6 +244,11 @@ func _on_round_started(_round_number: int) -> void:
 
 
 func _on_round_ended(_winner_team: int, _reason: StringName) -> void:
+	var detail: String = String(_reason)
+	if _reason == &"objective" and _last_objective_detail != &"":
+		detail = String(_last_objective_detail)
+	_round_history.append({"winner": _winner_team, "reason": detail})
+	_last_objective_detail = &""
 	objective.end_round()
 
 
@@ -227,11 +265,13 @@ func _on_catalyst_activated(_site: StringName, _position: Vector3) -> void:
 
 
 func _on_portal_opened(_position: Vector3) -> void:
+	_last_objective_detail = &"portal_opened"
 	server_match.end_round_external(server_match.attack_team, &"objective")
 	print("[Competitive] Portal opened — attackers win")
 
 
 func _on_portal_sealed(_peer_id: int) -> void:
+	_last_objective_detail = &"portal_sealed"
 	server_match.end_round_external(server_match.defense_team, &"objective")
 	print("[Competitive] Portal sealed — defenders win")
 

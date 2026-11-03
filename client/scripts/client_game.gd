@@ -454,6 +454,9 @@ func _handle_event(packet: PackedByteArray) -> void:
 				if hud:
 					hud.my_peer_id = my_peer_id
 					hud.update_from_match_state(st)
+				ClientScoreboard.my_peer_id = my_peer_id
+				ClientScoreboard.update_mode(ms["mode"])
+				ClientScoreboard.update_from_match_state(st)
 		NetProtocol.EVT_SPAWN:
 			if packet.size() >= 17:
 				var spawned_id := packet[3] | (packet[4] << 8)
