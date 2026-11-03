@@ -1,7 +1,6 @@
 extends Node
 
 const ClientInterpolation = preload("res://client/scripts/client_interpolation.gd")
-const ClientBuyMenuScene = preload("res://client/scripts/client_buy_menu.gd")
 
 var client_tick: int = 0
 var server_tick: int = 0

@@ -45,7 +45,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			close_menu()
 			get_viewport().set_input_as_handled()
 		elif event.keycode >= KEY_1 and event.keycode <= KEY_9:
-			var idx := event.keycode - KEY_1
+			var idx: int = event.keycode - KEY_1
 			_quick_buy(idx)
 			get_viewport().set_input_as_handled()
 
