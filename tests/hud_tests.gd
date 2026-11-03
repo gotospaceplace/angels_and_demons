@@ -20,6 +20,15 @@ func _ready() -> void:
 	_test_player_disconnect_cleanup()
 	_test_state_changed_event()
 
+	# Player stats tracking
+	_test_player_stats_init()
+	_test_player_kill_stats()
+	_test_player_damage_tracking()
+	_test_assist_detection()
+	_test_round_history_recording()
+	_test_round_history_objective_detail()
+	_test_stats_in_client_state()
+
 	# HUD state
 	_test_hud_creation()
 	_test_hud_update_from_snapshot()
@@ -30,6 +39,11 @@ func _ready() -> void:
 	_test_hud_hp_color_thresholds()
 	_test_hud_timer_format()
 	_test_hud_ammo_knife_hidden()
+
+	# Scoreboard
+	_test_scoreboard_mode_update()
+	_test_scoreboard_match_state_update()
+	_test_scoreboard_roster_sorting()
 
 	print("[HudTests] Done: %d passed, %d failed out of %d" % [pass_count, fail_count, total])
 	if fail_count > 0:
@@ -186,6 +200,116 @@ func _test_state_changed_event() -> void:
 
 	_assert(event_fired[0], "state_changed_event_fires",
 		"expected match_state_changed after warmup→freeze transition")
+
+
+# --- Player stats tracking tests ---
+
+func _test_player_stats_init() -> void:
+	var plugin := PluginCompetitive.new()
+	var mgr := PluginManager.new()
+	plugin.on_load(mgr)
+	plugin.on_player_connect(1)
+	_assert(plugin._player_stats.has(1), "stats_init_on_connect")
+	var s: Dictionary = plugin._player_stats[1]
+	_assert(s["kills"] == 0 and s["deaths"] == 0 and s["assists"] == 0 and s["damage"] == 0,
+		"stats_init_zeros")
+
+
+func _test_player_kill_stats() -> void:
+	var plugin := PluginCompetitive.new()
+	var mgr := PluginManager.new()
+	plugin.on_load(mgr)
+	plugin.on_player_connect(1)
+	plugin.on_player_connect(2)
+	plugin.on_player_kill(1, 2, 2, false)
+	_assert(plugin._player_stats[1]["kills"] == 1, "killer_kill_count",
+		"expected 1, got %d" % plugin._player_stats[1]["kills"])
+	_assert(plugin._player_stats[2]["deaths"] == 1, "victim_death_count",
+		"expected 1, got %d" % plugin._player_stats[2]["deaths"])
+
+
+func _test_player_damage_tracking() -> void:
+	var plugin := PluginCompetitive.new()
+	var mgr := PluginManager.new()
+	plugin.on_load(mgr)
+	plugin.on_player_connect(1)
+	plugin.on_player_connect(2)
+	plugin.on_player_damage(1, 2, 35.0, 2, "body")
+	_assert(plugin._player_stats[1]["damage"] == 35, "damage_tracked",
+		"expected 35, got %d" % plugin._player_stats[1]["damage"])
+	_assert(plugin._round_damage.has(2), "round_damage_victim_entry")
+	_assert(plugin._round_damage[2].get(1, 0) == 35, "round_damage_amount")
+
+
+func _test_assist_detection() -> void:
+	var plugin := PluginCompetitive.new()
+	var mgr := PluginManager.new()
+	plugin.on_load(mgr)
+	plugin.on_player_connect(1)
+	plugin.on_player_connect(2)
+	plugin.on_player_connect(3)
+	plugin.on_player_damage(1, 3, 40.0, 2, "body")
+	plugin.on_player_damage(2, 3, 60.0, 2, "body")
+	plugin.on_player_kill(2, 3, 2, false)
+	_assert(plugin._player_stats[1]["assists"] == 1, "assist_credited",
+		"expected 1 assist for player 1, got %d" % plugin._player_stats[1]["assists"])
+	_assert(plugin._player_stats[2]["assists"] == 0, "killer_no_self_assist",
+		"killer should not get assist, got %d" % plugin._player_stats[2]["assists"])
+
+
+func _test_round_history_recording() -> void:
+	var plugin := PluginCompetitive.new()
+	var mgr := PluginManager.new()
+	plugin.on_load(mgr)
+	plugin._on_round_ended(Team.Id.ANGELS, &"elimination")
+	_assert(plugin._round_history.size() == 1, "round_history_recorded",
+		"expected 1 entry, got %d" % plugin._round_history.size())
+	if plugin._round_history.size() > 0:
+		var entry: Dictionary = plugin._round_history[0]
+		_assert(entry.has("winner"), "history_has_winner")
+		_assert(entry["winner"] == Team.Id.ANGELS, "history_winner_correct")
+		_assert(entry.has("reason"), "history_has_reason")
+		_assert(entry["reason"] == "elimination", "history_reason_elimination",
+			"expected elimination, got %s" % entry["reason"])
+
+
+func _test_round_history_objective_detail() -> void:
+	var plugin := PluginCompetitive.new()
+	var mgr := PluginManager.new()
+	plugin.on_load(mgr)
+	plugin._last_objective_detail = &"portal_opened"
+	plugin._on_round_ended(Team.Id.DEMONS, &"objective")
+	_assert(plugin._round_history.size() == 1, "objective_history_recorded")
+	_assert(plugin._round_history[0]["reason"] == "portal_opened", "objective_detail_preserved",
+		"expected portal_opened, got %s" % plugin._round_history[0]["reason"])
+	_assert(plugin._last_objective_detail == &"", "detail_cleared_after_round")
+
+
+func _test_stats_in_client_state() -> void:
+	var plugin := PluginCompetitive.new()
+	var mgr := PluginManager.new()
+	plugin.on_load(mgr)
+	plugin.on_player_connect(1)
+	plugin.on_player_connect(2)
+	plugin.on_player_damage(1, 2, 50.0, 2, "body")
+	plugin.on_player_kill(1, 2, 2, false)
+	var state := plugin.get_client_state()
+	_assert(state.has("round_history"), "state_has_round_history")
+	_assert(state.has("loss_streak_angels"), "state_has_loss_streak")
+	var found_stats := false
+	for entry in state["roster"]:
+		if entry["id"] == 1:
+			found_stats = true
+			_assert(entry.has("kills"), "roster_has_kills")
+			_assert(entry.has("deaths"), "roster_has_deaths")
+			_assert(entry.has("assists"), "roster_has_assists")
+			_assert(entry.has("damage"), "roster_has_damage")
+			_assert(entry.has("money"), "roster_has_money")
+			_assert(entry["kills"] == 1, "roster_kills_value",
+				"expected 1, got %d" % entry["kills"])
+			_assert(entry["damage"] == 50, "roster_damage_value",
+				"expected 50, got %d" % entry["damage"])
+	_assert(found_stats, "found_player_1_in_roster")
 
 
 # --- ClientHud state tests ---
@@ -355,3 +479,58 @@ func _test_hud_ammo_knife_hidden() -> void:
 		"expected 25, got %s" % hud.ammo_label.text)
 
 	hud.queue_free()
+
+
+# --- Scoreboard tests ---
+
+func _test_scoreboard_mode_update() -> void:
+	ClientScoreboard.update_mode(&"competitive")
+	_assert(ClientScoreboard.mode == &"competitive", "scoreboard_mode_competitive")
+	ClientScoreboard.update_mode(&"deathmatch")
+	_assert(ClientScoreboard.mode == &"deathmatch", "scoreboard_mode_deathmatch")
+
+
+func _test_scoreboard_match_state_update() -> void:
+	ClientScoreboard.my_peer_id = 1
+	ClientScoreboard.update_from_match_state({
+		"state": "LIVE",
+		"round": 5,
+		"score_angels": 3,
+		"score_demons": 2,
+		"timer": 90.0,
+		"attack_team": Team.Id.DEMONS,
+		"my_team": Team.Id.ANGELS,
+		"round_history": [
+			{"winner": Team.Id.ANGELS, "reason": "elimination"},
+			{"winner": Team.Id.DEMONS, "reason": "portal_opened"},
+		],
+		"loss_streak_angels": 0,
+		"loss_streak_demons": 1,
+		"roster": [
+			{"id": 1, "team": Team.Id.ANGELS, "alive": true, "color": 0,
+			 "kills": 10, "deaths": 3, "assists": 2, "damage": 1500, "money": 5000},
+		],
+	})
+	_assert(ClientScoreboard.round_number == 5, "sb_round",
+		"expected 5, got %d" % ClientScoreboard.round_number)
+	_assert(ClientScoreboard.score_angels == 3, "sb_score_a")
+	_assert(ClientScoreboard.score_demons == 2, "sb_score_d")
+	_assert(ClientScoreboard.round_history.size() == 2, "sb_round_history_size")
+	_assert(ClientScoreboard.loss_streak_demons == 1, "sb_loss_streak")
+	_assert(ClientScoreboard.roster.size() == 1, "sb_roster_size")
+
+
+func _test_scoreboard_roster_sorting() -> void:
+	ClientScoreboard.update_mode(&"competitive")
+	ClientScoreboard.my_peer_id = 1
+	ClientScoreboard.my_team = Team.Id.ANGELS
+	ClientScoreboard.roster = [
+		{"id": 1, "team": Team.Id.ANGELS, "alive": true, "color": 0,
+		 "kills": 5, "deaths": 2, "assists": 1, "damage": 800, "money": 3000},
+		{"id": 2, "team": Team.Id.ANGELS, "alive": true, "color": 1,
+		 "kills": 10, "deaths": 1, "assists": 0, "damage": 1200, "money": 4000},
+	]
+	var sorted := ClientScoreboard._get_sorted_team_roster(Team.Id.ANGELS)
+	_assert(sorted.size() == 2, "sorted_size_2")
+	_assert(sorted[0]["id"] == 2, "sorted_top_fragger_first",
+		"expected player 2 (10 kills) first, got player %d" % sorted[0]["id"])
