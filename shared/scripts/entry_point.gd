@@ -26,6 +26,10 @@ func _ready() -> void:
 		print("EntryPoint: launching validation test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/validation_test_scene.tscn")
 		return
+	if "--test-economy" in args:
+		print("EntryPoint: launching economy test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/economy_test_scene.tscn")
+		return
 	if "--bench" in args:
 		print("EntryPoint: launching performance benchmark")
 		get_tree().change_scene_to_file.call_deferred("res://tests/perf_benchmark_scene.tscn")

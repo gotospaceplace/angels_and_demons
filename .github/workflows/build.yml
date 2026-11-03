@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 env:
@@ -112,6 +111,12 @@ jobs:
 
       - name: Combat tests
         run: timeout 30 godot --headless --path . -- --test-combat
+
+      - name: Lag compensation tests
+        run: timeout 30 godot --headless --path . -- --test-lagcomp
+
+      - name: Economy tests
+        run: timeout 30 godot --headless --path . -- --test-economy
 
       - name: Validation tests
         run: timeout 30 godot --headless --path . -- --test-validation
