@@ -1,110 +1,203 @@
 extends Node3D
 
+## Competitive test map based on aim_map BSP layout.
+## BSP coordinates converted: BSP X → Godot X, BSP Y → Godot −Z, BSP Z → Godot Y.
+## Scale: 1 GoldSrc unit = 1/39.37 m. Map centered at origin, floor at Y = 0.
+
+const FLOOR_COLOR := Color(0.35, 0.35, 0.32)
+const WALL_COLOR := Color(0.45, 0.42, 0.38)
+const WALL_SIDE_COLOR := Color(0.42, 0.40, 0.36)
+const PLAT_COLOR := Color(0.48, 0.45, 0.40)
+const RAMP_COLOR := Color(0.50, 0.47, 0.42)
+const STAIR_COLOR := Color(0.46, 0.43, 0.38)
+const CRATE_COLOR := Color(0.60, 0.45, 0.25)
+const LADDER_COLOR := Color(0.55, 0.50, 0.40)
+const PORTAL_MARKER_COLOR := Color(0.3, 0.8, 0.5, 0.35)
+const BUY_MARKER_COLOR := Color(0.3, 0.5, 0.8, 0.25)
+
+const MAP_W := 38.3
+const MAP_D := 58.7
+const WALL_H := 8.0
+const PLAT_TOP := 5.38
+const PLAT_THICK := 0.5
+const PLAT_W := 17.9
+
 var spawn_points: Array[Vector3] = [
-	Vector3(-15, 1, -15),
-	Vector3(15, 1, -15),
-	Vector3(-15, 1, 15),
-	Vector3(15, 1, 15),
-	Vector3(0, 1, -17),
-	Vector3(0, 1, 17),
-	Vector3(-17, 1, 0),
-	Vector3(17, 1, 0),
+	Vector3(-8.3, 1.0, 17.8),
+	Vector3(-1.8, 1.0, 17.8),
+	Vector3(1.4, 1.0, 17.8),
+	Vector3(8.5, 1.0, -17.8),
+	Vector3(2.0, 1.0, -17.8),
+	Vector3(-1.2, 1.0, -17.8),
+	Vector3(-5.0, 1.0, 0.0),
+	Vector3(5.0, 1.0, 0.0),
 ]
 
 var angels_spawns: Array[Vector3] = [
-	Vector3(-8, 1, -18),
-	Vector3(-4, 1, -18),
-	Vector3(0, 1, -18),
-	Vector3(4, 1, -18),
-	Vector3(8, 1, -18),
+	Vector3(-8.3, 1.0, 17.8),
+	Vector3(-5.1, 1.0, 17.8),
+	Vector3(-1.8, 1.0, 17.8),
+	Vector3(1.4, 1.0, 17.8),
+	Vector3(1.4, 1.0, 14.5),
 ]
 
 var demons_spawns: Array[Vector3] = [
-	Vector3(-8, 1, 18),
-	Vector3(-4, 1, 18),
-	Vector3(0, 1, 18),
-	Vector3(4, 1, 18),
-	Vector3(8, 1, 18),
+	Vector3(8.5, 1.0, -14.5),
+	Vector3(8.5, 1.0, -17.8),
+	Vector3(5.3, 1.0, -17.8),
+	Vector3(2.0, 1.0, -17.8),
+	Vector3(-1.2, 1.0, -17.8),
 ]
 
 var portal_sites: Dictionary = {
-	&"A": Vector3(-10, 1, -8),
-	&"B": Vector3(10, 1, -8),
+	&"A": Vector3(1.0, 5.9, 25.3),
+	&"B": Vector3(-0.8, 5.9, -25.3),
 }
 
 
 func _ready() -> void:
-	_build_floor()
-	_build_outer_walls()
-	_build_pillars()
-	_build_platforms()
-	_build_corridor()
-	_build_crates()
+	_build_arena()
+	_build_angels_side()
+	_build_demons_side()
+	_build_zones()
 	_build_lighting()
 
 
-func _build_floor() -> void:
-	_add_box("Floor", Vector3(0, -0.1, 0), Vector3(44, 0.2, 44), Color(0.35, 0.35, 0.32))
+# ---------------------------------------------------------------------------
+# Arena shell
+# ---------------------------------------------------------------------------
+
+func _build_arena() -> void:
+	_add_box("Floor", Vector3(0, -0.1, 0), Vector3(MAP_W, 0.2, MAP_D), FLOOR_COLOR)
+	var hw := MAP_W * 0.5
+	var hd := MAP_D * 0.5
+	_add_box("WallN", Vector3(0, WALL_H * 0.5, -hd), Vector3(MAP_W, WALL_H, 0.5), WALL_COLOR)
+	_add_box("WallS", Vector3(0, WALL_H * 0.5, hd), Vector3(MAP_W, WALL_H, 0.5), WALL_COLOR)
+	_add_box("WallW", Vector3(-hw, WALL_H * 0.5, 0), Vector3(0.5, WALL_H, MAP_D), WALL_SIDE_COLOR)
+	_add_box("WallE", Vector3(hw, WALL_H * 0.5, 0), Vector3(0.5, WALL_H, MAP_D), WALL_SIDE_COLOR)
 
 
-func _build_outer_walls() -> void:
-	var h := 5.0
-	var t := 0.5
-	var half := 22.0
-	_add_box("WallNorth", Vector3(0, h * 0.5, -half), Vector3(44, h, t), Color(0.45, 0.42, 0.38))
-	_add_box("WallSouth", Vector3(0, h * 0.5, half), Vector3(44, h, t), Color(0.45, 0.42, 0.38))
-	_add_box("WallWest", Vector3(-half, h * 0.5, 0), Vector3(t, h, 44), Color(0.42, 0.40, 0.36))
-	_add_box("WallEast", Vector3(half, h * 0.5, 0), Vector3(t, h, 44), Color(0.42, 0.40, 0.36))
+# ---------------------------------------------------------------------------
+# Angels side (+Z) — CT spawns, platform, cover
+# ---------------------------------------------------------------------------
+
+func _build_angels_side() -> void:
+	var pcx := 1.0
+	var front_z := 21.5
+	var back_z := 29.15
+	var depth := back_z - front_z
+	var center_z := (front_z + back_z) * 0.5
+	var deck_y := PLAT_TOP - PLAT_THICK * 0.5
+
+	# Platform deck
+	_add_box("PlatAngels", Vector3(pcx, deck_y, center_z),
+			Vector3(PLAT_W, PLAT_THICK, depth), PLAT_COLOR)
+
+	# Support columns (BSP models 1 & 2, extended floor-to-deck)
+	var col_h := PLAT_TOP - PLAT_THICK
+	_add_box("SupportAngelsL", Vector3(-7.1, col_h * 0.5, 22.2),
+			Vector3(1.63, col_h, 1.63), PLAT_COLOR)
+	_add_box("SupportAngelsR", Vector3(9.1, col_h * 0.5, 22.2),
+			Vector3(1.63, col_h, 1.63), PLAT_COLOR)
+
+	# East ramp
+	var ramp_x := pcx + PLAT_W * 0.5 + 1.3
+	_add_ramp("RampE_Angels", Vector3(ramp_x, 0, 17.75),
+			PLAT_TOP, 2.5, 7.5, false, RAMP_COLOR)
+	_add_box("LandingE_Angels", Vector3(ramp_x, deck_y, front_z + 0.5),
+			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
+
+	# West staircase
+	var stair_x := pcx - PLAT_W * 0.5 - 1.3
+	_add_stairs("StairW_Angels", Vector3(stair_x, 0, 14.0),
+			Vector3(0, 0, 7.5), PLAT_TOP, 2.5, 12, STAIR_COLOR)
+	_add_box("LandingW_Angels", Vector3(stair_x, deck_y, front_z + 0.5),
+			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
+
+	# Front ladder
+	_add_ladder("LadderAngels", Vector3(pcx, 0, front_z - 0.15),
+			PLAT_TOP, 1.0, LADDER_COLOR)
+
+	# Mid-arena cover crates (BSP models 3-9)
+	_add_box("CrateTallL_A", Vector3(-10.8, 1.65, 12.0), Vector3(1.63, 3.30, 1.63), CRATE_COLOR)
+	_add_box("CrateMedL_A", Vector3(-9.2, 0.88, 12.9), Vector3(1.60, 1.75, 1.63), CRATE_COLOR)
+	_add_box("CrateStep_A", Vector3(-8.0, 0.46, 13.5), Vector3(0.79, 0.91, 0.81), CRATE_COLOR)
+	_add_box("CrateMedC_A", Vector3(-5.0, 0.88, 11.9), Vector3(1.60, 1.75, 1.63), CRATE_COLOR)
+	_add_box("CrateTallC_A", Vector3(-3.3, 1.65, 11.0), Vector3(1.63, 3.30, 1.63), CRATE_COLOR)
+	_add_box("CrateLargeR_A", Vector3(2.0, 1.13, 12.0), Vector3(2.29, 2.26, 1.93), CRATE_COLOR)
+	_add_box("CrateMedR_A", Vector3(3.9, 0.81, 12.9), Vector3(1.63, 1.63, 1.63), CRATE_COLOR)
 
 
-func _build_pillars() -> void:
-	var s := 1.5
-	var h := 4.0
-	var d := 7.0
-	var color := Color(0.55, 0.50, 0.45)
-	_add_box("PillarNW", Vector3(-d, h * 0.5, -d), Vector3(s, h, s), color)
-	_add_box("PillarNE", Vector3(d, h * 0.5, -d), Vector3(s, h, s), color)
-	_add_box("PillarSW", Vector3(-d, h * 0.5, d), Vector3(s, h, s), color)
-	_add_box("PillarSE", Vector3(d, h * 0.5, d), Vector3(s, h, s), color)
+# ---------------------------------------------------------------------------
+# Demons side (−Z) — T spawns, platform, cover
+# ---------------------------------------------------------------------------
+
+func _build_demons_side() -> void:
+	var pcx := -0.8
+	var front_z := -21.5
+	var back_z := -29.15
+	var depth := absf(back_z - front_z)
+	var center_z := (front_z + back_z) * 0.5
+	var deck_y := PLAT_TOP - PLAT_THICK * 0.5
+
+	# Platform deck
+	_add_box("PlatDemons", Vector3(pcx, deck_y, center_z),
+			Vector3(PLAT_W, PLAT_THICK, depth), PLAT_COLOR)
+
+	# Support columns (BSP models 17 & 18)
+	var col_h := PLAT_TOP - PLAT_THICK
+	_add_box("SupportDemonsL", Vector3(-8.9, col_h * 0.5, -22.2),
+			Vector3(1.63, col_h, 1.63), PLAT_COLOR)
+	_add_box("SupportDemonsR", Vector3(7.3, col_h * 0.5, -22.2),
+			Vector3(1.63, col_h, 1.63), PLAT_COLOR)
+
+	# West ramp (mirrored from Angels east)
+	var ramp_x := pcx - PLAT_W * 0.5 - 1.3
+	_add_ramp("RampW_Demons", Vector3(ramp_x, 0, -17.75),
+			PLAT_TOP, 2.5, 7.5, true, RAMP_COLOR)
+	_add_box("LandingW_Demons", Vector3(ramp_x, deck_y, front_z - 0.5),
+			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
+
+	# East staircase (mirrored from Angels west)
+	var stair_x := pcx + PLAT_W * 0.5 + 1.3
+	_add_stairs("StairE_Demons", Vector3(stair_x, 0, -14.0),
+			Vector3(0, 0, -7.5), PLAT_TOP, 2.5, 12, STAIR_COLOR)
+	_add_box("LandingE_Demons", Vector3(stair_x, deck_y, front_z - 0.5),
+			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
+
+	# Front ladder
+	_add_ladder("LadderDemons", Vector3(pcx, 0, front_z + 0.15),
+			PLAT_TOP, 1.0, LADDER_COLOR)
+
+	# Mid-arena cover crates (BSP models 10-16)
+	_add_box("CrateTallL_D", Vector3(3.5, 1.65, -10.9), Vector3(1.63, 3.30, 1.63), CRATE_COLOR)
+	_add_box("CrateMedL_D", Vector3(5.2, 0.88, -11.9), Vector3(1.60, 1.75, 1.63), CRATE_COLOR)
+	_add_box("CrateStep_D", Vector3(8.2, 0.46, -13.5), Vector3(0.79, 0.91, 0.81), CRATE_COLOR)
+	_add_box("CrateMedC_D", Vector3(9.4, 0.88, -12.9), Vector3(1.60, 1.75, 1.63), CRATE_COLOR)
+	_add_box("CrateTallC_D", Vector3(11.0, 1.65, -12.0), Vector3(1.63, 3.30, 1.63), CRATE_COLOR)
+	_add_box("CrateLargeR_D", Vector3(-1.8, 1.13, -11.9), Vector3(2.29, 2.26, 1.93), CRATE_COLOR)
+	_add_box("CrateMedR_D", Vector3(-3.7, 0.81, -12.8), Vector3(1.63, 1.63, 1.63), CRATE_COLOR)
 
 
-func _build_platforms() -> void:
-	var plat_h := 2.0
-	var color := Color(0.48, 0.45, 0.40)
-	var ramp_color := Color(0.50, 0.47, 0.42)
+# ---------------------------------------------------------------------------
+# Gameplay zones
+# ---------------------------------------------------------------------------
 
-	# North platform
-	_add_box("PlatformNorth", Vector3(0, plat_h * 0.5, -14), Vector3(8, plat_h, 5), color)
-	# Ramp facing south (toward center)
-	_add_ramp("RampNorthS", Vector3(0, 0, -11), plat_h, 3.0, 3.0, false, ramp_color)
+func _build_zones() -> void:
+	for site_name: StringName in portal_sites:
+		var pos: Vector3 = portal_sites[site_name]
+		_add_zone("PortalSite_" + site_name, pos,
+				Vector3(4.0, 2.0, 4.0), "portal_site", PORTAL_MARKER_COLOR)
 
-	# South platform
-	_add_box("PlatformSouth", Vector3(0, plat_h * 0.5, 14), Vector3(8, plat_h, 5), color)
-	# Ramp facing north (toward center)
-	_add_ramp("RampSouthN", Vector3(0, 0, 11), plat_h, 3.0, 3.0, true, ramp_color)
-
-
-func _build_corridor() -> void:
-	var wall_h := 3.5
-	var wall_t := 0.4
-	var color := Color(0.50, 0.46, 0.40)
-	# East-west corridor through center, 3m wide gap
-	_add_box("CorridorWallN", Vector3(0, wall_h * 0.5, -1.5), Vector3(6, wall_h, wall_t), color)
-	_add_box("CorridorWallS", Vector3(0, wall_h * 0.5, 1.5), Vector3(6, wall_h, wall_t), color)
+	_add_zone("BuyZoneAngels", Vector3(-3.5, 2.0, 17.0),
+			Vector3(12.0, 4.0, 5.0), "buy_zone", BUY_MARKER_COLOR)
+	_add_zone("BuyZoneDemons", Vector3(3.5, 2.0, -17.0),
+			Vector3(12.0, 4.0, 5.0), "buy_zone", BUY_MARKER_COLOR)
 
 
-func _build_crates() -> void:
-	var s := 1.2
-	var color := Color(0.6, 0.45, 0.25)
-	_add_box("CrateA", Vector3(-10, s * 0.5, -5), Vector3(s, s, s), color)
-	_add_box("CrateB", Vector3(10, s * 0.5, -5), Vector3(s, s, s), color)
-	_add_box("CrateC", Vector3(-10, s * 0.5, 5), Vector3(s, s, s), color)
-	_add_box("CrateD", Vector3(10, s * 0.5, 5), Vector3(s, s, s), color)
-	_add_box("CrateE", Vector3(-5, s * 0.5, -10), Vector3(s, s, s), color)
-	_add_box("CrateF", Vector3(5, s * 0.5, -10), Vector3(s, s, s), color)
-	_add_box("CrateG", Vector3(-5, s * 0.5, 10), Vector3(s, s, s), color)
-	_add_box("CrateH", Vector3(5, s * 0.5, 10), Vector3(s, s, s), color)
-
+# ---------------------------------------------------------------------------
+# Lighting
+# ---------------------------------------------------------------------------
 
 func _build_lighting() -> void:
 	var sun := DirectionalLight3D.new()
@@ -126,20 +219,24 @@ func _build_lighting() -> void:
 	add_child(env)
 
 
-func _add_box(node_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
+# ---------------------------------------------------------------------------
+# Geometry helpers
+# ---------------------------------------------------------------------------
+
+func _add_box(node_name: String, pos: Vector3, box_size: Vector3, color: Color) -> void:
 	var body := StaticBody3D.new()
 	body.name = node_name
 	body.position = pos
 
 	var col := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = size
+	shape.size = box_size
 	col.shape = shape
 	body.add_child(col)
 
 	var mesh_inst := MeshInstance3D.new()
 	var box_mesh := BoxMesh.new()
-	box_mesh.size = size
+	box_mesh.size = box_size
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	box_mesh.material = mat
@@ -149,18 +246,21 @@ func _add_box(node_name: String, pos: Vector3, size: Vector3, color: Color) -> v
 	add_child(body)
 
 
-func _add_ramp(node_name: String, base_pos: Vector3, height: float, width: float, depth: float, flip: bool, color: Color) -> void:
+func _add_ramp(node_name: String, base_pos: Vector3, height: float,
+		width: float, depth: float, flip: bool, color: Color) -> void:
 	var body := StaticBody3D.new()
 	body.name = node_name
 	body.position = base_pos + Vector3(0, height * 0.5, 0)
 
-	var col := CollisionShape3D.new()
-	var shape := BoxShape3D.new()
-	shape.size = Vector3(width, 0.15, depth / cos(atan2(height, depth)))
-	col.shape = shape
 	var angle := atan2(height, depth)
 	if flip:
 		angle = -angle
+
+	var hyp := depth / cos(absf(angle))
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(width, 0.15, hyp)
+	col.shape = shape
 	col.rotation.x = angle
 	body.add_child(col)
 
@@ -175,3 +275,64 @@ func _add_ramp(node_name: String, base_pos: Vector3, height: float, width: float
 	body.add_child(mesh_inst)
 
 	add_child(body)
+
+
+func _add_stairs(base_name: String, start_pos: Vector3, direction: Vector3,
+		total_height: float, width: float, step_count: int, color: Color) -> void:
+	var step_h := total_height / step_count
+	var step_offset := direction / step_count
+	var step_depth := step_offset.length()
+	for i in range(step_count):
+		var h := step_h * (i + 1)
+		var pos := start_pos + step_offset * (float(i) + 0.5)
+		pos.y = h * 0.5
+		_add_box("%s_%02d" % [base_name, i], pos, Vector3(width, h, step_depth), color)
+
+
+func _add_ladder(base_name: String, pos: Vector3, height: float,
+		width: float, color: Color) -> void:
+	var rung_spacing := 0.45
+	var rung_count := int(height / rung_spacing)
+	for i in range(rung_count):
+		var rung_y := rung_spacing * (i + 1)
+		if rung_y > height:
+			break
+		_add_box("%s_%02d" % [base_name, i],
+				Vector3(pos.x, rung_y, pos.z),
+				Vector3(width, 0.1, 0.3), color)
+
+	var area := Area3D.new()
+	area.name = base_name + "_Zone"
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(width + 0.4, height, 0.6)
+	col.shape = shape
+	area.add_child(col)
+	area.position = Vector3(pos.x, height * 0.5, pos.z)
+	area.add_to_group("ladder")
+	add_child(area)
+
+
+func _add_zone(zone_name: String, pos: Vector3, zone_size: Vector3,
+		group_name: String, color: Color) -> void:
+	var area := Area3D.new()
+	area.name = zone_name
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = zone_size
+	col.shape = shape
+	area.add_child(col)
+	area.position = pos
+	area.add_to_group(group_name)
+
+	var mesh_inst := MeshInstance3D.new()
+	var box_mesh := BoxMesh.new()
+	box_mesh.size = zone_size
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	box_mesh.material = mat
+	mesh_inst.mesh = box_mesh
+	area.add_child(mesh_inst)
+
+	add_child(area)
