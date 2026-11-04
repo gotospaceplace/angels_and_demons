@@ -104,6 +104,7 @@ func _init_plugins(mode_name: String) -> void:
 			push_warning("Unknown mode '%s', falling back to deathmatch" % mode_name)
 			mode_plugin = PluginDeathmatch.new()
 	plugin_manager.load_plugin(mode_plugin)
+	plugin_manager.load_plugin(PluginChat.new())
 
 
 func _physics_process(delta: float) -> void:
@@ -375,6 +376,15 @@ func _handle_admin_packet(peer_id: int, packet: PackedByteArray) -> void:
 			return
 		var item_index: int = packet[3]
 		_handle_weapon_request(peer_id, item_index)
+	elif admin_type == NetProtocol.ADMIN_CHAT:
+		if packet.size() < 6:
+			return
+		var team_only: bool = packet[3] != 0
+		var msg_len: int = packet[4] | (packet[5] << 8)
+		if packet.size() < 6 + msg_len or msg_len == 0 or msg_len > 256:
+			return
+		var message := packet.slice(6, 6 + msg_len).get_string_from_utf8()
+		_handle_chat(peer_id, message, team_only)
 
 
 func _handle_buy(peer_id: int, item_index: int) -> void:
@@ -437,6 +447,34 @@ func _handle_weapon_request(peer_id: int, item_index: int) -> void:
 				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 				NetConstants.CHANNEL_EVENTS)
 	print("[Server] Player %d requested %s from teammates" % [peer_id, item["id"]])
+
+
+func _handle_chat(peer_id: int, message: String, team_only: bool) -> void:
+	if not players.has(peer_id):
+		return
+	var filtered := plugin_manager.dispatch_on_chat_message(peer_id, message, team_only)
+	if filtered.is_empty():
+		return
+
+	var chat_plugin: PluginChat = plugin_manager.get_plugin(&"chat") as PluginChat
+	var effective_team := team_only
+	if chat_plugin and chat_plugin.should_force_all_chat(peer_id):
+		effective_team = false
+
+	var recipients: Array[int]
+	if chat_plugin:
+		recipients = chat_plugin.get_eligible_peers(peer_id, effective_team, players)
+	else:
+		for pid in players:
+			recipients.append(pid)
+
+	var packet := NetProtocol.pack_chat_event(peer_id, filtered, effective_team)
+	for pid in recipients:
+		multiplayer.send_bytes(packet, pid,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+	var scope := "(TEAM)" if effective_team else "(ALL)"
+	print("[Server] CHAT %s Player %d: %s" % [scope, peer_id, filtered])
 
 
 func _send_buy_result(peer_id: int, success: bool, item_index: int) -> void:
