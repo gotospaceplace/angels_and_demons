@@ -84,16 +84,24 @@ godot --headless --import
 ```
 
 ```bash
-mkdir -p build/client
+godot --headless --export-release "Windows Client" build/angels_and_demons_buildN.exe
 ```
+
+Replace `N` with the current build number from `.build_number`. The exe is self-contained (`.pck` embedded) — distribute it directly, no zip needed.
+
+**PowerShell (Windows):**
+
+```powershell
+$n = (Get-Content .build_number -Raw).Trim()
+& $godot --headless --export-release "Windows Client" "build/angels_and_demons_build$n.exe"
+```
+
+**Bash (Linux / CI):**
 
 ```bash
-godot --headless --export-release "Windows Client" build/client/angels_and_demons.exe
+n=$(cat .build_number)
+godot --headless --export-release "Windows Client" "build/angels_and_demons_build${n}.exe"
 ```
-
-The first command imports all project resources (textures, sounds, scenes). The second exports the client to `build/client/angels_and_demons.exe` with its `.pck` embedded.
-
-To distribute for playtesting, zip the `build/client/` folder and share the archive. The `.exe` is self-contained.
 
 ## Building the Linux Server (native)
 
@@ -211,7 +219,7 @@ Defined in `export_presets.cfg` at the repository root:
 | Preset | Platform | Output | Type |
 |--------|----------|--------|------|
 | Linux Server | Linux x86_64 | `build/server/angels_and_demons_server.x86_64` | Dedicated server |
-| Windows Client | Windows x86_64 | `build/client/angels_and_demons.exe` | Game client |
+| Windows Client | Windows x86_64 | `build/angels_and_demons_buildN.exe` | Game client |
 
 ## Project Structure (build-relevant)
 
@@ -226,6 +234,6 @@ Defined in `export_presets.cfg` at the repository root:
 ├── .github/workflows/
 │   └── build.yml               # CI pipeline
 └── build/                      # Export output (git-ignored)
-    ├── client/
+    ├── angels_and_demons_buildN.exe  # Client builds (named by build number)
     └── server/
 ```
