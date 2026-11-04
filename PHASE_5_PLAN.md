@@ -1,5 +1,5 @@
 # PHASE 5 — Classic Competitive Rules
-**Status:** WB1–WB12 complete, WB13 remaining | **Version:** 1.1 | **Date:** 2026-11-04
+**Status:** COMPLETE — All work items (WB1–WB13) merged and CI green | **Version:** 1.2 | **Date:** 2026-11-04
 
 ## Scope
 Implement the full competitive match ruleset: two-team structure, objective-based rounds (portal activation — catalyst/relic), economy and buy system, freeze/buy period, round lifecycle and win conditions, spectator mode, walk mechanic (MP-002), and match management — producing a complete, playable 5v5 match on a single gray-box map using the networking and combat systems from Phases 2–4. All servers are hosted by us; players create lobbies through the client.
@@ -1141,10 +1141,10 @@ After all WBs complete:
 - [x] Scoreboard: team-sorted, kills/deaths/money/ping (PRs #12, #13)
 - [x] Chat: team and all chat functional (via chat plugin) (PR #16)
 - [x] Equipment persistence: survivors keep gear, dead players reset (PR #9)
-- [ ] A full 5v5 session completes without manual intervention
+- [ ] A full 5v5 session completes without manual intervention (playtesting — post-Phase 5)
 - [x] All gameplay rules are configurable via match settings (PRs #6–#11)
-- [ ] All Phase 2 movement + Phase 3 combat + Phase 4 network + Phase 5 match tests pass in CI (WB13)
-- [ ] No regression in movement, combat, or networking feel
+- [x] All Phase 2 movement + Phase 3 combat + Phase 4 network + Phase 5 match tests pass in CI (WB13)
+- [ ] No regression in movement, combat, or networking feel (playtesting — post-Phase 5)
 - [x] Deathmatch mode from Phase 4 is preserved as a plugin (PR #6)
 
 ---
@@ -1162,11 +1162,10 @@ After all WBs complete:
 10. **WB10** (match HUD) — **DONE** ✓ PRs #12, #13
 11. **WB8** (spectator) — **DONE** ✓ PR #14
 12. **WB11** (chat plugin) — **DONE** ✓ PR #16
-13. **WB13** (regression tests) — consolidated match_tests.gd + CI entry point remaining
+13. **WB13** (regression tests) — **DONE** ✓ Commit d128de4 (11 tests, 17 assertions, CI green)
 
 ---
 
 ## Immediate next steps
-1. ~~WB1–WB12~~ — **ALL DONE** ✓ All features merged (PRs #4–#18) + 3 playtest fix commits
-2. **WB13** (consolidated regression tests) — create `match_tests.gd`, add `--test-match` entry point, add CI step. Individual test suites already cover most cases; WB13 adds the missing cross-cutting tests and the unified runner.
-3. **Post-Phase 5:** Playtest-driven iteration on balance and feel, then Phase 6 planning
+1. ~~WB1–WB13~~ — **ALL DONE** ✓ All features merged (PRs #4–#19) + 3 playtest fix commits + WB13 match tests (d128de4)
+2. **Post-Phase 5:** Playtest-driven iteration on balance and feel (5v5 session, regression feel check), then Phase 6 planning
