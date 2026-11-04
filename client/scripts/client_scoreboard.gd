@@ -183,7 +183,7 @@ func _build_team_section(root: Control, team: int, y: float) -> void:
 	tname.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tname.position = Vector2(0, 85)
 	tname.size = Vector2(SCORE_BOX_W, 18)
-	tname.text = Team.get_name(team)
+	tname.text = Team.get_team_name(team)
 	box.add_child(tname)
 	_team_name_labels[team] = tname
 

@@ -27,6 +27,7 @@ var player_stats: Dictionary = {}
 var buy_menu: ClientBuyMenu
 var mode_loader: ClientModeLoader
 var hud: ClientHud
+var spectator: ClientSpectator
 
 var session_token: int = 0
 var server_address: String = "127.0.0.1"
@@ -78,6 +79,11 @@ func _ready() -> void:
 	hud = ClientHud.new()
 	hud.name = "HUD"
 	add_child(hud)
+
+	spectator = ClientSpectator.new()
+	spectator.name = "Spectator"
+	spectator.interpolation = interpolation
+	add_child(spectator)
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
@@ -131,39 +137,42 @@ func _physics_process(_delta: float) -> void:
 	if multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
 		return
 
+	var _spectating: bool = spectator != null and spectator.is_spectating()
+
 	var visual_yaw := 0.0
 	var visual_pitch := 0.0
-	if local_player:
+	if local_player and not _spectating:
 		visual_yaw = local_player.rotation.y
 		visual_pitch = local_player.get_node("Head").rotation.x
 
-	if _pending_reconcile != null:
+	if _pending_reconcile != null and not _spectating:
 		_try_reconcile(_pending_reconcile)
 		_pending_reconcile = null
 
-	if local_player:
+	if local_player and not _spectating:
 		local_player.rotation.y = visual_yaw
 		local_player.get_node("Head").rotation.x = visual_pitch
 
-	if local_player and client_tick > 0:
+	if local_player and client_tick > 0 and not _spectating:
 		_store_prediction(client_tick)
 
 	client_tick += 1
 
-	var cmd := _sample_input()
-	_store_input(cmd)
+	if not _spectating:
+		var cmd := _sample_input()
+		_store_input(cmd)
 
-	if local_player:
-		local_player.apply_network_input(cmd.yaw, cmd.pitch,
-			cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
-			cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
-			cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK),
-			cmd.has_button(NetInput.BIT_WALK))
-		local_player.test_driven = false
-		local_player.simulate_tick(NetConstants.TICK_INTERVAL)
-		local_player.test_driven = true
-		local_player.rotation.y = visual_yaw
-		local_player.get_node("Head").rotation.x = visual_pitch
+		if local_player:
+			local_player.apply_network_input(cmd.yaw, cmd.pitch,
+				cmd.has_button(NetInput.BIT_FORWARD), cmd.has_button(NetInput.BIT_BACK),
+				cmd.has_button(NetInput.BIT_LEFT), cmd.has_button(NetInput.BIT_RIGHT),
+				cmd.has_button(NetInput.BIT_JUMP), cmd.has_button(NetInput.BIT_DUCK),
+				cmd.has_button(NetInput.BIT_WALK))
+			local_player.test_driven = false
+			local_player.simulate_tick(NetConstants.TICK_INTERVAL)
+			local_player.test_driven = true
+			local_player.rotation.y = visual_yaw
+			local_player.get_node("Head").rotation.x = visual_pitch
 
 	if client_tick % 2 == 0:
 		_send_input()
@@ -180,7 +189,7 @@ func _process(delta: float) -> void:
 			var t := correction_timer / NetConstants.RECONCILE_SMOOTH_TIME
 			correction_offset = correction_origin * t
 
-	if local_player:
+	if local_player and not (spectator and spectator.is_spectating()):
 		var cam := local_player.get_node_or_null("Head/Camera3D")
 		if cam:
 			cam.position = Vector3.ZERO
@@ -421,6 +430,13 @@ func _handle_event(packet: PackedByteArray) -> void:
 					SoundManager.play_hit_confirm(headshot)
 				if victim_id == my_peer_id:
 					SoundManager.play_death()
+					if spectator and local_player:
+						var head := local_player.get_node("Head")
+						spectator.enter_deathcam(
+							head.global_position,
+							local_player.rotation.y,
+							head.rotation.x)
+						local_player.set_process_unhandled_input(false)
 				print("[Client] KILL: Player %d killed Player %d%s" % [
 					killer_id, victim_id, " (HEADSHOT)" if headshot else ""])
 		NetProtocol.EVT_HIT:
@@ -457,6 +473,11 @@ func _handle_event(packet: PackedByteArray) -> void:
 				ClientScoreboard.my_peer_id = my_peer_id
 				ClientScoreboard.update_mode(ms["mode"])
 				ClientScoreboard.update_from_match_state(st)
+				if spectator:
+					spectator.my_peer_id = my_peer_id
+					spectator.my_team = my_team
+					spectator.game_mode = ms["mode"]
+					spectator.update_roster(st.get("roster", []))
 		NetProtocol.EVT_SPAWN:
 			if packet.size() >= 17:
 				var spawned_id := packet[3] | (packet[4] << 8)
@@ -469,6 +490,12 @@ func _handle_event(packet: PackedByteArray) -> void:
 					local_player.velocity = Vector3.ZERO
 					prediction_buffer.clear()
 					snapshot_buffer.clear()
+					if spectator and spectator.is_spectating():
+						spectator.exit_spectator()
+						local_player.set_process_unhandled_input(true)
+						var cam := local_player.get_node_or_null("Head/Camera3D")
+						if cam:
+							cam.current = true
 				print("[Client] SPAWN: Player %d at %s" % [spawned_id, pos])
 		NetProtocol.EVT_BUY_RESULT:
 			if packet.size() >= 7:

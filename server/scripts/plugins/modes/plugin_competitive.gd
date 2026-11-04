@@ -72,7 +72,7 @@ func on_player_connect(peer_id: int) -> bool:
 	_player_alive[peer_id] = true
 	_player_stats[peer_id] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
 	print("[Competitive] Player %d assigned to %s (color %d)" % [
-		peer_id, Team.get_name(team), color_idx])
+		peer_id, Team.get_team_name(team), color_idx])
 	return true
 
 

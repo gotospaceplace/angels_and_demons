@@ -31,7 +31,7 @@ const NAME_DEMONS := "Demons"
 const NAME_SPECTATOR := "Spectator"
 
 
-static func get_name(team: int) -> String:
+static func get_team_name(team: int) -> String:
 	match team:
 		Id.ANGELS: return NAME_ANGELS
 		Id.DEMONS: return NAME_DEMONS

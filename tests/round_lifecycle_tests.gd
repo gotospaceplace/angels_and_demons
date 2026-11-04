@@ -210,7 +210,7 @@ func test_timer_expiry_defense_wins() -> void:
 	if m.state == ServerMatch.State.ROUND_OVER:
 		var defense_score: int = m.score.get(m.defense_team, 0)
 		if defense_score == 1:
-			_pass("timer expired → defense (%s) wins" % Team.get_name(m.defense_team))
+			_pass("timer expired → defense (%s) wins" % Team.get_team_name(m.defense_team))
 		else:
 			_fail("defense score=%d, expected 1" % defense_score)
 	else:
@@ -307,12 +307,12 @@ func test_halftime_swaps_teams() -> void:
 
 	if attack_before != attack_after and p1_team_before != p1_team_after:
 		_pass("teams swapped: attack %s→%s, P1 %s→%s" % [
-			Team.get_name(attack_before), Team.get_name(attack_after),
-			Team.get_name(p1_team_before), Team.get_name(p1_team_after)])
+			Team.get_team_name(attack_before), Team.get_team_name(attack_after),
+			Team.get_team_name(p1_team_before), Team.get_team_name(p1_team_after)])
 	else:
 		_fail("swap failed: attack %s→%s, P1 %s→%s" % [
-			Team.get_name(attack_before), Team.get_name(attack_after),
-			Team.get_name(p1_team_before), Team.get_name(p1_team_after)])
+			Team.get_team_name(attack_before), Team.get_team_name(attack_after),
+			Team.get_team_name(p1_team_before), Team.get_team_name(p1_team_after)])
 
 
 func test_halftime_resets_economy() -> void:
