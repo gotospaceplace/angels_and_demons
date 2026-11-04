@@ -239,6 +239,9 @@ func _process_fire_commands() -> void:
 			continue
 		var victim_sp = players[victim_id]
 
+		if victim_sp.is_dead:
+			continue
+
 		var final_damage: float = plugin_manager.dispatch_on_player_damage(
 			peer_id, victim_id, hit["damage"], sp.weapon_idx, hit["hitgroup"])
 		if final_damage <= 0.0:
