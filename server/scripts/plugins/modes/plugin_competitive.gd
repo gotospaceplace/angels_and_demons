@@ -38,6 +38,7 @@ func on_load(_manager) -> void:
 func register_settings(config) -> void:
 	server_match.register_settings(config)
 	objective.register_settings(config)
+	config.register("mp_team_balance_max", 1, "Max team size difference allowed (0 = no limit)", &"competitive")
 
 
 func on_map_load(_map_name: String) -> void:
@@ -198,6 +199,7 @@ func get_client_state() -> Dictionary:
 		"catalyst_carrier": objective.carrier_id,
 		"catalyst_position": objective.catalyst_position,
 		"round_history": _round_history,
+		"team_counts": get_team_counts(),
 		"loss_streak_angels": server_match.economy.get_loss_streak(Team.Id.ANGELS),
 		"loss_streak_demons": server_match.economy.get_loss_streak(Team.Id.DEMONS),
 		"roster": roster_data,
@@ -276,10 +278,69 @@ func _on_portal_sealed(_peer_id: int) -> void:
 	print("[Competitive] Portal sealed — defenders win")
 
 
-func _pick_team() -> int:
-	var team := _next_team
-	if _next_team == Team.Id.ANGELS:
-		_next_team = Team.Id.DEMONS
+func on_team_assign(_peer_id: int, team: int) -> bool:
+	if team == Team.Id.SPECTATOR:
+		return true
+	if not Team.is_playing_team(team):
+		return true
+	var max_diff: int = manager.match_config.get_int("mp_team_balance_max")
+	if max_diff <= 0:
+		return true
+	var other := Team.get_opposing(team)
+	var team_count := _count_team(team)
+	var other_count := _count_team(other)
+	return team_count - other_count < max_diff
+
+
+func change_team(peer_id: int, requested_team: int) -> bool:
+	var actual_team := requested_team
+	if requested_team == Team.Id.UNASSIGNED:
+		actual_team = _pick_auto_team()
+
+	if not manager.dispatch_on_team_assign(peer_id, actual_team):
+		return false
+
+	var old_team: int = server_match.get_team(peer_id)
+	server_match.set_team(peer_id, actual_team)
+
+	if Team.is_playing_team(actual_team):
+		var color_idx: int = _next_color.get(actual_team, 0) % Team.PLAYER_COLORS.size()
+		player_colors[peer_id] = color_idx
+		_next_color[actual_team] = color_idx + 1
+		_player_alive[peer_id] = true
 	else:
-		_next_team = Team.Id.ANGELS
-	return team
+		_player_alive[peer_id] = false
+
+	if old_team != actual_team and manager:
+		manager.plugin_event.emit(&"roster_changed", {})
+
+	print("[Competitive] Player %d changed team: %s → %s" % [
+		peer_id, Team.get_team_name(old_team), Team.get_team_name(actual_team)])
+	return true
+
+
+func get_team_counts() -> Dictionary:
+	return {
+		Team.Id.ANGELS: _count_team(Team.Id.ANGELS),
+		Team.Id.DEMONS: _count_team(Team.Id.DEMONS),
+	}
+
+
+func _count_team(team: int) -> int:
+	var count := 0
+	for pid in server_match.get_team_players():
+		if server_match.get_team(pid) == team:
+			count += 1
+	return count
+
+
+func _pick_auto_team() -> int:
+	var a := _count_team(Team.Id.ANGELS)
+	var d := _count_team(Team.Id.DEMONS)
+	if a <= d:
+		return Team.Id.ANGELS
+	return Team.Id.DEMONS
+
+
+func _pick_team() -> int:
+	return _pick_auto_team()

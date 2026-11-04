@@ -23,6 +23,7 @@ const ADMIN_REJOIN   := 1
 const ADMIN_BUY      := 2
 const ADMIN_REQUEST  := 3
 const ADMIN_CHAT     := 4
+const ADMIN_TEAM_SELECT := 5
 
 # Packet header: version (1) + msg_type (1) = 2 bytes
 const HEADER_SIZE := 2
@@ -342,6 +343,16 @@ static func pack_admin_chat(message: String, team_only: bool) -> PackedByteArray
 	buf[4] = msg_bytes.size() & 0xFF
 	buf[5] = (msg_bytes.size() >> 8) & 0xFF
 	buf.append_array(msg_bytes)
+	return buf
+
+
+static func pack_team_select(team: int) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 2)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_ADMIN
+	buf[2] = ADMIN_TEAM_SELECT
+	buf[3] = team & 0xFF
 	return buf
 
 

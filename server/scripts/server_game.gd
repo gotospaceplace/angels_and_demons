@@ -385,6 +385,27 @@ func _handle_admin_packet(peer_id: int, packet: PackedByteArray) -> void:
 			return
 		var message := packet.slice(6, 6 + msg_len).get_string_from_utf8()
 		_handle_chat(peer_id, message, team_only)
+	elif admin_type == NetProtocol.ADMIN_TEAM_SELECT:
+		if packet.size() < 4:
+			return
+		var requested_team: int = packet[3]
+		_handle_team_select(peer_id, requested_team)
+
+
+func _handle_team_select(peer_id: int, requested_team: int) -> void:
+	var mode: GamePlugin = plugin_manager.get_mode_plugin()
+	if mode == null or not mode.has_method("change_team"):
+		return
+	if not players.has(peer_id):
+		return
+	var success: bool = mode.change_team(peer_id, requested_team)
+	if success:
+		_broadcast_match_state()
+	else:
+		var msg := NetProtocol.pack_server_msg_event("Team change denied: teams would be unbalanced")
+		multiplayer.send_bytes(msg, peer_id,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
 
 
 func _handle_buy(peer_id: int, item_index: int) -> void:

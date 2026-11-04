@@ -58,6 +58,13 @@ func create(p_peer_id: int) -> void:
 	add_child(name_label)
 
 
+func set_team_color(color: Color) -> void:
+	if body_mesh and body_mesh.mesh:
+		var mat: StandardMaterial3D = body_mesh.mesh.material
+		if mat:
+			mat.albedo_color = color
+
+
 func apply_state(pos: Vector3, yaw_deg: float, pitch_deg: float, ducked: bool) -> void:
 	global_position = pos
 	rotation.y = deg_to_rad(yaw_deg)

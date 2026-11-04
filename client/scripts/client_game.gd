@@ -29,6 +29,8 @@ var mode_loader: ClientModeLoader
 var hud: ClientHud
 var spectator: ClientSpectator
 var chat: ClientChat
+var team_select: ClientTeamSelect
+var _team_select_shown: bool = false
 
 var session_token: int = 0
 var server_address: String = "127.0.0.1"
@@ -89,6 +91,11 @@ func _ready() -> void:
 	chat = ClientChat.new()
 	chat.name = "Chat"
 	add_child(chat)
+
+	team_select = ClientTeamSelect.new()
+	team_select.name = "TeamSelect"
+	add_child(team_select)
+	team_select.team_selected.connect(_on_team_selected)
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
@@ -496,6 +503,16 @@ func _handle_event(packet: PackedByteArray) -> void:
 					spectator.my_team = my_team
 					spectator.game_mode = ms["mode"]
 					spectator.update_roster(st.get("roster", []))
+				if team_select:
+					var tc: Dictionary = st.get("team_counts", {})
+					team_select.update_counts(
+						tc.get(Team.Id.ANGELS, 0),
+						tc.get(Team.Id.DEMONS, 0))
+					if not _team_select_shown and ms["mode"] == &"competitive":
+						_team_select_shown = true
+						team_select.open_menu()
+				if interpolation:
+					_update_team_colors(st.get("roster", []))
 		NetProtocol.EVT_SPAWN:
 			if packet.size() >= 17:
 				var spawned_id := packet[3] | (packet[4] << 8)
@@ -561,6 +578,16 @@ func _track_kill(killer_id: int, victim_id: int) -> void:
 	player_stats[victim_id]["deaths"] += 1
 
 
+func _update_team_colors(roster: Array) -> void:
+	var team_map: Dictionary = {}
+	for entry in roster:
+		team_map[entry.get("id", 0)] = entry.get("team", 0)
+	for pid in interpolation.remote_players:
+		var rp: Dictionary = interpolation.remote_players[pid]
+		var team: int = team_map.get(pid, Team.Id.UNASSIGNED)
+		rp["node"].set_team_color(Team.get_color(team))
+
+
 func _setup_reconnect_overlay() -> void:
 	var overlay := CanvasLayer.new()
 	overlay.name = "ReconnectOverlay"
@@ -599,6 +626,13 @@ func _on_buy_requested(item_index: int) -> void:
 
 func _on_weapon_requested(item_index: int) -> void:
 	var packet := NetProtocol.pack_weapon_request(item_index)
+	multiplayer.send_bytes(packet, 1,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_ADMIN)
+
+
+func _on_team_selected(team: int) -> void:
+	var packet := NetProtocol.pack_team_select(team)
 	multiplayer.send_bytes(packet, 1,
 		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 		NetConstants.CHANNEL_ADMIN)
