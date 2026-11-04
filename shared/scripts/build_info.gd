@@ -1,8 +1,8 @@
 ﻿extends Node
 
-const BUILD_NUMBER := 1
-const BUILD_HASH := "7300c85"
-const BUILD_DATE := "2026-11-04"
+const BUILD_NUMBER := 0
+const BUILD_HASH := "dev"
+const BUILD_DATE := "dev"
 const BUILD_VERSION := "0.1.0"
 
 static func get_build_string() -> String:
