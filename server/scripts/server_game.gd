@@ -246,7 +246,6 @@ func _process_fire_commands() -> void:
 			peer_id, victim_id, hit["damage"], sp.weapon_idx, hit["hitgroup"])
 		if final_damage <= 0.0:
 			continue
-		var was_alive := not victim_sp.is_dead
 		victim_sp.take_damage(final_damage)
 
 		var hit_packet := NetProtocol.pack_hit_event(
@@ -255,7 +254,7 @@ func _process_fire_commands() -> void:
 			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 			NetConstants.CHANNEL_EVENTS)
 
-		if victim_sp.is_dead and was_alive:
+		if victim_sp.is_dead:
 			victim_sp.die(server_tick)
 			sp.kills += 1
 			plugin_manager.last_death_position = victim_sp.body.global_position
