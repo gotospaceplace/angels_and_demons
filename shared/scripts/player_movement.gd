@@ -38,6 +38,7 @@ var ground_normal := Vector3.UP
 # Ladder
 var on_ladder := false
 var ladder_normal := Vector3.FORWARD
+var _ladder_top_y := 0.0
 var _ladder_area: Area3D
 
 # Bullet tagging
@@ -544,6 +545,14 @@ func _ladder_move(delta: float) -> void:
 		velocity = ladder_normal * MC.MAX_CLIMB_SPEED * 0.5
 		return
 
+	# Ledge mount: pushing toward wall near top vaults player onto platform
+	if wish_vel.dot(ladder_normal) < -0.3 and global_position.y > _ladder_top_y - 1.0:
+		on_ladder = false
+		velocity = -ladder_normal * 2.0
+		velocity.y = MC.JUMP_SPEED
+		on_ground = false
+		return
+
 	# Project out the ladder normal, then re-normalize to preserve full climb speed
 	wish_vel = wish_vel - ladder_normal * wish_vel.dot(ladder_normal)
 	if wish_vel.length() > 0.001:
@@ -567,6 +576,9 @@ func _on_ladder_entered(area: Area3D) -> void:
 		on_ladder = true
 		ladder_normal = area.face_normal
 		ground_time = 0.0
+		var shape_node := area.get_child(0) as CollisionShape3D
+		if shape_node and shape_node.shape is BoxShape3D:
+			_ladder_top_y = area.global_position.y + shape_node.shape.size.y * 0.5
 
 func _on_ladder_exited(area: Area3D) -> void:
 	if area is LadderVolume:
