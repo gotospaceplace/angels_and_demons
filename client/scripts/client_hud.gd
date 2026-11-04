@@ -55,6 +55,7 @@ var grenade_key_labels: Array[Label] = []
 var ammo_label: Label
 var catalyst_panel: Panel
 var catalyst_label: Label
+var build_label: Label
 
 const WEAPON_NAMES := ["Knife", "USP", "AK-47", "M4A1", "AWP"]
 const GRENADE_KEYS := ["V", "C", "Z"]
@@ -74,6 +75,7 @@ const COL_TIMER_WARN := Color(1.0, 0.25, 0.25)
 func _ready() -> void:
 	layer = 10
 	_build_ui()
+	build_label.text = BuildInfo.get_short_string()
 
 
 func _process(delta: float) -> void:
@@ -273,6 +275,10 @@ func _build_bottom_bar() -> void:
 	catalyst_label.size = Vector2(50, 30)
 	catalyst_panel.add_child(catalyst_label)
 
+	build_label = _make_label(12, Color(1, 1, 1, 0.6))
+	build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	bottom_bar.add_child(build_label)
+
 
 # --- Layout ---
 
@@ -362,6 +368,9 @@ func _layout_bottom_bar(vp: Vector2) -> void:
 	ammo_label.size = Vector2(120, 40)
 
 	catalyst_panel.position = Vector2(vp.x * 0.76, y - 8)
+
+	build_label.position = Vector2(vp.x - 170, vp.y - 24)
+	build_label.size = Vector2(160, 20)
 
 
 # --- Display updates ---

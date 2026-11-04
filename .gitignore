@@ -42,5 +42,8 @@ desktop.ini
 # Docker
 infra/docker/.env
 
+# Build counter (machine-local)
+.build_number
+
 # Test artifacts
 tests/results/

@@ -27,6 +27,7 @@ ClientScoreboard="*res://client/scripts/client_scoreboard.gd"
 ClientNetHud="*res://client/scripts/client_net_hud.gd"
 KillFeed="*res://client/scripts/kill_feed.gd"
 SoundManager="*res://client/scripts/sound_manager.gd"
+BuildInfo="*res://shared/scripts/build_info.gd"
 
 [display]
 
