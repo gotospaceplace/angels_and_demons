@@ -100,23 +100,23 @@ func _build_angels_side() -> void:
 	_add_box("SupportAngelsR", Vector3(9.1, col_h * 0.5, 22.2),
 			Vector3(1.63, col_h, 1.63), PLAT_COLOR)
 
-	# East ramp
+	# East ramp — behind platform, players approach from back wall side
 	var ramp_x := pcx + PLAT_W * 0.5 + 1.3
-	_add_ramp("RampE_Angels", Vector3(ramp_x, 0, 17.75),
-			PLAT_TOP, 2.5, 7.5, false, RAMP_COLOR)
+	_add_ramp("RampE_Angels", Vector3(ramp_x, 0, 25.5),
+			PLAT_TOP, 2.5, 7.0, true, RAMP_COLOR)
 	_add_box("LandingE_Angels", Vector3(ramp_x, deck_y, front_z + 0.5),
 			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
 
-	# West staircase
+	# West staircase — behind platform, away from spawn area
 	var stair_x := pcx - PLAT_W * 0.5 - 1.3
-	_add_stairs("StairW_Angels", Vector3(stair_x, 0, 14.0),
-			Vector3(0, 0, 7.5), PLAT_TOP, 2.5, 12, STAIR_COLOR)
+	_add_stairs("StairW_Angels", Vector3(stair_x, 0, 28.0),
+			Vector3(0, 0, -6.0), PLAT_TOP, 2.5, 12, STAIR_COLOR)
 	_add_box("LandingW_Angels", Vector3(stair_x, deck_y, front_z + 0.5),
 			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
 
-	# Front ladder
+	# Front ladder (faces toward mid-map)
 	_add_ladder("LadderAngels", Vector3(pcx, 0, front_z - 0.15),
-			PLAT_TOP, 1.0, LADDER_COLOR)
+			PLAT_TOP, 1.0, LADDER_COLOR, Vector3.FORWARD)
 
 	# Mid-arena cover crates (BSP models 3-9)
 	_add_box("CrateTallL_A", Vector3(-10.8, 1.65, 12.0), Vector3(1.63, 3.30, 1.63), CRATE_COLOR)
@@ -151,23 +151,23 @@ func _build_demons_side() -> void:
 	_add_box("SupportDemonsR", Vector3(7.3, col_h * 0.5, -22.2),
 			Vector3(1.63, col_h, 1.63), PLAT_COLOR)
 
-	# West ramp (mirrored from Angels east)
+	# West ramp — behind platform, players approach from back wall side
 	var ramp_x := pcx - PLAT_W * 0.5 - 1.3
-	_add_ramp("RampW_Demons", Vector3(ramp_x, 0, -17.75),
-			PLAT_TOP, 2.5, 7.5, true, RAMP_COLOR)
+	_add_ramp("RampW_Demons", Vector3(ramp_x, 0, -25.5),
+			PLAT_TOP, 2.5, 7.0, false, RAMP_COLOR)
 	_add_box("LandingW_Demons", Vector3(ramp_x, deck_y, front_z - 0.5),
 			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
 
-	# East staircase (mirrored from Angels west)
+	# East staircase — behind platform, away from spawn area
 	var stair_x := pcx + PLAT_W * 0.5 + 1.3
-	_add_stairs("StairE_Demons", Vector3(stair_x, 0, -14.0),
-			Vector3(0, 0, -7.5), PLAT_TOP, 2.5, 12, STAIR_COLOR)
+	_add_stairs("StairE_Demons", Vector3(stair_x, 0, -28.0),
+			Vector3(0, 0, 6.0), PLAT_TOP, 2.5, 12, STAIR_COLOR)
 	_add_box("LandingE_Demons", Vector3(stair_x, deck_y, front_z - 0.5),
 			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
 
-	# Front ladder
+	# Front ladder (faces toward mid-map)
 	_add_ladder("LadderDemons", Vector3(pcx, 0, front_z + 0.15),
-			PLAT_TOP, 1.0, LADDER_COLOR)
+			PLAT_TOP, 1.0, LADDER_COLOR, Vector3.BACK)
 
 	# Mid-arena cover crates (BSP models 10-16)
 	_add_box("CrateTallL_D", Vector3(3.5, 1.65, -10.9), Vector3(1.63, 3.30, 1.63), CRATE_COLOR)
@@ -290,7 +290,7 @@ func _add_stairs(base_name: String, start_pos: Vector3, direction: Vector3,
 
 
 func _add_ladder(base_name: String, pos: Vector3, height: float,
-		width: float, color: Color) -> void:
+		width: float, color: Color, face_dir: Vector3 = Vector3.FORWARD) -> void:
 	var rung_spacing := 0.45
 	var rung_count := int(height / rung_spacing)
 	for i in range(rung_count):
@@ -301,8 +301,9 @@ func _add_ladder(base_name: String, pos: Vector3, height: float,
 				Vector3(pos.x, rung_y, pos.z),
 				Vector3(width, 0.1, 0.3), color)
 
-	var area := Area3D.new()
+	var area := LadderVolume.new()
 	area.name = base_name + "_Zone"
+	area.face_normal = face_dir
 	var col := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = Vector3(width + 0.4, height, 0.6)

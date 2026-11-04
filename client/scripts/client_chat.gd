@@ -9,6 +9,8 @@ var _chat_container: VBoxContainer
 var _input_field: LineEdit
 var _input_bg: PanelContainer
 var _prefix_label: Label
+var _margin: MarginContainer
+var _last_vp_size := Vector2.ZERO
 var _is_open: bool = false
 var _team_mode: bool = false
 var _messages: Array[Dictionary] = []
@@ -25,19 +27,19 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.name = "ChatMargin"
-	margin.anchors_preset = Control.PRESET_FULL_RECT
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_bottom", 80)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_top", 0)
-	add_child(margin)
+	_margin = MarginContainer.new()
+	_margin.name = "ChatMargin"
+	_margin.anchors_preset = Control.PRESET_FULL_RECT
+	_margin.add_theme_constant_override("margin_left", 16)
+	_margin.add_theme_constant_override("margin_bottom", 216)
+	_margin.add_theme_constant_override("margin_right", 984)
+	_margin.add_theme_constant_override("margin_top", 324)
+	add_child(_margin)
 
 	var vbox := VBoxContainer.new()
 	vbox.name = "ChatRoot"
 	vbox.size_flags_vertical = Control.SIZE_SHRINK_END
-	margin.add_child(vbox)
+	_margin.add_child(vbox)
 
 	_chat_container = VBoxContainer.new()
 	_chat_container.name = "Messages"
@@ -91,6 +93,13 @@ func _build_ui() -> void:
 
 
 func _process(delta: float) -> void:
+	var vp := get_viewport().get_visible_rect().size
+	if vp != _last_vp_size and vp.y > 0:
+		_last_vp_size = vp
+		_margin.add_theme_constant_override("margin_top", int(vp.y * 0.45))
+		_margin.add_theme_constant_override("margin_bottom", int(vp.y * 0.30))
+		_margin.add_theme_constant_override("margin_right", int(vp.x - 296))
+
 	for i in range(_fade_timers.size()):
 		if _fade_timers[i] > 0.0 and not _is_open:
 			_fade_timers[i] -= delta
