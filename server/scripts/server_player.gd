@@ -86,9 +86,6 @@ func dequeue_input(current_tick: int) -> void:
 		cmd = last_input
 
 	if is_dead:
-		body.apply_network_input(cmd.yaw, cmd.pitch,
-			false, false, false, false, false, false)
-		body.simulate_tick(NetConstants.TICK_INTERVAL)
 		return
 
 	if is_reloading and current_tick >= reload_finish_tick:

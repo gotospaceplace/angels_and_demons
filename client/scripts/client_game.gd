@@ -489,7 +489,6 @@ func _handle_event(packet: PackedByteArray) -> void:
 					local_player.global_position = pos
 					local_player.velocity = Vector3.ZERO
 					prediction_buffer.clear()
-					snapshot_buffer.clear()
 					if spectator and spectator.is_spectating():
 						spectator.exit_spectator()
 						local_player.set_process_unhandled_input(true)
