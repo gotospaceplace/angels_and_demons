@@ -11,8 +11,13 @@ const FOOTSTEP_RUN_INTERVAL := 0.32
 const FOOTSTEP_CROUCH_INTERVAL := 0.56
 const FOOTSTEP_SPEED_THRESHOLD := 0.5
 
+var _test_mode := false
+var _test_footstep_count := 0
+
 
 func _ready() -> void:
+	if _test_mode:
+		return
 	sounds["knife_slash"] = load("res://assets/sounds/knife_slash.mp3")
 	sounds["usp_fire"] = load("res://assets/sounds/usp_fire.mp3")
 	sounds["ak47_fire"] = load("res://assets/sounds/ak47_fire.mp3")
@@ -62,6 +67,9 @@ func play_fire(weapon_idx: int) -> void:
 
 
 func play_footstep() -> void:
+	if _test_mode:
+		_test_footstep_count += 1
+		return
 	var pitch := randf_range(0.85, 1.15)
 	play("footstep", -6.0, pitch)
 

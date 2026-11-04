@@ -1,5 +1,5 @@
 # PHASE 5 — Classic Competitive Rules
-**Status:** Not started | **Version:** 1.0 | **Date:** 2026-11-02
+**Status:** WB1–WB12 complete, WB13 remaining | **Version:** 1.1 | **Date:** 2026-11-04
 
 ## Scope
 Implement the full competitive match ruleset: two-team structure, objective-based rounds (portal activation — catalyst/relic), economy and buy system, freeze/buy period, round lifecycle and win conditions, spectator mode, walk mechanic (MP-002), and match management — producing a complete, playable 5v5 match on a single gray-box map using the networking and combat systems from Phases 2–4. All servers are hosted by us; players create lobbies through the client.
@@ -1052,11 +1052,11 @@ Prices are server-configurable. The 10-weapon roster from the GDD may not be ful
 ## Dependencies
 - Phase 2 movement system — **done** (signed off 2026-10-25)
 - Phase 3 gunplay and grenades — **done** (signed off 2026-10-28)
-- Phase 4 multiplayer networking — **required** (in progress)
+- Phase 4 multiplayer networking — **done**
   - Server game loop, snapshots, prediction, reconciliation, lag compensation
   - Input command protocol and serialization
-  - Player lifecycle (spawn/death/respawn — will be refactored for round-based)
-  - Scoreboard (will be extended with teams)
+  - Player lifecycle (spawn/death/respawn — refactored for round-based in WB4/WB5)
+  - Scoreboard (extended with teams in WB10)
 - Movement inaccuracy threshold (Phase 3) — **done** (140 u/s wired to spread)
 - SoundManager footstep system — **done** (needs walk threshold check)
 - Godot 4.7.2 on laptop and vm-prime — **done**
@@ -1118,57 +1118,55 @@ After all WBs complete:
 ## Acceptance checklist (gate criteria)
 
 ### Plugin architecture
-- [ ] Plugin base class, plugin manager, and match config are implemented and tested
-- [ ] Server loads mode plugin from lobby config (competitive or deathmatch)
-- [ ] Platform layer (stats, anti-cheat, reporting) stubs are in place and hook into dispatch
-- [ ] Deathmatch plugin reproduces all Phase 4 gameplay with zero regressions
-- [ ] Competitive plugin runs a full match with all rules enforced
-- [ ] Feature plugins (chat, vote) load alongside any mode plugin
-- [ ] Lobby overrides apply correctly to match settings
-- [ ] Client loads correct UI modules based on server-reported mode
+- [x] Plugin base class, plugin manager, and match config are implemented and tested (PR #6)
+- [x] Server loads mode plugin from lobby config (competitive or deathmatch) (PR #6)
+- [x] Platform layer (stats, anti-cheat, reporting) stubs are in place and hook into dispatch (PR #6)
+- [x] Deathmatch plugin reproduces all Phase 4 gameplay with zero regressions (PR #6)
+- [x] Competitive plugin runs a full match with all rules enforced (PRs #7–#11)
+- [x] Feature plugins (chat, vote) load alongside any mode plugin (PR #16)
+- [x] Lobby overrides apply correctly to match settings (PR #6)
+- [x] Client loads correct UI modules based on server-reported mode (PR #6)
 
 ### Gameplay (via competitive plugin)
-- [x] Walk mechanic works: shift caps speed to 140 u/s, silent footsteps, full accuracy
-- [x] Walk key syncs over network (Phase 4 input command includes walk bit)
-- [ ] Two teams (Angels/Demons) with team selection and auto-assign
-- [ ] MR12 format: 12 rounds per half, first to 13, halftime swap
-- [ ] Round lifecycle: freeze → buy → live → round over, all timers correct
-- [ ] Economy: starting money, win/loss rewards, loss bonus escalation, kill rewards all correct
-- [ ] Buy menu: functional weapon/equipment purchasing during buy period in buy zone
-- [ ] Portal objective: catalyst activation, sealing, portal timer, drop on death, all win conditions
-- [ ] Spectator mode: first-person follow and free-cam after death
-- [ ] Match HUD: round timer, team scores, money, portal status, announcements
-- [ ] Scoreboard: team-sorted, kills/deaths/money/ping
-- [ ] Chat: team and all chat functional (via chat plugin)
-- [ ] Equipment persistence: survivors keep gear, dead players reset
+- [x] Walk mechanic works: shift caps speed to 140 u/s, silent footsteps, full accuracy (PR #4)
+- [x] Walk key syncs over network (Phase 4 input command includes walk bit) (PR #4)
+- [x] Two teams (Angels/Demons) with team selection and auto-assign (PR #17)
+- [x] MR12 format: 12 rounds per half, first to 13, halftime swap (PR #8)
+- [x] Round lifecycle: freeze → buy → live → round over, all timers correct (PR #8)
+- [x] Economy: starting money, win/loss rewards, loss bonus escalation, kill rewards all correct (PR #7)
+- [x] Buy menu: functional weapon/equipment purchasing during buy period in buy zone (PR #11)
+- [x] Portal objective: catalyst activation, sealing, portal timer, drop on death, all win conditions (PR #10)
+- [x] Spectator mode: first-person follow and free-cam after death (PR #14)
+- [x] Match HUD: round timer, team scores, money, portal status, announcements (PRs #12, #13)
+- [x] Scoreboard: team-sorted, kills/deaths/money/ping (PRs #12, #13)
+- [x] Chat: team and all chat functional (via chat plugin) (PR #16)
+- [x] Equipment persistence: survivors keep gear, dead players reset (PR #9)
 - [ ] A full 5v5 session completes without manual intervention
-- [ ] All gameplay rules are configurable via match settings
-- [ ] All Phase 2 movement + Phase 3 combat + Phase 4 network + Phase 5 match tests pass in CI
+- [x] All gameplay rules are configurable via match settings (PRs #6–#11)
+- [ ] All Phase 2 movement + Phase 3 combat + Phase 4 network + Phase 5 match tests pass in CI (WB13)
 - [ ] No regression in movement, combat, or networking feel
-- [ ] Deathmatch mode from Phase 4 is preserved as a plugin
+- [x] Deathmatch mode from Phase 4 is preserved as a plugin (PR #6)
 
 ---
 
 ## Suggested work order
-1. **WB1** (walk mechanic / MP-002) — **DONE** ✓ standalone movement feature, landed in PR #4
-2. **WB2** (plugin system + deathmatch extraction) — the foundation: base class, match config, plugin manager, platform stubs, refactor server_game.gd, extract deathmatch plugin. Must land before any other WB. Proves the architecture by running existing gameplay through the plugin layer with zero regressions.
-3. **WB3** (competitive economy module) — standalone calculation logic, testable without round system. Internal module of the competitive plugin.
-4. **WB4** (competitive plugin + round lifecycle) — core integration: this is where the game becomes round-based. Wires economy, teams, and rounds together.
-5. **WB5** (competitive spawn system) — per-team spawns, freeze time, equipment persistence
-6. **WB6** (portal objective) — adds primary win condition
-7. **WB12** (test map update) — needed for portal sites and team spawns (can start as a shell early)
-8. **WB7** (buy menu) — economy integrated into gameplay
-9. **WB9** (team selection) — player-facing team management
-10. **WB10** (match HUD) — visibility into match state (extend incrementally alongside features)
-11. **WB8** (spectator) — after death flow is in place
-12. **WB11** (chat plugin) — communication layer, works with any mode
-13. **WB13** (regression tests) — write tests alongside features, final pass here
+1. **WB1** (walk mechanic / MP-002) — **DONE** ✓ PR #4
+2. **WB2** (plugin system + deathmatch extraction) — **DONE** ✓ PR #6
+3. **WB3** (competitive economy module) — **DONE** ✓ PR #7
+4. **WB4** (competitive plugin + round lifecycle) — **DONE** ✓ PR #8
+5. **WB5** (competitive spawn system) — **DONE** ✓ PR #9
+6. **WB6** (portal objective) — **DONE** ✓ PR #10
+7. **WB12** (test map update) — **DONE** ✓ PR #18 + playtest fixes (c69eced, 0232027, 97cd85b)
+8. **WB7** (buy menu) — **DONE** ✓ PR #11
+9. **WB9** (team selection) — **DONE** ✓ PR #17
+10. **WB10** (match HUD) — **DONE** ✓ PRs #12, #13
+11. **WB8** (spectator) — **DONE** ✓ PR #14
+12. **WB11** (chat plugin) — **DONE** ✓ PR #16
+13. **WB13** (regression tests) — consolidated match_tests.gd + CI entry point remaining
 
 ---
 
 ## Immediate next steps
-1. **Laptop:** ~~WB1 (walk mechanic)~~ — **DONE** ✓ PR #4
-2. **Laptop:** WB2 (plugin system foundation) — the critical path. Establishes the architecture that every subsequent WB depends on. Key deliverable: existing deathmatch gameplay runs through the plugin layer with zero regressions.
-3. **Laptop:** WB3 (economy module) — pure logic, fully testable in isolation against the match config system
-4. **Phase 4 dependency:** WB4+ requires Phase 4 networking to be functional — plan accordingly
-5. **Key milestone:** Two teams buying weapons, playing a round with portal objective, spectating after death — this validates the entire competitive ruleset AND the plugin architecture
+1. ~~WB1–WB12~~ — **ALL DONE** ✓ All features merged (PRs #4–#18) + 3 playtest fix commits
+2. **WB13** (consolidated regression tests) — create `match_tests.gd`, add `--test-match` entry point, add CI step. Individual test suites already cover most cases; WB13 adds the missing cross-cutting tests and the unified runner.
+3. **Post-Phase 5:** Playtest-driven iteration on balance and feel, then Phase 6 planning

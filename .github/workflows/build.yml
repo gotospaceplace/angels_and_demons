@@ -133,6 +133,9 @@ jobs:
       - name: HUD tests
         run: timeout 30 godot --headless --path . -- --test-hud
 
+      - name: Match tests (WB13)
+        run: timeout 30 godot --headless --path . -- --test-match
+
       - name: Validation tests
         run: timeout 30 godot --headless --path . -- --test-validation
 

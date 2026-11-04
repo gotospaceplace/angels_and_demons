@@ -50,6 +50,10 @@ func _ready() -> void:
 		print("EntryPoint: launching HUD test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/hud_test_scene.tscn")
 		return
+	if "--test-match" in args:
+		print("EntryPoint: launching consolidated match test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/match_test_scene.tscn")
+		return
 	if "--bench" in args:
 		print("EntryPoint: launching performance benchmark")
 		get_tree().change_scene_to_file.call_deferred("res://tests/perf_benchmark_scene.tscn")
