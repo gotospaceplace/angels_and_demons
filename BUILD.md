@@ -15,6 +15,66 @@
 | Linux    | `~/.local/share/godot/export_templates/4.7.2.stable/` |
 | macOS    | `~/Library/Application Support/Godot/export_templates/4.7.2.stable/` |
 
+## Stamping a Build Number
+
+Before exporting, stamp the build with the current git hash, date, and an incrementing build counter. This writes `shared/scripts/build_info.gd` which is registered as the `BuildInfo` autoload.
+
+**PowerShell (Windows):**
+
+```powershell
+$n = [int](Get-Content .build_number) + 1; $n | Set-Content .build_number -NoNewline
+$hash = (git rev-parse --short HEAD)
+$date = (Get-Date -Format "yyyy-MM-dd")
+$ver = "0.1.0"
+@"
+extends Node
+
+const BUILD_NUMBER := $n
+const BUILD_HASH := "$hash"
+const BUILD_DATE := "$date"
+const BUILD_VERSION := "$ver"
+
+static func get_build_string() -> String:
+	if BUILD_HASH == "dev":
+		return "%s-dev" % BUILD_VERSION
+	return "%s build %d (%s %s)" % [BUILD_VERSION, BUILD_NUMBER, BUILD_HASH, BUILD_DATE]
+
+static func get_short_string() -> String:
+	if BUILD_HASH == "dev":
+		return "dev"
+	return "#%d-%s" % [BUILD_NUMBER, BUILD_HASH]
+"@ | Set-Content shared/scripts/build_info.gd -Encoding utf8
+```
+
+**Bash (Linux / CI):**
+
+```bash
+n=$(($(cat .build_number) + 1)); echo -n "$n" > .build_number
+hash=$(git rev-parse --short HEAD)
+date=$(date +%Y-%m-%d)
+ver="0.1.0"
+cat > shared/scripts/build_info.gd <<EOF
+extends Node
+
+const BUILD_NUMBER := $n
+const BUILD_HASH := "$hash"
+const BUILD_DATE := "$date"
+const BUILD_VERSION := "$ver"
+
+static func get_build_string() -> String:
+	if BUILD_HASH == "dev":
+		return "%s-dev" % BUILD_VERSION
+	return "%s build %d (%s %s)" % [BUILD_VERSION, BUILD_NUMBER, BUILD_HASH, BUILD_DATE]
+
+static func get_short_string() -> String:
+	if BUILD_HASH == "dev":
+		return "dev"
+	return "#%d-%s" % [BUILD_NUMBER, BUILD_HASH]
+EOF
+```
+
+The `.build_number` file is git-ignored (machine-local counter). In the editor, `BuildInfo` defaults to `dev` mode with no stamp. Access the build string at runtime via `BuildInfo.get_build_string()` or `BuildInfo.get_short_string()`.
+
 ## Building the Windows Client
 
 From the repository root, using the Godot console binary:
