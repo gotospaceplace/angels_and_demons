@@ -60,7 +60,7 @@ func _ready() -> void:
 
 	_ladder_area = Area3D.new()
 	_ladder_area.collision_layer = 0
-	_ladder_area.collision_mask = 1
+	_ladder_area.collision_mask = 2
 	var ladder_shape := CollisionShape3D.new()
 	var ladder_capsule := CapsuleShape3D.new()
 	ladder_capsule.radius = capsule.radius

@@ -100,10 +100,10 @@ func _build_angels_side() -> void:
 	_add_box("SupportAngelsR", Vector3(9.1, col_h * 0.5, 22.2),
 			Vector3(1.63, col_h, 1.63), PLAT_COLOR)
 
-	# East ramp — behind platform, players approach from back wall side
+	# East ramp — behind platform, bottom near back wall, top at platform front
 	var ramp_x := pcx + PLAT_W * 0.5 + 1.3
 	_add_ramp("RampE_Angels", Vector3(ramp_x, 0, 25.5),
-			PLAT_TOP, 2.5, 7.0, true, RAMP_COLOR)
+			PLAT_TOP, 2.5, 7.0, false, RAMP_COLOR)
 	_add_box("LandingE_Angels", Vector3(ramp_x, deck_y, front_z + 0.5),
 			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
 
@@ -151,10 +151,10 @@ func _build_demons_side() -> void:
 	_add_box("SupportDemonsR", Vector3(7.3, col_h * 0.5, -22.2),
 			Vector3(1.63, col_h, 1.63), PLAT_COLOR)
 
-	# West ramp — behind platform, players approach from back wall side
+	# West ramp — behind platform, bottom near back wall, top at platform front
 	var ramp_x := pcx - PLAT_W * 0.5 - 1.3
 	_add_ramp("RampW_Demons", Vector3(ramp_x, 0, -25.5),
-			PLAT_TOP, 2.5, 7.0, false, RAMP_COLOR)
+			PLAT_TOP, 2.5, 7.0, true, RAMP_COLOR)
 	_add_box("LandingW_Demons", Vector3(ramp_x, deck_y, front_z - 0.5),
 			Vector3(2.5, PLAT_THICK, 1.5), PLAT_COLOR)
 
@@ -257,16 +257,19 @@ func _add_ramp(node_name: String, base_pos: Vector3, height: float,
 		angle = -angle
 
 	var hyp := depth / cos(absf(angle))
+
+	# Thick collision slab to prevent fall-through
 	var col := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(width, 0.15, hyp)
+	shape.size = Vector3(width, 0.5, hyp)
 	col.shape = shape
 	col.rotation.x = angle
 	body.add_child(col)
 
+	# Visual mesh stays thin
 	var mesh_inst := MeshInstance3D.new()
 	var box_mesh := BoxMesh.new()
-	box_mesh.size = shape.size
+	box_mesh.size = Vector3(width, 0.15, hyp)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	box_mesh.material = mat
@@ -291,25 +294,41 @@ func _add_stairs(base_name: String, start_pos: Vector3, direction: Vector3,
 
 func _add_ladder(base_name: String, pos: Vector3, height: float,
 		width: float, color: Color, face_dir: Vector3 = Vector3.FORWARD) -> void:
+	var fd := face_dir.normalized()
+
+	# Solid wall behind the ladder
+	var wall_pos := Vector3(pos.x - fd.x * 0.2, height * 0.5, pos.z - fd.z * 0.2)
+	_add_box(base_name + "_Wall", wall_pos,
+			Vector3(width + 0.4, height, 0.3), color)
+
+	# Visual rungs (no collision — wall handles it)
 	var rung_spacing := 0.45
 	var rung_count := int(height / rung_spacing)
 	for i in range(rung_count):
 		var rung_y := rung_spacing * (i + 1)
 		if rung_y > height:
 			break
-		_add_box("%s_%02d" % [base_name, i],
-				Vector3(pos.x, rung_y, pos.z),
-				Vector3(width, 0.1, 0.3), color)
+		var mi := MeshInstance3D.new()
+		mi.name = "%s_Rung%02d" % [base_name, i]
+		var bm := BoxMesh.new()
+		bm.size = Vector3(width, 0.08, 0.15)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = color.darkened(0.2)
+		bm.material = mat
+		mi.mesh = bm
+		mi.position = Vector3(pos.x, rung_y, pos.z)
+		add_child(mi)
 
+	# Climbing trigger — layer 2, 1m deep (matches movement range)
 	var area := LadderVolume.new()
 	area.name = base_name + "_Zone"
-	area.face_normal = face_dir
+	area.face_normal = fd
 	var col := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(width + 0.4, height, 0.6)
+	shape.size = Vector3(width + 0.4, height, 1.0)
 	col.shape = shape
 	area.add_child(col)
-	area.position = Vector3(pos.x, height * 0.5, pos.z)
+	area.position = Vector3(pos.x + fd.x * 0.2, height * 0.5, pos.z + fd.z * 0.2)
 	area.add_to_group("ladder")
 	add_child(area)
 
