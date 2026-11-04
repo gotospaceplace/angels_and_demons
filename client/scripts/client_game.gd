@@ -28,6 +28,7 @@ var buy_menu: ClientBuyMenu
 var mode_loader: ClientModeLoader
 var hud: ClientHud
 var spectator: ClientSpectator
+var chat: ClientChat
 
 var session_token: int = 0
 var server_address: String = "127.0.0.1"
@@ -84,6 +85,10 @@ func _ready() -> void:
 	spectator.name = "Spectator"
 	spectator.interpolation = interpolation
 	add_child(spectator)
+
+	chat = ClientChat.new()
+	chat.name = "Chat"
+	add_child(chat)
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
@@ -451,11 +456,24 @@ func _handle_event(packet: PackedByteArray) -> void:
 			if packet.size() >= 7:
 				session_token = packet[3] | (packet[4] << 8) | (packet[5] << 16) | (packet[6] << 24)
 				print("[Client] Session token: %d" % session_token)
+		NetProtocol.EVT_CHAT:
+			if packet.size() >= 8:
+				var sender_id := packet[3] | (packet[4] << 8)
+				var team_flag := packet[5] != 0
+				var msg_len := packet[6] | (packet[7] << 8)
+				if packet.size() >= 8 + msg_len:
+					var msg := packet.slice(8, 8 + msg_len).get_string_from_utf8()
+					if chat:
+						chat.on_chat_received(sender_id, msg, team_flag)
+					print("[Chat] %sPlayer %d: %s" % [
+						"(TEAM) " if team_flag else "", sender_id, msg])
 		NetProtocol.EVT_SERVER_MSG:
 			if packet.size() >= 5:
 				var msg_len := packet[3] | (packet[4] << 8)
 				if packet.size() >= 5 + msg_len:
 					var msg := packet.slice(5, 5 + msg_len).get_string_from_utf8()
+					if chat:
+						chat.on_server_message(msg)
 					print("[Server] %s" % msg)
 		NetProtocol.EVT_MATCH_STATE:
 			var ms := NetProtocol.unpack_match_state_event(packet)

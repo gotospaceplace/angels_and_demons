@@ -22,6 +22,7 @@ const EVT_BUY_REQUEST := 9
 const ADMIN_REJOIN   := 1
 const ADMIN_BUY      := 2
 const ADMIN_REQUEST  := 3
+const ADMIN_CHAT     := 4
 
 # Packet header: version (1) + msg_type (1) = 2 bytes
 const HEADER_SIZE := 2
@@ -311,6 +312,36 @@ static func pack_buy_result_event(success: bool, item_index: int, money: int) ->
 	buf[4] = item_index & 0xFF
 	buf[5] = money & 0xFF
 	buf[6] = (money >> 8) & 0xFF
+	return buf
+
+
+static func pack_chat_event(sender_id: int, message: String, team_only: bool) -> PackedByteArray:
+	var msg_bytes := message.to_utf8_buffer()
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 6)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_CHAT
+	buf[3] = sender_id & 0xFF
+	buf[4] = (sender_id >> 8) & 0xFF
+	buf[5] = 1 if team_only else 0
+	buf[6] = msg_bytes.size() & 0xFF
+	buf[7] = (msg_bytes.size() >> 8) & 0xFF
+	buf.append_array(msg_bytes)
+	return buf
+
+
+static func pack_admin_chat(message: String, team_only: bool) -> PackedByteArray:
+	var msg_bytes := message.to_utf8_buffer()
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 4)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_ADMIN
+	buf[2] = ADMIN_CHAT
+	buf[3] = 1 if team_only else 0
+	buf[4] = msg_bytes.size() & 0xFF
+	buf[5] = (msg_bytes.size() >> 8) & 0xFF
+	buf.append_array(msg_bytes)
 	return buf
 
 
