@@ -10,6 +10,7 @@ const BINDABLE_ACTIONS := [
 	"weapon_last", "weapon_next", "weapon_prev",
 	"interact", "buy_menu",
 	"toggle_hud", "toggle_net_hud",
+	"screenshot",
 ]
 
 const ACTION_DISPLAY_NAMES := {
@@ -35,6 +36,7 @@ const ACTION_DISPLAY_NAMES := {
 	"buy_menu": "Buy Menu",
 	"toggle_hud": "Toggle HUD",
 	"toggle_net_hud": "Toggle Net HUD",
+	"screenshot": "Screenshot",
 }
 
 var _defaults := {}
