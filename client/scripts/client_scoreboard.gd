@@ -2,7 +2,6 @@ extends CanvasLayer
 
 const RoundIconScene = preload("res://client/scripts/round_icon.gd")
 
-# TODO: Implement Team Deathmatch scoreboard (two teams, stat columns without economy)
 # TODO: Implement Casual 10v10 scoreboard (scrollable rows)
 
 var mode: StringName = &""
@@ -71,6 +70,17 @@ const COL_DIM := Color(0.55, 0.55, 0.55)
 const COL_HDR_TEXT := Color(0.72, 0.72, 0.72)
 const COL_MONEY_G := Color(0.4, 0.9, 0.3)
 
+const TDM_MAX_ROWS := 6
+const TDM_TABLE_X := 82.0
+const TDM_ROW_H := 28.0
+const TDM_TEAM_Y := 68.0
+const TDM_CX_NAME := 0.0;     const TDM_CW_NAME := 250.0
+const TDM_CX_KILLS := 260.0;  const TDM_CW_KILLS := 60.0
+const TDM_CX_DEATHS := 330.0; const TDM_CW_DEATHS := 60.0
+const TDM_CX_ASSIST := 400.0; const TDM_CW_ASSIST := 60.0
+const TDM_CX_KDR := 470.0;    const TDM_CW_KDR := 60.0
+const TDM_CX_DMG := 540.0;    const TDM_CW_DMG := 70.0
+
 var panel: Panel
 var _hdr_mode: Label
 var _hdr_time: Label
@@ -90,6 +100,12 @@ var _ffa_root: Control
 var _ffa_hdr_mode: Label
 var _ffa_hdr_time: Label
 var _ffa_rows: Array = []
+var _tdm_root: Control
+var _tdm_hdr_mode: Label
+var _tdm_hdr_time: Label
+var _tdm_score_boxes := {}
+var _tdm_score_labels := {}
+var _tdm_rows := {}
 
 
 func _ready() -> void:
@@ -97,6 +113,7 @@ func _ready() -> void:
 	_build_panel()
 	_build_competitive()
 	_build_ffa()
+	_build_tdm()
 	_build_fallback()
 	panel.visible = false
 
@@ -463,6 +480,121 @@ func _refresh_ffa() -> void:
 			r["score"].visible = false
 
 
+func _build_tdm() -> void:
+	_tdm_root = Control.new()
+	_tdm_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(_tdm_root)
+	var root := _tdm_root
+
+	var hdr_bg := _rect(COL_HDR_BG, Vector2(PANEL_W, HEADER_H))
+	hdr_bg.position = Vector2.ZERO
+	root.add_child(hdr_bg)
+
+	_tdm_hdr_mode = _lbl(16, COL_TEXT)
+	_tdm_hdr_mode.position = Vector2(12, 10)
+	_tdm_hdr_mode.size = Vector2(400, 24)
+	root.add_child(_tdm_hdr_mode)
+
+	_tdm_hdr_time = _lbl(16, COL_DIM)
+	_tdm_hdr_time.position = Vector2(PANEL_W - 200, 10)
+	_tdm_hdr_time.size = Vector2(188, 24)
+	_tdm_hdr_time.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	root.add_child(_tdm_hdr_time)
+
+	var col_names := ["Name", "Kills", "Deaths", "Assists", "K/D", "DMG"]
+	var col_xs := [TDM_CX_NAME, TDM_CX_KILLS, TDM_CX_DEATHS,
+		TDM_CX_ASSIST, TDM_CX_KDR, TDM_CX_DMG]
+	var col_ws := [TDM_CW_NAME, TDM_CW_KILLS, TDM_CW_DEATHS,
+		TDM_CW_ASSIST, TDM_CW_KDR, TDM_CW_DMG]
+	for i in range(col_names.size()):
+		var l := _lbl(11, COL_HDR_TEXT)
+		l.text = col_names[i]
+		l.position = Vector2(TDM_TABLE_X + col_xs[i], COL_HDR_Y)
+		l.size = Vector2(col_ws[i], COL_HDR_H)
+		if i >= 1:
+			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		root.add_child(l)
+
+	for team in [Team.Id.ANGELS, Team.Id.DEMONS]:
+		var section_y: float
+		if team == Team.Id.ANGELS:
+			section_y = TDM_TEAM_Y
+		else:
+			section_y = TDM_TEAM_Y + TDM_MAX_ROWS * TDM_ROW_H + GAP
+		_build_tdm_team(root, team, section_y)
+
+
+func _build_tdm_team(root: Control, team: int, y: float) -> void:
+	var box := _make_panel(Color.WHITE, Vector2(SCORE_BOX_W, TDM_MAX_ROWS * TDM_ROW_H))
+	box.position = Vector2(SCORE_BOX_X, y)
+	root.add_child(box)
+	_tdm_score_boxes[team] = box
+
+	var num := _lbl(36, Color(0.1, 0.1, 0.1))
+	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	num.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	num.position = Vector2(0, 10)
+	num.size = Vector2(SCORE_BOX_W, 60)
+	box.add_child(num)
+	_tdm_score_labels[team] = num
+
+	var tname := _lbl(11, Color(0.1, 0.1, 0.1))
+	tname.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tname.position = Vector2(0, 75)
+	tname.size = Vector2(SCORE_BOX_W, 16)
+	tname.text = Team.get_team_name(team)
+	box.add_child(tname)
+
+	_tdm_rows[team] = []
+	for i in range(TDM_MAX_ROWS):
+		var row_y := y + i * TDM_ROW_H
+		var row_color: Color
+		if team == Team.Id.ANGELS:
+			row_color = COL_A_ROW if i % 2 == 0 else COL_A_ROW_ALT
+		else:
+			row_color = COL_D_ROW if i % 2 == 0 else COL_D_ROW_ALT
+		var r := _build_tdm_row(root, row_y, row_color)
+		_tdm_rows[team].append(r)
+
+
+func _build_tdm_row(root: Control, y: float, bg_color: Color) -> Dictionary:
+	var bg := _rect(bg_color, Vector2(PANEL_W - TDM_TABLE_X + 4, TDM_ROW_H))
+	bg.position = Vector2(TDM_TABLE_X - 4, y)
+	root.add_child(bg)
+
+	var highlight := _rect(COL_LOCAL, Vector2(PANEL_W - TDM_TABLE_X + 4, TDM_ROW_H))
+	highlight.position = Vector2(TDM_TABLE_X - 4, y)
+	highlight.visible = false
+	root.add_child(highlight)
+
+	var name_lbl := _lbl(13, COL_TEXT)
+	name_lbl.position = Vector2(TDM_TABLE_X + TDM_CX_NAME, y + 5)
+	name_lbl.size = Vector2(TDM_CW_NAME, 18)
+	name_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	root.add_child(name_lbl)
+
+	var kills := _tdm_stat(root, TDM_CX_KILLS, TDM_CW_KILLS, y)
+	var deaths := _tdm_stat(root, TDM_CX_DEATHS, TDM_CW_DEATHS, y)
+	var assists := _tdm_stat(root, TDM_CX_ASSIST, TDM_CW_ASSIST, y)
+	var kdr := _tdm_stat(root, TDM_CX_KDR, TDM_CW_KDR, y)
+	var dmg := _tdm_stat(root, TDM_CX_DMG, TDM_CW_DMG, y)
+
+	return {
+		"bg": bg, "highlight": highlight, "name": name_lbl,
+		"kills": kills, "deaths": deaths, "assists": assists,
+		"kdr": kdr, "dmg": dmg,
+	}
+
+
+func _tdm_stat(root: Control, cx: float, cw: float, y: float) -> Label:
+	var l := _lbl(12, COL_TEXT)
+	l.position = Vector2(TDM_TABLE_X + cx, y + 6)
+	l.size = Vector2(cw, 16)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(l)
+	return l
+
+
 func _build_fallback() -> void:
 	_fallback_root = Control.new()
 	_fallback_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -481,6 +613,7 @@ func _refresh() -> void:
 
 	_competitive_root.visible = false
 	_ffa_root.visible = false
+	_tdm_root.visible = false
 	_fallback_root.visible = false
 
 	if mode == &"competitive":
@@ -495,6 +628,12 @@ func _refresh() -> void:
 		panel.position = Vector2((vp.x - PANEL_W) * 0.5, (vp.y - ph) * 0.5)
 		panel.size = Vector2(PANEL_W, ph)
 		_refresh_ffa()
+	elif mode == &"team_deathmatch":
+		_tdm_root.visible = true
+		var ph := TDM_TEAM_Y + TDM_MAX_ROWS * TDM_ROW_H + GAP + TDM_MAX_ROWS * TDM_ROW_H + GAP
+		panel.position = Vector2((vp.x - PANEL_W) * 0.5, (vp.y - ph) * 0.5)
+		panel.size = Vector2(PANEL_W, ph)
+		_refresh_tdm()
 	else:
 		_fallback_root.visible = true
 		var ph := 360.0
@@ -624,6 +763,59 @@ func _refresh_loss_bonus() -> void:
 		_loss_label.text = "Loss Bonus\n$%d (%d)" % [bonus, my_streak]
 	else:
 		_loss_label.text = ""
+
+
+func _refresh_tdm() -> void:
+	_tdm_hdr_mode.text = "Team Deathmatch | Map"
+	_tdm_hdr_time.text = match_state
+
+	_tdm_score_labels[Team.Id.ANGELS].text = str(score_angels)
+	_tdm_score_labels[Team.Id.DEMONS].text = str(score_demons)
+
+	var angels := _get_sorted_team_roster(Team.Id.ANGELS)
+	var demons := _get_sorted_team_roster(Team.Id.DEMONS)
+	_fill_tdm_rows(Team.Id.ANGELS, angels)
+	_fill_tdm_rows(Team.Id.DEMONS, demons)
+
+
+func _fill_tdm_rows(team: int, team_roster: Array) -> void:
+	var rows: Array = _tdm_rows[team]
+	for i in range(TDM_MAX_ROWS):
+		var r: Dictionary = rows[i]
+		if i < team_roster.size():
+			var entry: Dictionary = team_roster[i]
+			var pid: int = entry.get("id", 0)
+			var is_local := pid == my_peer_id
+			var k: int = entry.get("kills", 0)
+			var d: int = entry.get("deaths", 0)
+
+			r["bg"].visible = true
+			r["highlight"].visible = is_local
+			r["name"].text = "Player %d" % pid
+			if is_local:
+				r["name"].add_theme_color_override("font_color", Color(0.95, 0.88, 0.3))
+			else:
+				r["name"].add_theme_color_override("font_color", COL_TEXT)
+			r["name"].visible = true
+			r["kills"].text = str(k)
+			r["deaths"].text = str(d)
+			r["assists"].text = str(entry.get("assists", 0))
+			r["kdr"].text = "%.1f" % (float(k) / maxf(float(d), 1.0))
+			r["dmg"].text = str(entry.get("damage", 0))
+			r["kills"].visible = true
+			r["deaths"].visible = true
+			r["assists"].visible = true
+			r["kdr"].visible = true
+			r["dmg"].visible = true
+		else:
+			r["bg"].visible = false
+			r["highlight"].visible = false
+			r["name"].visible = false
+			r["kills"].visible = false
+			r["deaths"].visible = false
+			r["assists"].visible = false
+			r["kdr"].visible = false
+			r["dmg"].visible = false
 
 
 func _refresh_fallback() -> void:
