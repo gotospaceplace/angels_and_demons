@@ -23,6 +23,9 @@ var next_token: int = 1
 var _use_state: Dictionary = {}
 var damage_log: Array = []
 
+var active_grenades: Array = []
+var next_grenade_id: int = 1
+
 const PENDING_TIMEOUT_TICKS := 64
 
 var spawn_points: Array[Vector3] = [
@@ -122,6 +125,7 @@ func _physics_process(delta: float) -> void:
 	_process_fire_commands()
 	_process_respawns()
 	_process_use_commands(delta)
+	_process_grenades(delta)
 	lag_comp.store_tick(server_tick, players)
 
 	plugin_manager.dispatch_on_tick(server_tick, delta)
@@ -418,6 +422,9 @@ func _handle_admin_packet(peer_id: int, packet: PackedByteArray) -> void:
 			return
 		var requested_team: int = packet[3]
 		_handle_team_select(peer_id, requested_team)
+	elif admin_type == NetProtocol.ADMIN_GRENADE:
+		if packet.size() >= 32:
+			_handle_grenade_throw(peer_id, packet)
 
 
 func _handle_team_select(peer_id: int, requested_team: int) -> void:
@@ -726,6 +733,239 @@ func _cmd_settings() -> void:
 			s["name"], str(s["value"]), str(s["default"]), s["plugin"]])
 
 
+func _handle_grenade_throw(peer_id: int, packet: PackedByteArray) -> void:
+	if not players.has(peer_id):
+		return
+	var sp = players[peer_id]
+	if sp.is_dead:
+		return
+
+	var grenade_type: int = packet[3]
+	if grenade_type > 2:
+		return
+	if not sp.consume_grenade(grenade_type):
+		return
+
+	var pos := Vector3(packet.decode_float(4), packet.decode_float(8), packet.decode_float(12))
+	var vel := Vector3(packet.decode_float(16), packet.decode_float(20), packet.decode_float(24))
+	var fuse: float = packet.decode_float(28)
+	fuse = clampf(fuse, 0.0, WC.GRENADE_FUSE)
+
+	var gid := next_grenade_id
+	next_grenade_id += 1
+
+	var body := RigidBody3D.new()
+	body.collision_layer = 4
+	body.collision_mask = 1
+
+	var phys_mat := PhysicsMaterial.new()
+	phys_mat.bounce = WC.GRENADE_BOUNCE
+	phys_mat.friction = WC.GRENADE_FRICTION
+	body.physics_material_override = phys_mat
+
+	var project_grav: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+	if project_grav > 0.0:
+		body.gravity_scale = (MC.GRAVITY * 0.4) / project_grav
+
+	body.linear_damp = 0.1
+	body.angular_damp = 2.0
+	body.continuous_cd = true
+
+	var shape := SphereShape3D.new()
+	shape.radius = 0.04
+	var col := CollisionShape3D.new()
+	col.shape = shape
+	body.add_child(col)
+
+	world_node.add_child(body)
+	body.global_position = pos
+	body.linear_velocity = vel
+
+	active_grenades.append({
+		"body": body,
+		"id": gid,
+		"type": grenade_type,
+		"thrower": peer_id,
+		"fuse": fuse,
+	})
+
+	var spawn_packet := NetProtocol.pack_grenade_spawn_event(
+		peer_id, gid, grenade_type, pos, vel, fuse)
+	for pid in players:
+		multiplayer.send_bytes(spawn_packet, pid,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+
+	print("[Server] Player %d threw grenade type=%d id=%d fuse=%.2f" % [
+		peer_id, grenade_type, gid, fuse])
+
+
+func _process_grenades(delta: float) -> void:
+	var to_detonate: Array = []
+	for g in active_grenades:
+		g["fuse"] -= delta
+		if g["fuse"] <= 0.0:
+			to_detonate.append(g)
+	for g in to_detonate:
+		_detonate_grenade(g)
+		active_grenades.erase(g)
+		if is_instance_valid(g["body"]):
+			g["body"].queue_free()
+
+
+func _detonate_grenade(g: Dictionary) -> void:
+	var pos: Vector3 = g["body"].global_position if is_instance_valid(g["body"]) else Vector3.ZERO
+	var grenade_type: int = g["type"]
+	var thrower_id: int = g["thrower"]
+
+	var det_packet := NetProtocol.pack_grenade_detonate_event(g["id"], grenade_type, pos)
+	for pid in players:
+		multiplayer.send_bytes(det_packet, pid,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+
+	match grenade_type:
+		0: _detonate_he_server(thrower_id, pos)
+		1: _detonate_flash_server(thrower_id, pos)
+		2: _detonate_smoke_server(pos)
+
+
+func _detonate_he_server(thrower_id: int, pos: Vector3) -> void:
+	var blast_radius_m := WC.HE_BLAST_RADIUS_GSRC * MC.METERS_PER_UNIT
+	var space := world_node.get_world_3d().direct_space_state
+	var damaged: Dictionary = {}
+
+	for peer_id in players:
+		var sp = players[peer_id]
+		if sp.is_dead:
+			continue
+		if damaged.has(peer_id):
+			continue
+
+		var target_pos: Vector3 = sp.body.global_position
+		var dist_m := pos.distance_to(target_pos)
+		var dist_gsrc := dist_m * MC.UNITS_PER_METER
+		if dist_gsrc >= WC.HE_BLAST_RADIUS_GSRC:
+			continue
+
+		var check_from := pos + Vector3(0, 0.1, 0)
+		var check_to := target_pos + Vector3(0, 0.5, 0)
+		var los_params := PhysicsRayQueryParameters3D.create(check_from, check_to)
+		los_params.collision_mask = 1
+		var los_result := space.intersect_ray(los_params)
+		if los_result:
+			continue
+
+		var base_damage := WC.HE_DAMAGE * (1.0 - dist_gsrc / WC.HE_BLAST_RADIUS_GSRC)
+		var final_damage: float = plugin_manager.dispatch_on_player_damage(
+			thrower_id, peer_id, base_damage, -1, "chest")
+		if final_damage <= 0.0:
+			continue
+
+		sp.take_damage(final_damage)
+		damaged[peer_id] = true
+
+		damage_log.append({
+			"attacker": thrower_id,
+			"victim": peer_id,
+			"damage": int(ceilf(final_damage)),
+			"weapon": -1,
+			"headshot": false,
+		})
+
+		if players.has(thrower_id):
+			var hit_packet := NetProtocol.pack_hit_event(
+				peer_id, int(final_damage), false)
+			multiplayer.send_bytes(hit_packet, thrower_id,
+				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+				NetConstants.CHANNEL_EVENTS)
+
+		if sp.is_dead:
+			sp.die(server_tick)
+			if players.has(thrower_id):
+				players[thrower_id].kills += 1
+			plugin_manager.last_death_position = sp.body.global_position
+			plugin_manager.dispatch_on_player_kill(thrower_id, peer_id, -1, false)
+			plugin_manager.dispatch_on_player_death(peer_id, thrower_id)
+			_send_death_report(peer_id)
+			var kill_flags := 0
+			if _is_in_smoke(pos) or _is_in_smoke(sp.body.global_position):
+				kill_flags |= NetProtocol.KILL_FLAG_SMOKE
+			var kill_packet := NetProtocol.pack_kill_event(
+				thrower_id, peer_id, -1, false, kill_flags)
+			for pid in players:
+				multiplayer.send_bytes(kill_packet, pid,
+					MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+					NetConstants.CHANNEL_EVENTS)
+			print("[Server] GRENADE KILL: Player %d → Player %d (HE, dmg=%.1f)" % [
+				thrower_id, peer_id, final_damage])
+
+
+func _detonate_flash_server(thrower_id: int, pos: Vector3) -> void:
+	var space := world_node.get_world_3d().direct_space_state
+
+	for peer_id in players:
+		var sp = players[peer_id]
+		if sp.is_dead:
+			continue
+
+		var eye_pos: Vector3 = sp.body.get_node("Head").global_position
+
+		var los_params := PhysicsRayQueryParameters3D.create(
+			pos + Vector3(0, 0.1, 0), eye_pos)
+		los_params.collision_mask = 1
+		los_params.exclude = [sp.body.get_rid()]
+		var los_result := space.intersect_ray(los_params)
+		if los_result:
+			continue
+
+		var cam_yaw := deg_to_rad(fposmod(rad_to_deg(sp.body.rotation.y), 360.0))
+		var cam_pitch := sp.body.get_node("Head").rotation.x
+		var cam_forward := Vector3(
+			-sin(cam_yaw) * cos(cam_pitch),
+			sin(cam_pitch),
+			-cos(cam_yaw) * cos(cam_pitch)).normalized()
+		var dir_to_flash := pos - eye_pos
+		cam_forward.y = 0.0
+		dir_to_flash.y = 0.0
+		cam_forward = cam_forward.normalized()
+		dir_to_flash = dir_to_flash.normalized()
+		var dot := cam_forward.dot(dir_to_flash)
+		var angle_deg := rad_to_deg(acos(clampf(dot, -1.0, 1.0)))
+
+		var blind := _lerp_flash_angle(angle_deg, WC.FLASH_ANGLES, WC.FLASH_BLIND)
+		var fade := _lerp_flash_angle(angle_deg, WC.FLASH_ANGLES, WC.FLASH_FADE)
+
+		if blind <= 0.0 and fade <= 0.0:
+			fade = WC.FLASH_TINT_TIME
+		if blind <= 0.0 and fade <= 0.0:
+			continue
+
+		sp.body._flash_blind = blind
+
+		var flash_packet := NetProtocol.pack_flash_event(blind, fade)
+		multiplayer.send_bytes(flash_packet, peer_id,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+
+
+func _detonate_smoke_server(pos: Vector3) -> void:
+	var cloud := Node3D.new()
+	cloud.set_script(preload("res://shared/scripts/smoke_cloud.gd"))
+	world_node.add_child(cloud)
+	cloud.global_position = pos
+
+
+func _lerp_flash_angle(angle: float, angles: Array, values: Array) -> float:
+	if angle <= float(angles[0]):
+		return float(values[0])
+	for i in range(1, angles.size()):
+		if angle <= float(angles[i]):
+			var t: float = (angle - float(angles[i - 1])) / (float(angles[i]) - float(angles[i - 1]))
+			return lerpf(float(values[i - 1]), float(values[i]), t)
+	return float(values[values.size() - 1])
+
+
 func _is_in_smoke(pos: Vector3) -> bool:
 	var smoke_radius: float = WC.SMOKE_RADIUS_GSRC * MC.METERS_PER_UNIT
 	for cloud in get_tree().get_nodes_in_group("smoke_cloud"):
@@ -811,6 +1051,10 @@ func _send_death_report(victim_id: int) -> void:
 
 func _reset_round_players() -> void:
 	damage_log.clear()
+	for g in active_grenades:
+		if is_instance_valid(g["body"]):
+			g["body"].queue_free()
+	active_grenades.clear()
 	for peer_id in players:
 		var sp = players[peer_id]
 		var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)

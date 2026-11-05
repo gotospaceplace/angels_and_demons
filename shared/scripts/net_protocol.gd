@@ -18,6 +18,9 @@ const EVT_MATCH_STATE := 7
 const EVT_BUY_RESULT  := 8
 const EVT_BUY_REQUEST := 9
 const EVT_DEATH_REPORT := 10
+const EVT_GRENADE_SPAWN := 11
+const EVT_GRENADE_DETONATE := 12
+const EVT_FLASH := 13
 
 # Admin subtypes (MSG_ADMIN payload)
 const ADMIN_REJOIN   := 1
@@ -25,6 +28,7 @@ const ADMIN_BUY      := 2
 const ADMIN_REQUEST  := 3
 const ADMIN_CHAT     := 4
 const ADMIN_TEAM_SELECT := 5
+const ADMIN_GRENADE := 6
 
 # Packet header: version (1) + msg_type (1) = 2 bytes
 const HEADER_SIZE := 2
@@ -397,3 +401,72 @@ static func unpack_death_report_event(buf: PackedByteArray) -> Dictionary:
 	if buf.size() > 5:
 		report = bytes_to_var(buf.slice(5))
 	return {"victim_id": victim_id, "report": report}
+
+
+# --- Grenade networking ---
+
+static func pack_admin_grenade(grenade_type: int, pos: Vector3, vel: Vector3,
+		fuse: float) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 1 + 1 + 28)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_ADMIN
+	buf[2] = ADMIN_GRENADE
+	buf[3] = grenade_type & 0xFF
+	buf.encode_float(4, pos.x)
+	buf.encode_float(8, pos.y)
+	buf.encode_float(12, pos.z)
+	buf.encode_float(16, vel.x)
+	buf.encode_float(20, vel.y)
+	buf.encode_float(24, vel.z)
+	buf.encode_float(28, fuse)
+	return buf
+
+
+static func pack_grenade_spawn_event(thrower_id: int, grenade_id: int,
+		grenade_type: int, pos: Vector3, vel: Vector3, fuse: float) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 1 + 5 + 28)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_GRENADE_SPAWN
+	buf[3] = thrower_id & 0xFF
+	buf[4] = (thrower_id >> 8) & 0xFF
+	buf[5] = grenade_id & 0xFF
+	buf[6] = (grenade_id >> 8) & 0xFF
+	buf[7] = grenade_type & 0xFF
+	buf.encode_float(8, pos.x)
+	buf.encode_float(12, pos.y)
+	buf.encode_float(16, pos.z)
+	buf.encode_float(20, vel.x)
+	buf.encode_float(24, vel.y)
+	buf.encode_float(28, vel.z)
+	buf.encode_float(32, fuse)
+	return buf
+
+
+static func pack_grenade_detonate_event(grenade_id: int, grenade_type: int,
+		pos: Vector3) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 1 + 3 + 12)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_GRENADE_DETONATE
+	buf[3] = grenade_id & 0xFF
+	buf[4] = (grenade_id >> 8) & 0xFF
+	buf[5] = grenade_type & 0xFF
+	buf.encode_float(6, pos.x)
+	buf.encode_float(10, pos.y)
+	buf.encode_float(14, pos.z)
+	return buf
+
+
+static func pack_flash_event(blind_time: float, fade_time: float) -> PackedByteArray:
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 1 + 8)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_FLASH
+	buf.encode_float(3, blind_time)
+	buf.encode_float(7, fade_time)
+	return buf
