@@ -68,3 +68,8 @@ extends Resource
 # --- Melee ---
 @export var is_melee: bool = false
 @export var melee_range: float = 2.0
+@export var stab_damage: float = 0.0
+@export var stab_range: float = 0.0
+@export var stab_cycle_time: float = 0.0
+@export var backstab_damage: float = 0.0
+@export var backstab_stab_damage: float = 0.0
