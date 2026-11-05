@@ -15,6 +15,11 @@ static func _knife() -> Resource:
 	w.is_melee = true
 	w.melee_range = 2.0
 	w.base_damage = 40.0
+	w.stab_damage = 55.0
+	w.stab_range = 1.3
+	w.stab_cycle_time = 1.0
+	w.backstab_damage = 65.0
+	w.backstab_stab_damage = 180.0
 	w.range_modifier = 1.0
 	w.cycle_time = 0.4
 	w.reload_time = 0.0

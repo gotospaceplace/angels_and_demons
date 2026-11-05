@@ -18,6 +18,7 @@ var snapshot_history: Array = []
 var acked_snapshot_tick: int = 0
 
 var fire_pressed: bool = false
+var fire2_pressed: bool = false
 var next_fire_tick: int = 0
 var is_reloading: bool = false
 var reload_finish_tick: int = 0
@@ -123,6 +124,7 @@ func _check_weapon_switch(cmd: NetInput) -> void:
 		weapon_idx = new_idx
 		ammo_mag = WEAPON_MAG_SIZES[new_idx]
 		fire_pressed = false
+		fire2_pressed = false
 		next_fire_tick = 0
 		is_reloading = false
 
@@ -192,6 +194,7 @@ func die(current_tick: int) -> void:
 	hp = 0
 	deaths += 1
 	fire_pressed = false
+	fire2_pressed = false
 	is_reloading = false
 	respawn_tick = current_tick + int(NetConstants.RESPAWN_DELAY * float(NetConstants.TICK_RATE))
 	var collision := body.get_node_or_null("PlayerCollision")
@@ -206,6 +209,7 @@ func respawn(spawn_pos: Vector3) -> void:
 	weapon_idx = 2
 	ammo_mag = 30
 	fire_pressed = false
+	fire2_pressed = false
 	next_fire_tick = 0
 	is_reloading = false
 	reload_pressed = false
@@ -223,6 +227,7 @@ func set_weapon(new_weapon_idx: int) -> void:
 	weapon_idx = new_weapon_idx
 	ammo_mag = WEAPON_MAG_SIZES[new_weapon_idx]
 	fire_pressed = false
+	fire2_pressed = false
 	next_fire_tick = 0
 	is_reloading = false
 
@@ -230,6 +235,7 @@ func set_weapon(new_weapon_idx: int) -> void:
 func teleport_to_spawn(spawn_pos: Vector3) -> void:
 	hp = 100
 	fire_pressed = false
+	fire2_pressed = false
 	next_fire_tick = 0
 	is_reloading = false
 	reload_pressed = false

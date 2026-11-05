@@ -54,6 +54,34 @@ func _ready() -> void:
 		print("EntryPoint: launching consolidated match test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/match_test_scene.tscn")
 		return
+	if "--test-deathreport" in args:
+		print("EntryPoint: launching death report test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/death_report_test_scene.tscn")
+		return
+	if "--test-killfeed" in args:
+		print("EntryPoint: launching kill feed test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/kill_feed_test_scene.tscn")
+		return
+	if "--test-roundicon" in args:
+		print("EntryPoint: launching round icon test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/round_icon_test_scene.tscn")
+		return
+	if "--test-ffa" in args:
+		print("EntryPoint: launching FFA scoreboard test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/ffa_scoreboard_test_scene.tscn")
+		return
+	if "--test-tdm" in args:
+		print("EntryPoint: launching TDM scoreboard test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/tdm_scoreboard_test_scene.tscn")
+		return
+	if "--test-casual" in args:
+		print("EntryPoint: launching casual scoreboard test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/casual_scoreboard_test_scene.tscn")
+		return
+	if "--test-keybindings" in args:
+		print("EntryPoint: launching key bindings test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/key_bindings_test_scene.tscn")
+		return
 	if "--bench" in args:
 		print("EntryPoint: launching performance benchmark")
 		get_tree().change_scene_to_file.call_deferred("res://tests/perf_benchmark_scene.tscn")
