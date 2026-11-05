@@ -1,5 +1,7 @@
 extends Node
 
+const MC = preload("res://shared/scripts/movement_constants.gd")
+const WC = preload("res://shared/scripts/weapon_constants.gd")
 const ServerPlayer = preload("res://server/scripts/server_player.gd")
 const ServerLagComp = preload("res://server/scripts/server_lag_comp.gd")
 const ServerConsole = preload("res://server/scripts/server_console.gd")
@@ -279,14 +281,22 @@ func _process_fire_commands() -> void:
 			plugin_manager.dispatch_on_player_kill(peer_id, victim_id, sp.weapon_idx, hit["headshot"])
 			plugin_manager.dispatch_on_player_death(victim_id, peer_id)
 			_send_death_report(victim_id)
+			var kill_flags := 0
+			if hit.get("wallbang", false):
+				kill_flags |= NetProtocol.KILL_FLAG_WALLBANG
+			if _is_in_smoke(sp.body.global_position) or _is_in_smoke(victim_sp.body.global_position):
+				kill_flags |= NetProtocol.KILL_FLAG_SMOKE
+			if victim_sp.body.get("_flash_blind") != null and victim_sp.body._flash_blind > 0.0:
+				kill_flags |= NetProtocol.KILL_FLAG_FLASH
 			var kill_packet := NetProtocol.pack_kill_event(
-				peer_id, victim_id, sp.weapon_idx, hit["headshot"])
+				peer_id, victim_id, sp.weapon_idx, hit["headshot"], kill_flags)
 			for pid in players:
 				multiplayer.send_bytes(kill_packet, pid,
 					MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 					NetConstants.CHANNEL_EVENTS)
-			print("[Server] KILL: Player %d → Player %d (%s, dmg=%.1f) [K:%d D:%d]" % [
+			print("[Server] KILL: Player %d → Player %d (%s, dmg=%.1f%s) [K:%d D:%d]" % [
 				peer_id, victim_id, hit["hitgroup"], final_damage,
+				_kill_flags_str(kill_flags),
 				sp.kills, victim_sp.deaths])
 
 
@@ -714,6 +724,27 @@ func _cmd_settings() -> void:
 	for s in settings:
 		print("[Console]   %s = %s  (default: %s, from: %s)" % [
 			s["name"], str(s["value"]), str(s["default"]), s["plugin"]])
+
+
+func _is_in_smoke(pos: Vector3) -> bool:
+	var smoke_radius: float = WC.SMOKE_RADIUS_GSRC * MC.METERS_PER_UNIT
+	for cloud in get_tree().get_nodes_in_group("smoke_cloud"):
+		if pos.distance_to(cloud.global_position) <= smoke_radius:
+			return true
+	return false
+
+
+func _kill_flags_str(flags: int) -> String:
+	var parts: Array[String] = []
+	if flags & NetProtocol.KILL_FLAG_WALLBANG:
+		parts.append("WB")
+	if flags & NetProtocol.KILL_FLAG_SMOKE:
+		parts.append("SMOKE")
+	if flags & NetProtocol.KILL_FLAG_FLASH:
+		parts.append("FLASH")
+	if parts.is_empty():
+		return ""
+	return " [%s]" % ", ".join(parts)
 
 
 func _on_plugin_event(event_name: StringName, _data: Dictionary) -> void:

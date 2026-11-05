@@ -87,8 +87,11 @@ func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
 	if world_result:
 		world_dist = eye_pos.distance_to(world_result["position"])
 
+	var pen_depth: float = WC.PEN_MAX_DEPTH.get(weapon.penetration_level, 0.0)
+	var scan_dist: float = world_dist + pen_depth if pen_depth > 0.0 else world_dist
+
 	var best_hit := {}
-	var best_dist := world_dist
+	var best_dist := scan_dist
 
 	for pid in state["players"]:
 		if pid == shooter_id:
@@ -149,6 +152,7 @@ func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
 			"hitgroup": hitgroup,
 			"headshot": headshot,
 			"distance": t,
+			"wallbang": t > world_dist,
 		}
 
 	if best_hit.is_empty():
@@ -176,7 +180,10 @@ func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
 			base_dmg = weapon.backstab_damage if is_backstab else weapon.base_damage
 		best_hit["damage"] = base_dmg * hitgroup_mult
 	else:
-		best_hit["damage"] = weapon.base_damage * range_factor * hitgroup_mult
+		var retention: float = 1.0
+		if best_hit["wallbang"]:
+			retention = WC.WALL_PEN_RETENTION.get(weapon.penetration_level, 0.0)
+		best_hit["damage"] = weapon.base_damage * range_factor * hitgroup_mult * retention
 	best_hit["weapon_idx"] = shooter_sp.weapon_idx
 
 	return best_hit

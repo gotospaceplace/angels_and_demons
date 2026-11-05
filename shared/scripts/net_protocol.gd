@@ -169,9 +169,15 @@ static func unpack_snapshot(buf: PackedByteArray, bases: Dictionary = {}) -> Dic
 
 # --- Event packet: server → client (reliable) ---
 
-static func pack_kill_event(killer_id: int, victim_id: int, weapon_idx: int, headshot: bool) -> PackedByteArray:
+const KILL_FLAG_WALLBANG := 1
+const KILL_FLAG_SMOKE   := 2
+const KILL_FLAG_FLASH   := 4
+
+
+static func pack_kill_event(killer_id: int, victim_id: int, weapon_idx: int,
+		headshot: bool, kill_flags: int = 0) -> PackedByteArray:
 	var buf := PackedByteArray()
-	buf.resize(HEADER_SIZE + 6)
+	buf.resize(HEADER_SIZE + 7)
 	buf[0] = NetConstants.PROTOCOL_VERSION
 	buf[1] = MSG_EVENT
 	buf[2] = EVT_KILL
@@ -180,6 +186,7 @@ static func pack_kill_event(killer_id: int, victim_id: int, weapon_idx: int, hea
 	buf[5] = victim_id & 0xFF
 	buf[6] = (victim_id >> 8) & 0xFF
 	buf[7] = (weapon_idx & 0x7F) | (0x80 if headshot else 0)
+	buf[8] = kill_flags & 0xFF
 	return buf
 
 
