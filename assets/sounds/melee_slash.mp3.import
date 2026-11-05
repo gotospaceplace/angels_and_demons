@@ -3,12 +3,12 @@
 importer="mp3"
 type="AudioStreamMP3"
 uid="uid://62vkxdcuvcdw"
-path="res://.godot/imported/melee_slash.mp3-b78c3fdd856e0ea4aee90753e62313bc.mp3str"
+path="res://.godot/imported/melee_slash.mp3-2b0d7680af217cb3b119ac35691e7002.mp3str"
 
 [deps]
 
 source_file="res://assets/sounds/melee_slash.mp3"
-dest_files=["res://.godot/imported/melee_slash.mp3-b78c3fdd856e0ea4aee90753e62313bc.mp3str"]
+dest_files=["res://.godot/imported/melee_slash.mp3-2b0d7680af217cb3b119ac35691e7002.mp3str"]
 
 [params]
 
