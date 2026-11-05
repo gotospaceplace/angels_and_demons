@@ -56,7 +56,7 @@ func _test_menu_autoload_exists() -> void:
 func _test_bindable_actions_defined() -> void:
 	_assert(KeyBindings.BINDABLE_ACTIONS.size() > 0, "has_bindable_actions",
 		"size=%d" % KeyBindings.BINDABLE_ACTIONS.size())
-	_assert(KeyBindings.BINDABLE_ACTIONS.size() == 22, "bindable_count_22",
+	_assert(KeyBindings.BINDABLE_ACTIONS.size() == 23, "bindable_count_23",
 		"got %d" % KeyBindings.BINDABLE_ACTIONS.size())
 
 
