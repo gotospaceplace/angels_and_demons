@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const RoundIconScene = preload("res://client/scripts/round_icon.gd")
+
 # TODO: Implement FFA Deathmatch scoreboard (single sorted list: Kills/Deaths/Assists/KDR/HS%/DMG/Score)
 # TODO: Implement Team Deathmatch scoreboard (two teams, stat columns without economy)
 # TODO: Implement Casual 10v10 scoreboard (scrollable rows)
@@ -283,19 +285,17 @@ func _build_middle(root: Control, y: float) -> void:
 	var marker_size := Vector2(18, 18)
 	var marker_gap := 3.0
 	for i in range(MAX_ROUND_MARKERS):
-		var extra_gap := 8.0 if i == 12 else 0.0
 		var bg := _rect(Color(0.2, 0.2, 0.2, 0.5), marker_size)
 		bg.position = Vector2(marker_x + i * (marker_size.x + marker_gap) + (8.0 if i >= 12 else 0.0), 18)
 		bg.visible = false
 		_middle.add_child(bg)
-		var txt := _lbl(10, COL_TEXT)
-		txt.position = bg.position + Vector2(0, 1)
-		txt.size = marker_size
-		txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		txt.visible = false
-		_middle.add_child(txt)
-		_round_markers.append({"bg": bg, "text": txt})
+		var icon := RoundIconScene.new()
+		icon.position = bg.position + Vector2(1, 1)
+		icon.size = marker_size - Vector2(2, 2)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.visible = false
+		_middle.add_child(icon)
+		_round_markers.append({"bg": bg, "icon": icon})
 
 	_loss_label = _lbl(11, COL_DIM)
 	_loss_label.position = Vector2(PANEL_W - 140, 16)
@@ -439,16 +439,11 @@ func _refresh_round_history() -> void:
 			var reason: String = entry.get("reason", "")
 			m["bg"].color = Team.get_color(winner) if Team.is_playing_team(winner) else COL_DIM
 			m["bg"].visible = true
-			match reason:
-				"elimination": m["text"].text = "E"
-				"portal_opened": m["text"].text = "P"
-				"portal_sealed": m["text"].text = "R"
-				"time_expired": m["text"].text = "T"
-				_: m["text"].text = "?"
-			m["text"].visible = true
+			m["icon"].set_icon(reason, COL_TEXT)
+			m["icon"].visible = true
 		else:
 			m["bg"].visible = false
-			m["text"].visible = false
+			m["icon"].visible = false
 
 
 func _refresh_loss_bonus() -> void:
