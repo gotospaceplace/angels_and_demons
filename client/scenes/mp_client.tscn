@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://client/scripts/client_game.gd" id="1_client"]
 [ext_resource type="Script" path="res://shared/scripts/player_movement.gd" id="2_player"]
-[ext_resource type="PackedScene" path="res://shared/scenes/mp_testmap.tscn" id="3_map"]
+[ext_resource type="PackedScene" path="res://shared/scenes/map_dm_aim.tscn" id="3_map"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.35
@@ -11,7 +11,7 @@ height = 1.8
 [node name="MPClient" type="Node3D"]
 script = ExtResource("1_client")
 
-[node name="TestMap" parent="." instance=ExtResource("3_map")]
+[node name="MAP_DM_AIM" parent="." instance=ExtResource("3_map")]
 
 [node name="Player" type="CharacterBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
