@@ -187,6 +187,14 @@ jobs:
             echo "Skipping — key bindings tests not merged yet"
           fi
 
+      - name: aim_map collision tests (Phase 2B)
+        run: |
+          if [ -f tests/aim_map_collision_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-aimmap
+          else
+            echo "Skipping — aim_map collision tests not merged yet"
+          fi
+
       - name: Performance benchmark
         run: timeout 60 godot --headless --path . -- --bench
 

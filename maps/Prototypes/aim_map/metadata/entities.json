@@ -1,0 +1,1723 @@
+{
+  "schema_version": "0.1",
+  "coordinate_system": "Godot Y-up meters; (X,Z,-Y) from BSP",
+  "floor_base_bsp_z": -467.0,
+  "horizontal_center_bsp": [
+    -104.5,
+    -1348.0
+  ],
+  "entities": [
+    {
+      "id": 0,
+      "classname": "worldspawn",
+      "original": {
+        "wad": "\\sierra\\half-life\\valve\\halflife.wad;\\sierra\\half-life\\valve\\liquids.wad;\\sierra\\half-life\\valve\\xeno.wad;\\sierra\\half-life\\cstrike\\cstrike.wad;\\sierra\\half-life\\cstrike\\cs_dust.wad;\\sierra\\half-life\\cstrike\\de_aztec.wad",
+        "mapversion": "220",
+        "MaxRange": "4096",
+        "message": "aim_map",
+        "skyname": "des",
+        "light": "100",
+        "classname": "worldspawn"
+      }
+    },
+    {
+      "id": 1,
+      "classname": "info_map_parameters",
+      "original": {
+        "origin": "-90 -1356 -257",
+        "bombradius": "500",
+        "buying": "3",
+        "classname": "info_map_parameters"
+      },
+      "position_bsp": [
+        -90.0,
+        -1356.0,
+        -257.0
+      ],
+      "position_godot": [
+        0.3683,
+        5.334,
+        0.2032
+      ]
+    },
+    {
+      "id": 2,
+      "classname": "ambient_generic",
+      "original": {
+        "origin": "-150 -1353 -256",
+        "pitchstart": "100",
+        "pitch": "100",
+        "health": "10",
+        "classname": "ambient_generic"
+      },
+      "position_bsp": [
+        -150.0,
+        -1353.0,
+        -256.0
+      ],
+      "position_godot": [
+        -1.1557,
+        5.3594,
+        0.127
+      ]
+    },
+    {
+      "id": 3,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-176 -2048 -423",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -176.0,
+        -2048.0,
+        -423.0
+      ],
+      "position_godot": [
+        -1.8161,
+        1.1176,
+        17.78
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 4,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-304 -2048 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -304.0,
+        -2048.0,
+        -431.0
+      ],
+      "position_godot": [
+        -5.0673,
+        0.9144,
+        17.78
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 5,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-432 -2048 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -432.0,
+        -2048.0,
+        -431.0
+      ],
+      "position_godot": [
+        -8.3185,
+        0.9144,
+        17.78
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 6,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-48 -1920 -423",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -48.0,
+        -1920.0,
+        -423.0
+      ],
+      "position_godot": [
+        1.4351,
+        1.1176,
+        14.5288
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 7,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-64 -1984 -423",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -64.0,
+        -1984.0,
+        -423.0
+      ],
+      "position_godot": [
+        1.0287,
+        1.1176,
+        16.1544
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 8,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-48 -2048 -423",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -48.0,
+        -2048.0,
+        -423.0
+      ],
+      "position_godot": [
+        1.4351,
+        1.1176,
+        17.78
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 9,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-48 -2112 -423",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -48.0,
+        -2112.0,
+        -423.0
+      ],
+      "position_godot": [
+        1.4351,
+        1.1176,
+        19.4056
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 10,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-176 -2112 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -176.0,
+        -2112.0,
+        -431.0
+      ],
+      "position_godot": [
+        -1.8161,
+        0.9144,
+        19.4056
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 11,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-176 -1984 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -176.0,
+        -1984.0,
+        -431.0
+      ],
+      "position_godot": [
+        -1.8161,
+        0.9144,
+        16.1544
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 12,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-176 -1920 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -176.0,
+        -1920.0,
+        -431.0
+      ],
+      "position_godot": [
+        -1.8161,
+        0.9144,
+        14.5288
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 13,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-304 -1920 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -304.0,
+        -1920.0,
+        -431.0
+      ],
+      "position_godot": [
+        -5.0673,
+        0.9144,
+        14.5288
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 14,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-304 -1984 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -304.0,
+        -1984.0,
+        -431.0
+      ],
+      "position_godot": [
+        -5.0673,
+        0.9144,
+        16.1544
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 15,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-304 -2112 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -304.0,
+        -2112.0,
+        -431.0
+      ],
+      "position_godot": [
+        -5.0673,
+        0.9144,
+        19.4056
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 16,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-432 -2112 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -432.0,
+        -2112.0,
+        -431.0
+      ],
+      "position_godot": [
+        -8.3185,
+        0.9144,
+        19.4056
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 17,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-432 -1984 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -432.0,
+        -1984.0,
+        -431.0
+      ],
+      "position_godot": [
+        -8.3185,
+        0.9144,
+        16.1544
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 18,
+      "classname": "info_player_start",
+      "original": {
+        "origin": "-432 -1920 -431",
+        "angles": "0 270 0",
+        "classname": "info_player_start"
+      },
+      "position_bsp": [
+        -432.0,
+        -1920.0,
+        -431.0
+      ],
+      "position_godot": [
+        -8.3185,
+        0.9144,
+        14.5288
+      ],
+      "angles_bsp": "0 270 0"
+    },
+    {
+      "id": 19,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "248 -2224 -256",
+        "angles": "0 0 0",
+        "count": "1",
+        "item": "10",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        248.0,
+        -2224.0,
+        -256.0
+      ],
+      "position_godot": [
+        8.9535,
+        5.3594,
+        22.2504
+      ],
+      "angles_bsp": "0 0 0"
+    },
+    {
+      "id": 20,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-392 -2224 -256",
+        "angles": "0 0 0",
+        "count": "1",
+        "item": "10",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -392.0,
+        -2224.0,
+        -256.0
+      ],
+      "position_godot": [
+        -7.3025,
+        5.3594,
+        22.2504
+      ],
+      "angles_bsp": "0 0 0"
+    },
+    {
+      "id": 21,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-496 -2112 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -496.0,
+        -2112.0,
+        -467.0
+      ],
+      "position_godot": [
+        -9.9441,
+        0.0,
+        19.4056
+      ]
+    },
+    {
+      "id": 22,
+      "classname": "func_wall",
+      "original": {
+        "model": "*1",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 1
+    },
+    {
+      "id": 23,
+      "classname": "func_wall",
+      "original": {
+        "model": "*2",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 2
+    },
+    {
+      "id": 24,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-112 -2112 -459",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -112.0,
+        -2112.0,
+        -459.0
+      ],
+      "position_godot": [
+        -0.1905,
+        0.2032,
+        19.4056
+      ]
+    },
+    {
+      "id": 25,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-112 -2048 -459",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -112.0,
+        -2048.0,
+        -459.0
+      ],
+      "position_godot": [
+        -0.1905,
+        0.2032,
+        17.78
+      ]
+    },
+    {
+      "id": 26,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-112 -1984 -459",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -112.0,
+        -1984.0,
+        -459.0
+      ],
+      "position_godot": [
+        -0.1905,
+        0.2032,
+        16.1544
+      ]
+    },
+    {
+      "id": 27,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-112 -1920 -459",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -112.0,
+        -1920.0,
+        -459.0
+      ],
+      "position_godot": [
+        -0.1905,
+        0.2032,
+        14.5288
+      ]
+    },
+    {
+      "id": 28,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-240 -2112 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -240.0,
+        -2112.0,
+        -467.0
+      ],
+      "position_godot": [
+        -3.4417,
+        0.0,
+        19.4056
+      ]
+    },
+    {
+      "id": 29,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-240 -2048 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -240.0,
+        -2048.0,
+        -467.0
+      ],
+      "position_godot": [
+        -3.4417,
+        0.0,
+        17.78
+      ]
+    },
+    {
+      "id": 30,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-240 -1984 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -240.0,
+        -1984.0,
+        -467.0
+      ],
+      "position_godot": [
+        -3.4417,
+        0.0,
+        16.1544
+      ]
+    },
+    {
+      "id": 31,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-240 -1920 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -240.0,
+        -1920.0,
+        -467.0
+      ],
+      "position_godot": [
+        -3.4417,
+        0.0,
+        14.5288
+      ]
+    },
+    {
+      "id": 32,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-368 -2112 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -368.0,
+        -2112.0,
+        -467.0
+      ],
+      "position_godot": [
+        -6.6929,
+        0.0,
+        19.4056
+      ]
+    },
+    {
+      "id": 33,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-368 -2048 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -368.0,
+        -2048.0,
+        -467.0
+      ],
+      "position_godot": [
+        -6.6929,
+        0.0,
+        17.78
+      ]
+    },
+    {
+      "id": 34,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-368 -1984 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -368.0,
+        -1984.0,
+        -467.0
+      ],
+      "position_godot": [
+        -6.6929,
+        0.0,
+        16.1544
+      ]
+    },
+    {
+      "id": 35,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-368 -1920 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -368.0,
+        -1920.0,
+        -467.0
+      ],
+      "position_godot": [
+        -6.6929,
+        0.0,
+        14.5288
+      ]
+    },
+    {
+      "id": 36,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-496 -1920 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -496.0,
+        -1920.0,
+        -467.0
+      ],
+      "position_godot": [
+        -9.9441,
+        0.0,
+        14.5288
+      ]
+    },
+    {
+      "id": 37,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-496 -1984 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -496.0,
+        -1984.0,
+        -467.0
+      ],
+      "position_godot": [
+        -9.9441,
+        0.0,
+        16.1544
+      ]
+    },
+    {
+      "id": 38,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-496 -2048 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -496.0,
+        -2048.0,
+        -467.0
+      ],
+      "position_godot": [
+        -9.9441,
+        0.0,
+        17.78
+      ]
+    },
+    {
+      "id": 39,
+      "classname": "func_wall",
+      "original": {
+        "model": "*3",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 3
+    },
+    {
+      "id": 40,
+      "classname": "func_wall",
+      "original": {
+        "model": "*4",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 4
+    },
+    {
+      "id": 41,
+      "classname": "func_wall",
+      "original": {
+        "model": "*5",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 5
+    },
+    {
+      "id": 42,
+      "classname": "func_wall",
+      "original": {
+        "model": "*6",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 6
+    },
+    {
+      "id": 43,
+      "classname": "func_wall",
+      "original": {
+        "model": "*7",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 7
+    },
+    {
+      "id": 44,
+      "classname": "func_wall",
+      "original": {
+        "model": "*8",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 8
+    },
+    {
+      "id": 45,
+      "classname": "func_wall",
+      "original": {
+        "model": "*9",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 9
+    },
+    {
+      "id": 46,
+      "classname": "func_wall",
+      "original": {
+        "model": "*10",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 10
+    },
+    {
+      "id": 47,
+      "classname": "func_wall",
+      "original": {
+        "model": "*11",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 11
+    },
+    {
+      "id": 48,
+      "classname": "func_wall",
+      "original": {
+        "model": "*12",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 12
+    },
+    {
+      "id": 49,
+      "classname": "func_wall",
+      "original": {
+        "model": "*13",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 13
+    },
+    {
+      "id": 50,
+      "classname": "func_wall",
+      "original": {
+        "model": "*14",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 14
+    },
+    {
+      "id": 51,
+      "classname": "func_wall",
+      "original": {
+        "model": "*15",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 15
+    },
+    {
+      "id": 52,
+      "classname": "func_wall",
+      "original": {
+        "model": "*16",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 16
+    },
+    {
+      "id": 53,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "296 -649 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        296.0,
+        -649.0,
+        -467.0
+      ],
+      "position_godot": [
+        10.1727,
+        0.0,
+        -17.7546
+      ]
+    },
+    {
+      "id": 54,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "296 -713 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        296.0,
+        -713.0,
+        -467.0
+      ],
+      "position_godot": [
+        10.1727,
+        0.0,
+        -16.129
+      ]
+    },
+    {
+      "id": 55,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "296 -777 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        296.0,
+        -777.0,
+        -467.0
+      ],
+      "position_godot": [
+        10.1727,
+        0.0,
+        -14.5034
+      ]
+    },
+    {
+      "id": 56,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "168 -777 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        168.0,
+        -777.0,
+        -467.0
+      ],
+      "position_godot": [
+        6.9215,
+        0.0,
+        -14.5034
+      ]
+    },
+    {
+      "id": 57,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "168 -713 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        168.0,
+        -713.0,
+        -467.0
+      ],
+      "position_godot": [
+        6.9215,
+        0.0,
+        -16.129
+      ]
+    },
+    {
+      "id": 58,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "168 -649 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        168.0,
+        -649.0,
+        -467.0
+      ],
+      "position_godot": [
+        6.9215,
+        0.0,
+        -17.7546
+      ]
+    },
+    {
+      "id": 59,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "168 -585 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        168.0,
+        -585.0,
+        -467.0
+      ],
+      "position_godot": [
+        6.9215,
+        0.0,
+        -19.3802
+      ]
+    },
+    {
+      "id": 60,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "40 -777 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        40.0,
+        -777.0,
+        -467.0
+      ],
+      "position_godot": [
+        3.6703,
+        0.0,
+        -14.5034
+      ]
+    },
+    {
+      "id": 61,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "40 -713 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        40.0,
+        -713.0,
+        -467.0
+      ],
+      "position_godot": [
+        3.6703,
+        0.0,
+        -16.129
+      ]
+    },
+    {
+      "id": 62,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "40 -649 -467",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        40.0,
+        -649.0,
+        -467.0
+      ],
+      "position_godot": [
+        3.6703,
+        0.0,
+        -17.7546
+      ]
+    },
+    {
+      "id": 63,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "40 -585 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        40.0,
+        -585.0,
+        -467.0
+      ],
+      "position_godot": [
+        3.6703,
+        0.0,
+        -19.3802
+      ]
+    },
+    {
+      "id": 64,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-88 -777 -459",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -88.0,
+        -777.0,
+        -459.0
+      ],
+      "position_godot": [
+        0.4191,
+        0.2032,
+        -14.5034
+      ]
+    },
+    {
+      "id": 65,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-88 -713 -459",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -88.0,
+        -713.0,
+        -459.0
+      ],
+      "position_godot": [
+        0.4191,
+        0.2032,
+        -16.129
+      ]
+    },
+    {
+      "id": 66,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-88 -649 -459",
+        "count": "1",
+        "item": "4",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -88.0,
+        -649.0,
+        -459.0
+      ],
+      "position_godot": [
+        0.4191,
+        0.2032,
+        -17.7546
+      ]
+    },
+    {
+      "id": 67,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-88 -585 -459",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -88.0,
+        -585.0,
+        -459.0
+      ],
+      "position_godot": [
+        0.4191,
+        0.2032,
+        -19.3802
+      ]
+    },
+    {
+      "id": 68,
+      "classname": "func_wall",
+      "original": {
+        "model": "*17",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 17
+    },
+    {
+      "id": 69,
+      "classname": "func_wall",
+      "original": {
+        "model": "*18",
+        "rendercolor": "0 0 0",
+        "classname": "func_wall"
+      },
+      "brush_model_index": 18
+    },
+    {
+      "id": 70,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "296 -585 -467",
+        "count": "1",
+        "item": "6",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        296.0,
+        -585.0,
+        -467.0
+      ],
+      "position_godot": [
+        10.1727,
+        0.0,
+        -19.3802
+      ]
+    },
+    {
+      "id": 71,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "176 -472 -256",
+        "angles": "0 0 0",
+        "count": "1",
+        "item": "10",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        176.0,
+        -472.0,
+        -256.0
+      ],
+      "position_godot": [
+        7.1247,
+        5.3594,
+        -22.2504
+      ],
+      "angles_bsp": "0 0 0"
+    },
+    {
+      "id": 72,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-464 -472 -256",
+        "angles": "0 0 0",
+        "count": "1",
+        "item": "10",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -464.0,
+        -472.0,
+        -256.0
+      ],
+      "position_godot": [
+        -9.1313,
+        5.3594,
+        -22.2504
+      ],
+      "angles_bsp": "0 0 0"
+    },
+    {
+      "id": 73,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "232 -777 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        232.0,
+        -777.0,
+        -431.0
+      ],
+      "position_godot": [
+        8.5471,
+        0.9144,
+        -14.5034
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 74,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "232 -713 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        232.0,
+        -713.0,
+        -431.0
+      ],
+      "position_godot": [
+        8.5471,
+        0.9144,
+        -16.129
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 75,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "232 -585 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        232.0,
+        -585.0,
+        -431.0
+      ],
+      "position_godot": [
+        8.5471,
+        0.9144,
+        -19.3802
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 76,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "104 -585 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        104.0,
+        -585.0,
+        -431.0
+      ],
+      "position_godot": [
+        5.2959,
+        0.9144,
+        -19.3802
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 77,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "104 -713 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        104.0,
+        -713.0,
+        -431.0
+      ],
+      "position_godot": [
+        5.2959,
+        0.9144,
+        -16.129
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 78,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "104 -777 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        104.0,
+        -777.0,
+        -431.0
+      ],
+      "position_godot": [
+        5.2959,
+        0.9144,
+        -14.5034
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 79,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "-24 -777 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        -24.0,
+        -777.0,
+        -431.0
+      ],
+      "position_godot": [
+        2.0447,
+        0.9144,
+        -14.5034
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 80,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "-24 -713 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        -24.0,
+        -713.0,
+        -431.0
+      ],
+      "position_godot": [
+        2.0447,
+        0.9144,
+        -16.129
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 81,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "-24 -585 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        -24.0,
+        -585.0,
+        -431.0
+      ],
+      "position_godot": [
+        2.0447,
+        0.9144,
+        -19.3802
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 82,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "-152 -585 -423",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        -152.0,
+        -585.0,
+        -423.0
+      ],
+      "position_godot": [
+        -1.2065,
+        1.1176,
+        -19.3802
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 83,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "-152 -649 -423",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        -152.0,
+        -649.0,
+        -423.0
+      ],
+      "position_godot": [
+        -1.2065,
+        1.1176,
+        -17.7546
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 84,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "-152 -713 -423",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        -152.0,
+        -713.0,
+        -423.0
+      ],
+      "position_godot": [
+        -1.2065,
+        1.1176,
+        -16.129
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 85,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "-152 -777 -423",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        -152.0,
+        -777.0,
+        -423.0
+      ],
+      "position_godot": [
+        -1.2065,
+        1.1176,
+        -14.5034
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 86,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "232 -649 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        232.0,
+        -649.0,
+        -431.0
+      ],
+      "position_godot": [
+        8.5471,
+        0.9144,
+        -17.7546
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 87,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "104 -649 -431",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        104.0,
+        -649.0,
+        -431.0
+      ],
+      "position_godot": [
+        5.2959,
+        0.9144,
+        -17.7546
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 88,
+      "classname": "info_player_deathmatch",
+      "original": {
+        "origin": "-24 -649 -423",
+        "angles": "0 90 0",
+        "classname": "info_player_deathmatch"
+      },
+      "position_bsp": [
+        -24.0,
+        -649.0,
+        -423.0
+      ],
+      "position_godot": [
+        2.0447,
+        1.1176,
+        -17.7546
+      ],
+      "angles_bsp": "0 90 0"
+    },
+    {
+      "id": 89,
+      "classname": "light_environment",
+      "original": {
+        "origin": "-124 -1353 -136",
+        "pitch": "-90",
+        "_light": "255 255 128 60",
+        "angles": "90 0 0",
+        "classname": "light_environment"
+      },
+      "position_bsp": [
+        -124.0,
+        -1353.0,
+        -136.0
+      ],
+      "position_godot": [
+        -0.4953,
+        8.4074,
+        0.127
+      ],
+      "angles_bsp": "90 0 0"
+    },
+    {
+      "id": 90,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "36 -916 -338",
+        "angles": "0 0 0",
+        "count": "1",
+        "item": "10",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        36.0,
+        -916.0,
+        -338.0
+      ],
+      "position_godot": [
+        3.5687,
+        3.2766,
+        -10.9728
+      ],
+      "angles_bsp": "0 0 0"
+    },
+    {
+      "id": 91,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "332 -877 -338",
+        "angles": "0 0 0",
+        "count": "1",
+        "item": "10",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        332.0,
+        -877.0,
+        -338.0
+      ],
+      "position_godot": [
+        11.0871,
+        3.2766,
+        -11.9634
+      ],
+      "angles_bsp": "0 0 0"
+    },
+    {
+      "id": 92,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-531 -1824 -338",
+        "angles": "0 0 0",
+        "count": "1",
+        "item": "10",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -531.0,
+        -1824.0,
+        -338.0
+      ],
+      "position_godot": [
+        -10.8331,
+        3.2766,
+        12.0904
+      ],
+      "angles_bsp": "0 0 0"
+    },
+    {
+      "id": 93,
+      "classname": "armoury_entity",
+      "original": {
+        "origin": "-234 -1781 -338",
+        "angles": "0 0 0",
+        "count": "1",
+        "item": "10",
+        "classname": "armoury_entity"
+      },
+      "position_bsp": [
+        -234.0,
+        -1781.0,
+        -338.0
+      ],
+      "position_godot": [
+        -3.2893,
+        3.2766,
+        10.9982
+      ],
+      "angles_bsp": "0 0 0"
+    }
+  ]
+}
