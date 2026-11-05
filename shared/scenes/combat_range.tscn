@@ -1,13 +1,7 @@
 [gd_scene format=3 uid="uid://t2yxsw7leoo5"]
 
-[ext_resource type="Script" path="res://shared/scripts/player_movement.gd" id="1_player"]
-[ext_resource type="Script" path="res://shared/scripts/combat_range.gd" id="2_range"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
-albedo_color = Color(0.25, 0.25, 0.28, 1)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
-albedo_color = Color(0.35, 0.35, 0.38, 1)
+[ext_resource type="Script" uid="uid://6pdl0y5exuf6" path="res://shared/scripts/player_movement.gd" id="1_player"]
+[ext_resource type="Script" uid="uid://gf4hpfwtkahv" path="res://shared/scripts/combat_range.gd" id="2_range"]
 
 [sub_resource type="Environment" id="Environment_range"]
 ambient_light_source = 2
@@ -17,81 +11,88 @@ tonemap_mode = 2
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributes_range"]
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.25, 0.25, 0.28, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+albedo_color = Color(0.35, 0.35, 0.38, 1)
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.35
 height = 1.8
 
-[node name="CombatRange" type="Node3D"]
+[node name="CombatRange" type="Node3D" unique_id=883763967]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=843359622]
 environment = SubResource("Environment_range")
 camera_attributes = SubResource("CameraAttributes_range")
 
-[node name="Sun" type="DirectionalLight3D" parent="."]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=111864221]
 transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 10, 0)
 shadow_enabled = true
 
-[node name="Light1" type="OmniLight3D" parent="."]
+[node name="Light1" type="OmniLight3D" parent="." unique_id=1623076979]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, -15)
 light_energy = 0.8
 omni_range = 30.0
 
-[node name="Light2" type="OmniLight3D" parent="."]
+[node name="Light2" type="OmniLight3D" parent="." unique_id=408010722]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, -45)
 light_energy = 0.8
 omni_range = 30.0
 
-[node name="Light3" type="OmniLight3D" parent="."]
+[node name="Light3" type="OmniLight3D" parent="." unique_id=588585044]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 4, -20)
 light_energy = 0.6
 omni_range = 15.0
 
-[node name="Light4" type="OmniLight3D" parent="."]
+[node name="Light4" type="OmniLight3D" parent="." unique_id=365700915]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 4, -20)
 light_energy = 0.6
 omni_range = 15.0
 
-[node name="Floor" type="CSGBox3D" parent="."]
+[node name="Floor" type="CSGBox3D" parent="." unique_id=80584627]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.014033079, 0.0327425, -0.012716293)
 use_collision = true
 size = Vector3(50, 0.2, 90)
 material = SubResource("StandardMaterial3D_floor")
 
-[node name="WallNorth" type="CSGBox3D" parent="."]
+[node name="WallNorth" type="CSGBox3D" parent="." unique_id=1779751831]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, -75)
 use_collision = true
 size = Vector3(50, 6, 0.3)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="WallSouth" type="CSGBox3D" parent="."]
+[node name="WallSouth" type="CSGBox3D" parent="." unique_id=287723862]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 10)
 use_collision = true
 size = Vector3(50, 6, 0.3)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="WallEast" type="CSGBox3D" parent="."]
+[node name="WallEast" type="CSGBox3D" parent="." unique_id=568602598]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 3, -32)
 use_collision = true
 size = Vector3(0.3, 6, 85)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="WallWest" type="CSGBox3D" parent="."]
+[node name="WallWest" type="CSGBox3D" parent="." unique_id=1015614378]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 3, -32)
 use_collision = true
 size = Vector3(0.3, 6, 85)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="CombatRangeBuilder" type="Node3D" parent="."]
+[node name="CombatRangeBuilder" type="Node3D" parent="." unique_id=1303481842]
 script = ExtResource("2_range")
 
-[node name="Player" type="CharacterBody3D" parent="."]
+[node name="Player" type="CharacterBody3D" parent="." unique_id=1473894048]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 5)
 script = ExtResource("1_player")
 
-[node name="PlayerCollision" type="CollisionShape3D" parent="Player"]
+[node name="PlayerCollision" type="CollisionShape3D" parent="Player" unique_id=1562573726]
 shape = SubResource("CapsuleShape3D_player")
 
-[node name="Head" type="Node3D" parent="Player"]
+[node name="Head" type="Node3D" parent="Player" unique_id=148650325]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.711, 0)
 
-[node name="Camera3D" type="Camera3D" parent="Player/Head"]
+[node name="Camera3D" type="Camera3D" parent="Player/Head" unique_id=1640366019]
 fov = 90.0
