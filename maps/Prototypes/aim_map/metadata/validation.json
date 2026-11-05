@@ -1,0 +1,211 @@
+{
+  "source_file": "aim_map.bsp",
+  "sha256": "bf0a879d11c2b73a0b58b7832ea8f91d7979ba0b90071c14d40a712a2e1a5b3c",
+  "bsp_version": 30,
+  "scale_m_per_unit": 0.0254,
+  "floor_base_bsp_z": -467.0,
+  "horizontal_center_bsp": [
+    -104.5,
+    -1348.0
+  ],
+  "floor_base_method": "highest upward face at or below lowest spawn origin minus 36u standing hull half-height plus 2u tolerance; verify with collision testing",
+  "vertex_count": 1405,
+  "face_count": 1094,
+  "exported_triangles": 2490,
+  "winding_corrections": 2308,
+  "degenerate_triangles_skipped": 182,
+  "normal_mismatches_after_correction": 0,
+  "model_count": 19,
+  "entity_count": 94,
+  "entity_classes": {
+    "worldspawn": 1,
+    "info_map_parameters": 1,
+    "ambient_generic": 1,
+    "info_player_start": 16,
+    "armoury_entity": 40,
+    "func_wall": 18,
+    "info_player_deathmatch": 16,
+    "light_environment": 1
+  },
+  "source_bounds_bsp": {
+    "min": [
+      -859.0,
+      -2504.0,
+      -468.0
+    ],
+    "max": [
+      650.0,
+      -192.0,
+      -115.0
+    ]
+  },
+  "godot_bounds_m": {
+    "min": [
+      -19.1643,
+      -0.0254,
+      -29.3624
+    ],
+    "max": [
+      19.1643,
+      8.9408,
+      29.3624
+    ]
+  },
+  "texture_names": [
+    {
+      "name": "sky",
+      "width": 16,
+      "height": 16,
+      "embedded": false
+    },
+    {
+      "name": "xcrate9d",
+      "width": 80,
+      "height": 48,
+      "embedded": false
+    },
+    {
+      "name": "aaatrigger",
+      "width": 16,
+      "height": 16,
+      "embedded": false
+    },
+    {
+      "name": "-0csSandWall",
+      "width": 128,
+      "height": 240,
+      "embedded": false
+    },
+    {
+      "name": "-0Sand",
+      "width": 128,
+      "height": 128,
+      "embedded": false
+    },
+    {
+      "name": "-1csSandWall",
+      "width": 128,
+      "height": 240,
+      "embedded": false
+    },
+    {
+      "name": "-1Sand",
+      "width": 128,
+      "height": 128,
+      "embedded": false
+    },
+    {
+      "name": "-2Sand",
+      "width": 128,
+      "height": 128,
+      "embedded": false
+    },
+    {
+      "name": "-3Sand",
+      "width": 128,
+      "height": 128,
+      "embedded": false
+    },
+    {
+      "name": "MltryCrteSd2",
+      "width": 64,
+      "height": 64,
+      "embedded": false
+    },
+    {
+      "name": "MltryCrteTp",
+      "width": 64,
+      "height": 64,
+      "embedded": false
+    },
+    {
+      "name": "SandCCrete",
+      "width": 256,
+      "height": 192,
+      "embedded": false
+    },
+    {
+      "name": "SandCrtLrgSd",
+      "width": 128,
+      "height": 128,
+      "embedded": false
+    },
+    {
+      "name": "SandCrtLrgTp",
+      "width": 128,
+      "height": 128,
+      "embedded": false
+    },
+    {
+      "name": "SandCrtSmSd",
+      "width": 64,
+      "height": 64,
+      "embedded": false
+    },
+    {
+      "name": "SandTrim",
+      "width": 96,
+      "height": 32,
+      "embedded": false
+    },
+    {
+      "name": "SandWllDoor",
+      "width": 192,
+      "height": 160,
+      "embedded": false
+    },
+    {
+      "name": "SandWllWndw",
+      "width": 128,
+      "height": 240,
+      "embedded": false
+    }
+  ],
+  "missing_textures": [
+    "sky",
+    "xcrate9d",
+    "aaatrigger",
+    "-0csSandWall",
+    "-0Sand",
+    "-1csSandWall",
+    "-1Sand",
+    "-2Sand",
+    "-3Sand",
+    "MltryCrteSd2",
+    "MltryCrteTp",
+    "SandCCrete",
+    "SandCrtLrgSd",
+    "SandCrtLrgTp",
+    "SandCrtSmSd",
+    "SandTrim",
+    "SandWllDoor",
+    "SandWllWndw"
+  ],
+  "exported_embedded_textures": [],
+  "triangles_by_material": {
+    "SandTrim": 687,
+    "-0csSandWall": 454,
+    "SandCrtSmSd": 84,
+    "-3Sand": 249,
+    "-1csSandWall": 232,
+    "SandCCrete": 392,
+    "-0Sand": 33,
+    "SandWllWndw": 32,
+    "SandCrtLrgTp": 62,
+    "SandCrtLrgSd": 197,
+    "SandWllDoor": 20,
+    "MltryCrteSd2": 40,
+    "MltryCrteTp": 8
+  },
+  "known_limitations": [
+    "No original GoldSrc lightmaps",
+    "Brush model origin handling needs visual verification for moving entities",
+    "Visible triangles are not a validated collision mesh",
+    "Texture PNGs are separate and not assigned to GLB materials",
+    "Texture UV tiling may need adjustment",
+    "No walkable-floor raycast performed; floor baseline is heuristic",
+    "Clip hull BSP reconstruction is not implemented; invisible clip collision is not exported",
+    "Brush solidity classification requires runtime entity handling; func_wall is ordinarily solid",
+    "Map copyright and texture redistribution rights not established"
+  ]
+}
