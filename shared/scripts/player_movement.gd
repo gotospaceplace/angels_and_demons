@@ -45,6 +45,9 @@ var _ladder_area: Area3D
 var tag_base_cap: float = 0.0
 var tag_timer: float = 0.0
 
+# Step camera smoothing
+var _step_smooth_offset := 0.0
+
 # Flash effect
 var _flash_overlay: CanvasLayer = null
 var _flash_blind: float = 0.0
@@ -127,6 +130,12 @@ func simulate_tick(delta: float) -> void:
 		velocity.y -= MC.GRAVITY * delta * 0.5
 	else:
 		velocity.y = 0.0
+
+	if _step_smooth_offset != 0.0:
+		var decay_speed := MC.STEP_SIZE / MC.STEP_SMOOTH_TIME
+		_step_smooth_offset = move_toward(_step_smooth_offset, 0.0, decay_speed * delta)
+	if is_local_client and not test_driven and _step_smooth_offset != 0.0:
+		head.position.y += _step_smooth_offset
 
 	if tag_timer > 0.0:
 		tag_timer -= delta
@@ -386,6 +395,8 @@ func _walk_move(delta: float) -> void:
 	if move.length_squared() < 0.000001:
 		return
 
+	var pre_step_y := global_position.y
+
 	var on_slope := ground_normal.y < 0.93 and ground_normal.y >= MC.FLOOR_NORMAL_MIN
 
 	if on_slope:
@@ -465,6 +476,11 @@ func _walk_move(delta: float) -> void:
 		if not snapped:
 			# No walkable ground below — undo the lift
 			global_position.y -= 0.1
+
+	var step_delta := global_position.y - pre_step_y
+	if absf(step_delta) > 0.01 and not test_driven:
+		_step_smooth_offset -= step_delta
+		_step_smooth_offset = clampf(_step_smooth_offset, -MC.STEP_SIZE, MC.STEP_SIZE)
 
 func _fly_move(delta: float) -> void:
 	var start_y := global_position.y
