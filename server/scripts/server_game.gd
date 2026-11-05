@@ -5,7 +5,7 @@ const WC = preload("res://shared/scripts/weapon_constants.gd")
 const ServerPlayer = preload("res://server/scripts/server_player.gd")
 const ServerLagComp = preload("res://server/scripts/server_lag_comp.gd")
 const ServerConsole = preload("res://server/scripts/server_console.gd")
-const TestMapScene = preload("res://shared/scenes/mp_testmap.tscn")
+const MapScene = preload("res://shared/scenes/map_dm_aim.tscn")
 
 var server_tick: int = 0
 var players: Dictionary = {}
@@ -47,7 +47,7 @@ func _ready() -> void:
 	Engine.physics_ticks_per_second = NetConstants.TICK_RATE
 	process_physics_priority = 1
 
-	var map := TestMapScene.instantiate()
+	var map := MapScene.instantiate()
 	map.name = "World"
 	add_child(map)
 	world_node = map
@@ -1103,12 +1103,12 @@ func _cmd_chat_mode(peer_id: int, args: String) -> void:
 func _cmd_chat_map(peer_id: int, args: String) -> void:
 	var map_name := args.to_lower()
 	if map_name.is_empty():
-		_send_server_msg(peer_id, "Current map: aim_map. Usage: /map <name>")
+		_send_server_msg(peer_id, "Current map: MAP_DM_AIM. Usage: /map <name>")
 		return
-	if map_name == "aim_map":
-		_send_server_msg(peer_id, "Already on aim_map")
+	if map_name == "map_dm_aim":
+		_send_server_msg(peer_id, "Already on MAP_DM_AIM")
 	else:
-		_send_server_msg(peer_id, "Unknown map: %s. Available: aim_map" % map_name)
+		_send_server_msg(peer_id, "Unknown map: %s. Available: MAP_DM_AIM" % map_name)
 
 
 func _cmd_chat_restart(peer_id: int) -> void:

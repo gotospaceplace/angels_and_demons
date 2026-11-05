@@ -1,6 +1,6 @@
 extends Node3D
 
-## Competitive test map based on aim_map BSP layout.
+## MAP_DM_AIM — Deathmatch aim map based on aim_map BSP layout.
 ## BSP coordinates converted: BSP X → Godot X, BSP Y → Godot −Z, BSP Z → Godot Y.
 ## Scale: 1 GoldSrc unit = 1/39.37 m. Map centered at origin, floor at Y = 0.
 
