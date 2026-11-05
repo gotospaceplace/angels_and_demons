@@ -920,7 +920,7 @@ func _detonate_flash_server(thrower_id: int, pos: Vector3) -> void:
 			continue
 
 		var cam_yaw := deg_to_rad(fposmod(rad_to_deg(sp.body.rotation.y), 360.0))
-		var cam_pitch := sp.body.get_node("Head").rotation.x
+		var cam_pitch: float = sp.body.get_node("Head").rotation.x
 		var cam_forward := Vector3(
 			-sin(cam_yaw) * cos(cam_pitch),
 			sin(cam_pitch),
