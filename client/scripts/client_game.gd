@@ -31,6 +31,7 @@ var hud: ClientHud
 var spectator: ClientSpectator
 var chat: ClientChat
 var team_select: ClientTeamSelect
+var death_report: ClientDeathReport
 var _team_select_shown: bool = false
 
 var session_token: int = 0
@@ -97,6 +98,10 @@ func _ready() -> void:
 	team_select.name = "TeamSelect"
 	add_child(team_select)
 	team_select.team_selected.connect(_on_team_selected)
+
+	death_report = ClientDeathReport.new()
+	death_report.name = "DeathReport"
+	add_child(death_report)
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
@@ -529,6 +534,8 @@ func _handle_event(packet: PackedByteArray) -> void:
 					local_player.global_position = pos
 					local_player.velocity = Vector3.ZERO
 					prediction_buffer.clear()
+					if death_report and death_report.is_showing():
+						death_report.hide_report()
 					if spectator and spectator.is_spectating():
 						spectator.exit_spectator()
 						local_player.set_process_unhandled_input(true)
@@ -554,6 +561,14 @@ func _handle_event(packet: PackedByteArray) -> void:
 				buy_menu.show_request(requester_id, item_idx)
 				if not buy_menu.is_open:
 					buy_menu.open_menu()
+		NetProtocol.EVT_DEATH_REPORT:
+			var dr := NetProtocol.unpack_death_report_event(packet)
+			if not dr.is_empty() and dr["victim_id"] == my_peer_id:
+				if death_report:
+					death_report.show_report(dr["report"])
+				print("[Client] Death report: gave=%d took=%d" % [
+					dr["report"].get("given", []).size(),
+					dr["report"].get("taken", []).size()])
 
 
 func set_local_player(player: CharacterBody3D) -> void:

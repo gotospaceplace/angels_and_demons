@@ -21,6 +21,7 @@ var disconnected_players: Dictionary = {}
 var pending_peers: Dictionary = {}
 var next_token: int = 1
 var _use_state: Dictionary = {}
+var damage_log: Array = []
 
 const PENDING_TIMEOUT_TICKS := 64
 
@@ -200,16 +201,22 @@ func _process_fire_commands() -> void:
 
 		var cmd: NetInput = sp.last_input
 		var wants_fire: bool = cmd.has_button(NetInput.BIT_FIRE)
+		var wants_fire2: bool = cmd.has_button(NetInput.BIT_FIRE2)
 
 		if sp.is_reloading:
 			sp.fire_pressed = wants_fire
+			sp.fire2_pressed = wants_fire2
 			continue
 
 		var should_fire := false
+		var is_stab := false
 		var weapon = lag_comp.get_weapon(sp.weapon_idx)
 
 		if weapon.is_melee:
-			if wants_fire and not sp.fire_pressed and server_tick >= sp.next_fire_tick:
+			if wants_fire2 and not sp.fire2_pressed and server_tick >= sp.next_fire_tick:
+				should_fire = true
+				is_stab = true
+			elif wants_fire and not sp.fire_pressed and server_tick >= sp.next_fire_tick:
 				should_fire = true
 		elif weapon.is_automatic:
 			if wants_fire and server_tick >= sp.next_fire_tick and sp.ammo_mag > 0:
@@ -219,6 +226,7 @@ func _process_fire_commands() -> void:
 				should_fire = true
 
 		sp.fire_pressed = wants_fire
+		sp.fire2_pressed = wants_fire2
 
 		if not should_fire:
 			continue
@@ -231,9 +239,10 @@ func _process_fire_commands() -> void:
 			if sp.ammo_mag <= 0:
 				sp.start_reload(server_tick)
 
-		sp.next_fire_tick = server_tick + maxi(1, int(weapon.cycle_time * float(NetConstants.TICK_RATE)))
+		var cycle: float = weapon.stab_cycle_time if is_stab else weapon.cycle_time
+		sp.next_fire_tick = server_tick + maxi(1, int(cycle * float(NetConstants.TICK_RATE)))
 
-		var hit := lag_comp.process_fire(peer_id, cmd, server_tick, players, space)
+		var hit := lag_comp.process_fire(peer_id, cmd, server_tick, players, space, is_stab)
 		if hit.is_empty():
 			continue
 
@@ -251,6 +260,14 @@ func _process_fire_commands() -> void:
 			continue
 		victim_sp.take_damage(final_damage)
 
+		damage_log.append({
+			"attacker": peer_id,
+			"victim": victim_id,
+			"damage": int(ceilf(final_damage)),
+			"weapon": sp.weapon_idx,
+			"headshot": hit["headshot"],
+		})
+
 		var hit_packet := NetProtocol.pack_hit_event(
 			victim_id, int(final_damage), hit["headshot"])
 		multiplayer.send_bytes(hit_packet, peer_id,
@@ -263,6 +280,7 @@ func _process_fire_commands() -> void:
 			plugin_manager.last_death_position = victim_sp.body.global_position
 			plugin_manager.dispatch_on_player_kill(peer_id, victim_id, sp.weapon_idx, hit["headshot"])
 			plugin_manager.dispatch_on_player_death(victim_id, peer_id)
+			_send_death_report(victim_id)
 			var kill_flags := 0
 			if hit.get("wallbang", false):
 				kill_flags |= NetProtocol.KILL_FLAG_WALLBANG
@@ -764,7 +782,35 @@ func _send_match_state_to(peer_id: int) -> void:
 		NetConstants.CHANNEL_EVENTS)
 
 
+func _send_death_report(victim_id: int) -> void:
+	var given: Dictionary = {}
+	var taken: Dictionary = {}
+	for entry in damage_log:
+		if entry["attacker"] == victim_id:
+			var vid: int = entry["victim"]
+			if not given.has(vid):
+				given[vid] = {"id": vid, "dmg": 0, "hits": 0, "hs": 0}
+			given[vid]["dmg"] += entry["damage"]
+			given[vid]["hits"] += 1
+			if entry["headshot"]:
+				given[vid]["hs"] += 1
+		if entry["victim"] == victim_id:
+			var aid: int = entry["attacker"]
+			if not taken.has(aid):
+				taken[aid] = {"id": aid, "dmg": 0, "hits": 0, "hs": 0}
+			taken[aid]["dmg"] += entry["damage"]
+			taken[aid]["hits"] += 1
+			if entry["headshot"]:
+				taken[aid]["hs"] += 1
+	var report := {"given": given.values(), "taken": taken.values()}
+	var packet := NetProtocol.pack_death_report_event(victim_id, report)
+	multiplayer.send_bytes(packet, victim_id,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_EVENTS)
+
+
 func _reset_round_players() -> void:
+	damage_log.clear()
 	for peer_id in players:
 		var sp = players[peer_id]
 		var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)

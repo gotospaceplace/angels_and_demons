@@ -42,7 +42,8 @@ func get_weapon(idx: int):
 
 
 func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
-		players: Dictionary, space: PhysicsDirectSpaceState3D) -> Dictionary:
+		players: Dictionary, space: PhysicsDirectSpaceState3D,
+		is_stab: bool = false) -> Dictionary:
 	var shooter_sp = players.get(shooter_id)
 	if not shooter_sp or shooter_sp.is_dead:
 		return {}
@@ -70,7 +71,7 @@ func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
 	var weapon = get_weapon(shooter_sp.weapon_idx)
 	var max_range: float
 	if weapon.is_melee:
-		max_range = weapon.melee_range
+		max_range = weapon.stab_range if is_stab else weapon.melee_range
 	else:
 		max_range = WC.MAX_HITSCAN_RANGE / MC.UNITS_PER_METER
 
@@ -161,10 +162,28 @@ func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
 	var hitgroup_mult: float = WC.HITGROUP_MULTIPLIERS.get(best_hit["hitgroup"], 1.0)
 	var range_factor := pow(weapon.range_modifier, dist_gsrc / WC.RANGE_UNIT)
 
-	var retention: float = 1.0
-	if best_hit["wallbang"]:
-		retention = WC.WALL_PEN_RETENTION.get(weapon.penetration_level, 0.0)
-	best_hit["damage"] = weapon.base_damage * range_factor * hitgroup_mult * retention
+	if weapon.is_melee:
+		var victim_id: int = best_hit["victim_id"]
+		var victim_ps: Dictionary = state["players"].get(victim_id, {})
+		var is_backstab := false
+		if not victim_ps.is_empty():
+			var atk_yaw := deg_to_rad(cmd.yaw)
+			var atk_fwd := Vector3(-sin(atk_yaw), 0, -cos(atk_yaw))
+			var vic_yaw: float = victim_ps["yaw"]
+			var vic_fwd := Vector3(-sin(vic_yaw), 0, -cos(vic_yaw))
+			is_backstab = atk_fwd.dot(vic_fwd) > 0.0
+		best_hit["backstab"] = is_backstab
+		var base_dmg: float
+		if is_stab:
+			base_dmg = weapon.backstab_stab_damage if is_backstab else weapon.stab_damage
+		else:
+			base_dmg = weapon.backstab_damage if is_backstab else weapon.base_damage
+		best_hit["damage"] = base_dmg * hitgroup_mult
+	else:
+		var retention: float = 1.0
+		if best_hit["wallbang"]:
+			retention = WC.WALL_PEN_RETENTION.get(weapon.penetration_level, 0.0)
+		best_hit["damage"] = weapon.base_damage * range_factor * hitgroup_mult * retention
 	best_hit["weapon_idx"] = shooter_sp.weapon_idx
 
 	return best_hit
