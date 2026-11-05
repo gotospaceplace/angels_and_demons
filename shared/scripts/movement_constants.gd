@@ -76,7 +76,7 @@ const MAX_CLIMB_SPEED := 200.0 * METERS_PER_UNIT  # 5.08 m/s
 
 # --- Per-weapon maxspeed (Godot m/s) ---
 # GoldSrc values from ReGameDLL weapons.h
-const SPEED_KNIFE := 250.0 * METERS_PER_UNIT     # 6.35 m/s
+const SPEED_MELEE := 250.0 * METERS_PER_UNIT     # 6.35 m/s
 const SPEED_PISTOL := 250.0 * METERS_PER_UNIT    # 6.35 m/s
 const SPEED_SMG := 250.0 * METERS_PER_UNIT       # 6.35 m/s
 const SPEED_SCOUT := 260.0 * METERS_PER_UNIT     # 6.60 m/s

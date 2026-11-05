@@ -18,7 +18,7 @@ var _test_footstep_count := 0
 func _ready() -> void:
 	if _test_mode:
 		return
-	sounds["knife_slash"] = load("res://assets/sounds/knife_slash.mp3")
+	sounds["melee_slash"] = load("res://assets/sounds/melee_slash.mp3")
 	sounds["usp_fire"] = load("res://assets/sounds/usp_fire.mp3")
 	sounds["ak47_fire"] = load("res://assets/sounds/ak47_fire.mp3")
 	sounds["m4a1_fire"] = load("res://assets/sounds/m4a1_fire.wav")
@@ -58,7 +58,7 @@ func play(sound_name: String, volume_db: float = 0.0, pitch: float = 1.0) -> voi
 	oldest.play()
 
 
-const WEAPON_SOUNDS := ["knife_slash", "usp_fire", "ak47_fire", "m4a1_fire", "awp_fire"]
+const WEAPON_SOUNDS := ["melee_slash", "usp_fire", "ak47_fire", "m4a1_fire", "awp_fire"]
 
 func play_fire(weapon_idx: int) -> void:
 	if weapon_idx < 0 or weapon_idx >= WEAPON_SOUNDS.size():

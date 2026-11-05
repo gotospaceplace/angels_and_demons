@@ -5,12 +5,12 @@ const MC := preload("res://shared/scripts/movement_constants.gd")
 const WD := preload("res://shared/scripts/weapon_data.gd")
 
 static func create_all() -> Array:
-	return [_knife(), _usp(), _ak47(), _m4a1(), _awp()]
+	return [_melee(), _usp(), _ak47(), _m4a1(), _awp()]
 
 
-static func _knife() -> Resource:
+static func _melee() -> Resource:
 	var w = WD.new()
-	w.weapon_name = "Knife"
+	w.weapon_name = "Melee"
 	w.slot = 0
 	w.is_melee = true
 	w.melee_range = 2.0
@@ -28,7 +28,7 @@ static func _knife() -> Resource:
 	w.magazine_size = 0
 	w.reserve_ammo = 0
 	w.is_automatic = false
-	w.max_speed = MC.SPEED_KNIFE
+	w.max_speed = MC.SPEED_MELEE
 	w.armor_penetration = 1.0
 	w.accuracy_type = 0  # None
 	return w

@@ -464,9 +464,9 @@ func test_weapon_switch_updates_ammo() -> void:
 	cmd.set_button(NetInput.BIT_WEAPON3, true)
 	sp._check_weapon_switch(cmd)
 	if sp.weapon_idx != 0:
-		_fail("weapon_idx: %d, expected 0 (knife)" % sp.weapon_idx); return
+		_fail("weapon_idx: %d, expected 0 (melee)" % sp.weapon_idx); return
 	if sp.ammo_mag != 0:
-		_fail("ammo_mag: %d, expected 0 (knife)" % sp.ammo_mag); return
+		_fail("ammo_mag: %d, expected 0 (melee)" % sp.ammo_mag); return
 	_pass("weapon switch updates idx and ammo correctly")
 
 

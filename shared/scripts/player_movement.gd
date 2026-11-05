@@ -10,7 +10,7 @@ var MOUSE_SENSITIVITY: float:
 
 var wish_dir := Vector3.ZERO
 var wish_speed := 0.0
-var max_speed := MC.SPEED_KNIFE
+var max_speed := MC.SPEED_MELEE
 var on_ground := false
 var was_on_ground := false
 var jump_pressed := false

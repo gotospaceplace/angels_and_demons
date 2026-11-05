@@ -38,7 +38,7 @@ func _ready() -> void:
 	_test_hud_player_cards_filter_dead()
 	_test_hud_hp_color_thresholds()
 	_test_hud_timer_format()
-	_test_hud_ammo_knife_hidden()
+	_test_hud_ammo_melee_hidden()
 
 	# Scoreboard
 	_test_scoreboard_mode_update()
@@ -472,13 +472,13 @@ func _test_hud_timer_format() -> void:
 	hud.queue_free()
 
 
-func _test_hud_ammo_knife_hidden() -> void:
+func _test_hud_ammo_melee_hidden() -> void:
 	var hud := ClientHud.new()
 	add_child(hud)
 
 	hud.weapon_idx = 0
 	hud._update_ammo()
-	_assert(hud.ammo_label.text == "", "ammo_hidden_for_knife")
+	_assert(hud.ammo_label.text == "", "ammo_hidden_for_melee")
 
 	hud.weapon_idx = 2
 	hud.ammo_mag = 25
