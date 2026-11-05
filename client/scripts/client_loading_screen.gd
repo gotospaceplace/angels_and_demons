@@ -16,8 +16,19 @@ var _loaded_scene: PackedScene
 func _ready() -> void:
 	if NetworkManager.loading_map_name != "":
 		map_label.text = NetworkManager.loading_map_name
-	ResourceLoader.load_threaded_request(TARGET_SCENE)
-	_load_started = true
+	var err := ResourceLoader.load_threaded_request(TARGET_SCENE)
+	if err == OK:
+		_load_started = true
+	else:
+		print("[LoadingScreen] Threaded load failed (error %d), falling back to sync load" % err)
+		_loaded_scene = load(TARGET_SCENE) as PackedScene
+		if _loaded_scene:
+			_scene_ready = true
+			_load_started = true
+			progress_bar.value = 100.0
+			status_label.text = "Ready"
+		else:
+			status_label.text = "Failed to load map"
 
 
 func _process(delta: float) -> void:
