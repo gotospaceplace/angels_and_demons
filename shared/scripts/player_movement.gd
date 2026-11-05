@@ -84,7 +84,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
 		head.rotation.x = clampf(head.rotation.x, -PI / 2.0, PI / 2.0)
 
-	if event.is_action_pressed("ui_cancel"):
+	if event.is_action_pressed("ui_cancel") and not is_local_client:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 	if event is InputEventMouseButton and event.is_action_pressed("jump"):

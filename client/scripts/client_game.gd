@@ -32,6 +32,7 @@ var spectator: ClientSpectator
 var chat: ClientChat
 var team_select: ClientTeamSelect
 var death_report: ClientDeathReport
+var esc_menu: ClientEscMenu
 var _team_select_shown: bool = false
 
 var session_token: int = 0
@@ -102,6 +103,10 @@ func _ready() -> void:
 	death_report = ClientDeathReport.new()
 	death_report.name = "DeathReport"
 	add_child(death_report)
+
+	esc_menu = ClientEscMenu.new()
+	esc_menu.name = "EscMenu"
+	add_child(esc_menu)
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
