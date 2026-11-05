@@ -10,6 +10,9 @@ const DEFAULT_PORT := 27050
 const MAX_CLIENTS := 16
 
 var peer: ENetMultiplayerPeer
+var last_server_address: String = ""
+var last_server_port: int = DEFAULT_PORT
+var loading_map_name: String = ""
 
 func host_server(port: int = DEFAULT_PORT) -> Error:
 	peer = ENetMultiplayerPeer.new()
@@ -24,6 +27,8 @@ func host_server(port: int = DEFAULT_PORT) -> Error:
 	return OK
 
 func join_server(address: String, port: int = DEFAULT_PORT) -> Error:
+	last_server_address = address
+	last_server_port = port
 	peer = ENetMultiplayerPeer.new()
 	var err := peer.create_client(address, port)
 	if err != OK:

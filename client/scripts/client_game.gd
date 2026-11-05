@@ -51,6 +51,9 @@ func _ready() -> void:
 	Engine.physics_ticks_per_second = NetConstants.TICK_RATE
 	process_physics_priority = -1
 
+	if NetworkManager.last_server_address != "":
+		server_address = NetworkManager.last_server_address
+		server_port = NetworkManager.last_server_port
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--join="):
 			server_address = arg.get_slice("=", 1)
