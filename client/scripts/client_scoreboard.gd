@@ -1,6 +1,5 @@
 extends CanvasLayer
 
-# TODO: Implement FFA Deathmatch scoreboard (single sorted list: Kills/Deaths/Assists/KDR/HS%/DMG/Score)
 # TODO: Implement Team Deathmatch scoreboard (two teams, stat columns without economy)
 # TODO: Implement Casual 10v10 scoreboard (scrollable rows)
 
@@ -42,6 +41,22 @@ const CX_DEATHS := 480.0;  const CW_DEATHS := 55.0
 const CX_ASSISTS := 545.0; const CW_ASSISTS := 55.0
 const CX_DMG := 610.0;     const CW_DMG := 70.0
 
+const FFA_MAX_ROWS := 12
+const FFA_TABLE_X := 12.0
+const FFA_ROW_H := 26.0
+const FFA_HDR_Y := 44.0
+const FFA_BODY_Y := 66.0
+const FFA_CX_RANK := 0.0;     const FFA_CW_RANK := 36.0
+const FFA_CX_NAME := 40.0;    const FFA_CW_NAME := 220.0
+const FFA_CX_KILLS := 270.0;  const FFA_CW_KILLS := 60.0
+const FFA_CX_DEATHS := 340.0; const FFA_CW_DEATHS := 60.0
+const FFA_CX_ASSIST := 410.0; const FFA_CW_ASSIST := 60.0
+const FFA_CX_KDR := 480.0;    const FFA_CW_KDR := 60.0
+const FFA_CX_DMG := 550.0;    const FFA_CW_DMG := 70.0
+const FFA_CX_SCORE := 630.0;  const FFA_CW_SCORE := 60.0
+const COL_FFA_ROW := Color(0.15, 0.15, 0.18, 0.5)
+const COL_FFA_ROW_ALT := Color(0.15, 0.15, 0.18, 0.33)
+
 const COL_BG := Color(0.06, 0.06, 0.08, 0.94)
 const COL_HDR_BG := Color(0.1, 0.1, 0.12, 0.98)
 const COL_A_ROW := Color(0.18, 0.22, 0.45, 0.5)
@@ -69,12 +84,17 @@ var _loss_label: Label
 var _fallback_label: Label
 var _competitive_root: Control
 var _fallback_root: Control
+var _ffa_root: Control
+var _ffa_hdr_mode: Label
+var _ffa_hdr_time: Label
+var _ffa_rows: Array = []
 
 
 func _ready() -> void:
 	layer = 12
 	_build_panel()
 	_build_competitive()
+	_build_ffa()
 	_build_fallback()
 	panel.visible = false
 
@@ -304,6 +324,145 @@ func _build_middle(root: Control, y: float) -> void:
 	_middle.add_child(_loss_label)
 
 
+func _build_ffa() -> void:
+	_ffa_root = Control.new()
+	_ffa_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(_ffa_root)
+	var root := _ffa_root
+
+	var hdr_bg := _rect(COL_HDR_BG, Vector2(PANEL_W, HEADER_H))
+	hdr_bg.position = Vector2.ZERO
+	root.add_child(hdr_bg)
+
+	_ffa_hdr_mode = _lbl(16, COL_TEXT)
+	_ffa_hdr_mode.position = Vector2(12, 10)
+	_ffa_hdr_mode.size = Vector2(400, 24)
+	root.add_child(_ffa_hdr_mode)
+
+	_ffa_hdr_time = _lbl(16, COL_DIM)
+	_ffa_hdr_time.position = Vector2(PANEL_W - 200, 10)
+	_ffa_hdr_time.size = Vector2(188, 24)
+	_ffa_hdr_time.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	root.add_child(_ffa_hdr_time)
+
+	var col_names := ["#", "Name", "Kills", "Deaths", "Assists", "K/D", "DMG", "Score"]
+	var col_xs := [FFA_CX_RANK, FFA_CX_NAME, FFA_CX_KILLS, FFA_CX_DEATHS,
+		FFA_CX_ASSIST, FFA_CX_KDR, FFA_CX_DMG, FFA_CX_SCORE]
+	var col_ws := [FFA_CW_RANK, FFA_CW_NAME, FFA_CW_KILLS, FFA_CW_DEATHS,
+		FFA_CW_ASSIST, FFA_CW_KDR, FFA_CW_DMG, FFA_CW_SCORE]
+	for i in range(col_names.size()):
+		var l := _lbl(11, COL_HDR_TEXT)
+		l.text = col_names[i]
+		l.position = Vector2(FFA_TABLE_X + col_xs[i], FFA_HDR_Y)
+		l.size = Vector2(col_ws[i], COL_HDR_H)
+		if i >= 2:
+			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		root.add_child(l)
+
+	for i in range(FFA_MAX_ROWS):
+		var row_y := FFA_BODY_Y + i * FFA_ROW_H
+		var bg_color := COL_FFA_ROW if i % 2 == 0 else COL_FFA_ROW_ALT
+		var r := _build_ffa_row(root, row_y, bg_color)
+		_ffa_rows.append(r)
+
+
+func _build_ffa_row(root: Control, y: float, bg_color: Color) -> Dictionary:
+	var bg := _rect(bg_color, Vector2(PANEL_W - FFA_TABLE_X * 2, FFA_ROW_H))
+	bg.position = Vector2(FFA_TABLE_X, y)
+	root.add_child(bg)
+
+	var highlight := _rect(COL_LOCAL, Vector2(PANEL_W - FFA_TABLE_X * 2, FFA_ROW_H))
+	highlight.position = Vector2(FFA_TABLE_X, y)
+	highlight.visible = false
+	root.add_child(highlight)
+
+	var rank := _lbl(12, COL_DIM)
+	rank.position = Vector2(FFA_TABLE_X + FFA_CX_RANK, y + 5)
+	rank.size = Vector2(FFA_CW_RANK, 16)
+	rank.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(rank)
+
+	var name_lbl := _lbl(13, COL_TEXT)
+	name_lbl.position = Vector2(FFA_TABLE_X + FFA_CX_NAME, y + 4)
+	name_lbl.size = Vector2(FFA_CW_NAME, 18)
+	name_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	root.add_child(name_lbl)
+
+	var kills := _ffa_stat(root, FFA_CX_KILLS, FFA_CW_KILLS, y)
+	var deaths := _ffa_stat(root, FFA_CX_DEATHS, FFA_CW_DEATHS, y)
+	var assists := _ffa_stat(root, FFA_CX_ASSIST, FFA_CW_ASSIST, y)
+	var kdr := _ffa_stat(root, FFA_CX_KDR, FFA_CW_KDR, y)
+	var dmg := _ffa_stat(root, FFA_CX_DMG, FFA_CW_DMG, y)
+	var score := _ffa_stat(root, FFA_CX_SCORE, FFA_CW_SCORE, y)
+
+	return {
+		"bg": bg, "highlight": highlight, "rank": rank, "name": name_lbl,
+		"kills": kills, "deaths": deaths, "assists": assists,
+		"kdr": kdr, "dmg": dmg, "score": score,
+	}
+
+
+func _ffa_stat(root: Control, cx: float, cw: float, y: float) -> Label:
+	var l := _lbl(12, COL_TEXT)
+	l.position = Vector2(FFA_TABLE_X + cx, y + 5)
+	l.size = Vector2(cw, 16)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(l)
+	return l
+
+
+func _refresh_ffa() -> void:
+	_ffa_hdr_mode.text = "Deathmatch | Map"
+	_ffa_hdr_time.text = match_state
+
+	var sorted := roster.duplicate()
+	sorted.sort_custom(func(a, b): return a.get("kills", 0) > b.get("kills", 0))
+
+	var local_ping := _get_local_ping()
+	for i in range(FFA_MAX_ROWS):
+		var r: Dictionary = _ffa_rows[i]
+		if i < sorted.size():
+			var entry: Dictionary = sorted[i]
+			var pid: int = entry.get("id", 0)
+			var is_local := pid == my_peer_id
+			var k: int = entry.get("kills", 0)
+			var d: int = entry.get("deaths", 0)
+
+			r["bg"].visible = true
+			r["highlight"].visible = is_local
+			r["rank"].text = str(i + 1)
+			r["rank"].visible = true
+			r["name"].text = "Player %d" % pid
+			if is_local:
+				r["name"].add_theme_color_override("font_color", Color(0.95, 0.88, 0.3))
+			else:
+				r["name"].add_theme_color_override("font_color", COL_TEXT)
+			r["name"].visible = true
+			r["kills"].text = str(k)
+			r["deaths"].text = str(d)
+			r["assists"].text = str(entry.get("assists", 0))
+			r["kdr"].text = "%.1f" % (float(k) / maxf(float(d), 1.0))
+			r["dmg"].text = str(entry.get("damage", 0))
+			r["score"].text = str(k)
+			r["kills"].visible = true
+			r["deaths"].visible = true
+			r["assists"].visible = true
+			r["kdr"].visible = true
+			r["dmg"].visible = true
+			r["score"].visible = true
+		else:
+			r["bg"].visible = false
+			r["highlight"].visible = false
+			r["rank"].visible = false
+			r["name"].visible = false
+			r["kills"].visible = false
+			r["deaths"].visible = false
+			r["assists"].visible = false
+			r["kdr"].visible = false
+			r["dmg"].visible = false
+			r["score"].visible = false
+
+
 func _build_fallback() -> void:
 	_fallback_root = Control.new()
 	_fallback_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -320,15 +479,23 @@ func _refresh() -> void:
 	if vp == Vector2.ZERO:
 		vp = Vector2(1920, 1080)
 
+	_competitive_root.visible = false
+	_ffa_root.visible = false
+	_fallback_root.visible = false
+
 	if mode == &"competitive":
 		_competitive_root.visible = true
-		_fallback_root.visible = false
 		var ph := TEAM_Y + MAX_ROWS * ROW_H + GAP + MIDDLE_H + GAP + MAX_ROWS * ROW_H + GAP
 		panel.position = Vector2((vp.x - PANEL_W) * 0.5, (vp.y - ph) * 0.5)
 		panel.size = Vector2(PANEL_W, ph)
 		_refresh_competitive()
+	elif mode == &"deathmatch":
+		_ffa_root.visible = true
+		var ph := FFA_BODY_Y + FFA_MAX_ROWS * FFA_ROW_H + GAP
+		panel.position = Vector2((vp.x - PANEL_W) * 0.5, (vp.y - ph) * 0.5)
+		panel.size = Vector2(PANEL_W, ph)
+		_refresh_ffa()
 	else:
-		_competitive_root.visible = false
 		_fallback_root.visible = true
 		var ph := 360.0
 		panel.position = Vector2((vp.x - PANEL_W) * 0.5, (vp.y - ph) * 0.5)
