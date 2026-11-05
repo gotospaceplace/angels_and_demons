@@ -437,10 +437,7 @@ func _handle_team_select(peer_id: int, requested_team: int) -> void:
 	if success:
 		_broadcast_match_state()
 	else:
-		var msg := NetProtocol.pack_server_msg_event("Team change denied: teams would be unbalanced")
-		multiplayer.send_bytes(msg, peer_id,
-			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
-			NetConstants.CHANNEL_EVENTS)
+		_send_server_msg(peer_id, "Team change denied: teams would be unbalanced")
 
 
 func _handle_buy(peer_id: int, item_index: int) -> void:
@@ -507,6 +504,9 @@ func _handle_weapon_request(peer_id: int, item_index: int) -> void:
 
 func _handle_chat(peer_id: int, message: String, team_only: bool) -> void:
 	if not players.has(peer_id):
+		return
+	if message.begins_with("/"):
+		_handle_chat_command(peer_id, message)
 		return
 	var filtered := plugin_manager.dispatch_on_chat_message(peer_id, message, team_only)
 	if filtered.is_empty():
@@ -691,20 +691,12 @@ func _cmd_say(args: String) -> void:
 		print("[Console] Usage: say <message>")
 		return
 	print("[Console] ADMIN: Broadcast: %s" % args)
-	var packet := NetProtocol.pack_server_msg_event(args)
-	for peer_id in players:
-		multiplayer.send_bytes(packet, peer_id,
-			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
-			NetConstants.CHANNEL_EVENTS)
+	_broadcast_server_msg(args)
 
 
 func _cmd_quit() -> void:
 	print("[Console] ADMIN: Server shutting down")
-	var msg := NetProtocol.pack_server_msg_event("Server shutting down")
-	for peer_id in players:
-		multiplayer.send_bytes(msg, peer_id,
-			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
-			NetConstants.CHANNEL_EVENTS)
+	_broadcast_server_msg("Server shutting down")
 	if console:
 		console.stop()
 	get_tree().quit()
@@ -1074,3 +1066,96 @@ func _reset_round_players() -> void:
 	print("[Server] Round reset: %d players respawned" % players.size())
 
 
+func _handle_chat_command(peer_id: int, raw: String) -> void:
+	var parts := raw.strip_edges().split(" ", false, 1)
+	var cmd := parts[0].to_lower()
+	var args := parts[1].strip_edges() if parts.size() > 1 else ""
+
+	match cmd:
+		"/mode":
+			_cmd_chat_mode(peer_id, args)
+		"/map":
+			_cmd_chat_map(peer_id, args)
+		"/restart":
+			_cmd_chat_restart(peer_id)
+		"/help":
+			_cmd_chat_help(peer_id)
+		_:
+			_send_server_msg(peer_id, "Unknown command: %s (type /help)" % cmd)
+
+
+func _cmd_chat_mode(peer_id: int, args: String) -> void:
+	var mode_name := args.to_lower()
+	if mode_name.is_empty():
+		var current := plugin_manager.get_client_mode()
+		_send_server_msg(peer_id, "Current mode: %s. Usage: /mode <deathmatch|competitive>" % current)
+		return
+	if mode_name != "deathmatch" and mode_name != "competitive":
+		_send_server_msg(peer_id, "Unknown mode: %s. Available: deathmatch, competitive" % mode_name)
+		return
+	if mode_name == String(plugin_manager.get_client_mode()):
+		_send_server_msg(peer_id, "Already in %s mode" % mode_name)
+		return
+	_change_mode(mode_name)
+	_broadcast_server_msg("Mode changed to %s by Player %d" % [mode_name, peer_id])
+
+
+func _cmd_chat_map(peer_id: int, args: String) -> void:
+	var map_name := args.to_lower()
+	if map_name.is_empty():
+		_send_server_msg(peer_id, "Current map: aim_map. Usage: /map <name>")
+		return
+	if map_name == "aim_map":
+		_send_server_msg(peer_id, "Already on aim_map")
+	else:
+		_send_server_msg(peer_id, "Unknown map: %s. Available: aim_map" % map_name)
+
+
+func _cmd_chat_restart(peer_id: int) -> void:
+	_broadcast_server_msg("Round restarted by Player %d" % peer_id)
+	_reset_round_players()
+	_broadcast_match_state()
+
+
+func _cmd_chat_help(peer_id: int) -> void:
+	_send_server_msg(peer_id, "Commands: /mode <deathmatch|competitive>, /map <name>, /restart, /help")
+
+
+func _change_mode(mode_name: String) -> void:
+	var old_mode := plugin_manager.get_mode_plugin()
+	if old_mode:
+		plugin_manager.unload_plugin(old_mode)
+
+	var new_mode: GamePlugin
+	match mode_name:
+		"deathmatch":
+			new_mode = PluginDeathmatch.new()
+		"competitive":
+			new_mode = PluginCompetitive.new()
+		_:
+			return
+	plugin_manager.load_plugin(new_mode)
+
+	if world_node.get("angels_spawns") and world_node.get("demons_spawns"):
+		plugin_manager.set_map_spawns(world_node.angels_spawns, world_node.demons_spawns)
+	if world_node.get("portal_sites"):
+		plugin_manager.set_map_portal_sites(world_node.portal_sites)
+
+	_reset_round_players()
+	_broadcast_match_state()
+	print("[Server] Mode changed to: %s" % mode_name)
+
+
+func _send_server_msg(peer_id: int, message: String) -> void:
+	var packet := NetProtocol.pack_server_msg_event(message)
+	multiplayer.send_bytes(packet, peer_id,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_EVENTS)
+
+
+func _broadcast_server_msg(message: String) -> void:
+	var packet := NetProtocol.pack_server_msg_event(message)
+	for pid in players:
+		multiplayer.send_bytes(packet, pid,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
