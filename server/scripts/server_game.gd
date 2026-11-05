@@ -19,6 +19,7 @@ var disconnected_players: Dictionary = {}
 var pending_peers: Dictionary = {}
 var next_token: int = 1
 var _use_state: Dictionary = {}
+var damage_log: Array = []
 
 const PENDING_TIMEOUT_TICKS := 64
 
@@ -257,6 +258,14 @@ func _process_fire_commands() -> void:
 			continue
 		victim_sp.take_damage(final_damage)
 
+		damage_log.append({
+			"attacker": peer_id,
+			"victim": victim_id,
+			"damage": int(ceilf(final_damage)),
+			"weapon": sp.weapon_idx,
+			"headshot": hit["headshot"],
+		})
+
 		var hit_packet := NetProtocol.pack_hit_event(
 			victim_id, int(final_damage), hit["headshot"])
 		multiplayer.send_bytes(hit_packet, peer_id,
@@ -269,6 +278,7 @@ func _process_fire_commands() -> void:
 			plugin_manager.last_death_position = victim_sp.body.global_position
 			plugin_manager.dispatch_on_player_kill(peer_id, victim_id, sp.weapon_idx, hit["headshot"])
 			plugin_manager.dispatch_on_player_death(victim_id, peer_id)
+			_send_death_report(victim_id)
 			var kill_packet := NetProtocol.pack_kill_event(
 				peer_id, victim_id, sp.weapon_idx, hit["headshot"])
 			for pid in players:
@@ -741,7 +751,35 @@ func _send_match_state_to(peer_id: int) -> void:
 		NetConstants.CHANNEL_EVENTS)
 
 
+func _send_death_report(victim_id: int) -> void:
+	var given: Dictionary = {}
+	var taken: Dictionary = {}
+	for entry in damage_log:
+		if entry["attacker"] == victim_id:
+			var vid: int = entry["victim"]
+			if not given.has(vid):
+				given[vid] = {"id": vid, "dmg": 0, "hits": 0, "hs": 0}
+			given[vid]["dmg"] += entry["damage"]
+			given[vid]["hits"] += 1
+			if entry["headshot"]:
+				given[vid]["hs"] += 1
+		if entry["victim"] == victim_id:
+			var aid: int = entry["attacker"]
+			if not taken.has(aid):
+				taken[aid] = {"id": aid, "dmg": 0, "hits": 0, "hs": 0}
+			taken[aid]["dmg"] += entry["damage"]
+			taken[aid]["hits"] += 1
+			if entry["headshot"]:
+				taken[aid]["hs"] += 1
+	var report := {"given": given.values(), "taken": taken.values()}
+	var packet := NetProtocol.pack_death_report_event(victim_id, report)
+	multiplayer.send_bytes(packet, victim_id,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_EVENTS)
+
+
 func _reset_round_players() -> void:
+	damage_log.clear()
 	for peer_id in players:
 		var sp = players[peer_id]
 		var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)
