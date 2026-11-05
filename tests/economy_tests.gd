@@ -19,7 +19,7 @@ func _ready() -> void:
 		&"test_kill_reward_smg",
 		&"test_kill_reward_sniper",
 		&"test_kill_reward_pistol",
-		&"test_kill_reward_knife",
+		&"test_kill_reward_melee",
 		&"test_catalyst_activate_bonus",
 		&"test_purchase_success",
 		&"test_purchase_insufficient_funds",
@@ -212,14 +212,14 @@ func test_kill_reward_pistol() -> void:
 		_fail("expected +$300, got +$%d" % gained)
 
 
-func test_kill_reward_knife() -> void:
+func test_kill_reward_melee() -> void:
 	var eco := _make_economy()
 	eco.init_player(1)
 	var before := eco.get_money(1)
-	eco.award_kill(1, 0)  # weapon_idx 0 = knife
+	eco.award_kill(1, 0)  # weapon_idx 0 = melee
 	var gained := eco.get_money(1) - before
 	if gained == 1500:
-		_pass("knife kill +$%d" % gained)
+		_pass("melee kill +$%d" % gained)
 	else:
 		_fail("expected +$1500, got +$%d" % gained)
 

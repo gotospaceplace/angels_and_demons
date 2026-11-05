@@ -57,7 +57,7 @@ var catalyst_panel: Panel
 var catalyst_label: Label
 var build_label: Label
 
-const WEAPON_NAMES := ["Knife", "USP", "AK-47", "M4A1", "AWP"]
+const WEAPON_NAMES := ["Melee", "USP", "AK-47", "M4A1", "AWP"]
 const GRENADE_KEYS := ["V", "C", "Z"]
 const GRENADE_NAMES := ["HE", "Flash", "Smoke"]
 const WEAPON_SLOT_MAP := [2, 1, 0]

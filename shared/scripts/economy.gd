@@ -13,20 +13,20 @@ const LOSS_BONUS_MAX := 3400
 
 const CATALYST_ACTIVATE_BONUS := 800
 
-enum WeaponCategory { RIFLE, SMG, SNIPER, PISTOL, KNIFE, GRENADE }
+enum WeaponCategory { RIFLE, SMG, SNIPER, PISTOL, MELEE, GRENADE }
 
 const KILL_REWARDS := {
 	WeaponCategory.RIFLE: 300,
 	WeaponCategory.SMG: 600,
 	WeaponCategory.SNIPER: 100,
 	WeaponCategory.PISTOL: 300,
-	WeaponCategory.KNIFE: 1500,
+	WeaponCategory.MELEE: 1500,
 	WeaponCategory.GRENADE: 300,
 }
 
 # Maps weapon_idx (from weapon_registry) to economy category
 const WEAPON_CATEGORY := {
-	0: WeaponCategory.KNIFE,
+	0: WeaponCategory.MELEE,
 	1: WeaponCategory.PISTOL,
 	2: WeaponCategory.RIFLE,
 	3: WeaponCategory.RIFLE,

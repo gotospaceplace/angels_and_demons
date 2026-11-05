@@ -2,7 +2,7 @@ class_name WeaponData
 extends Resource
 
 @export var weapon_name: String = ""
-@export var slot: int = 0  # 0=knife, 1=pistol, 2=primary
+@export var slot: int = 0  # 0=melee, 1=pistol, 2=primary
 
 # --- Damage ---
 @export var base_damage: float = 0.0

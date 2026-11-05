@@ -23,7 +23,7 @@ func _ready() -> void:
 	_test_headshot_icon()
 	_test_headshot_plus_wallbang()
 	_test_no_flags_no_icons()
-	_test_knife_weapon_label()
+	_test_melee_weapon_label()
 	_test_default_params_backward_compat()
 
 	print("[KillFeedTests] Done: %d passed, %d failed out of %d" % [pass_count, fail_count, total])
@@ -221,11 +221,11 @@ func _test_no_flags_no_icons() -> void:
 	feed.queue_free()
 
 
-func _test_knife_weapon_label() -> void:
+func _test_melee_weapon_label() -> void:
 	var feed := _make_feed()
 	feed.add_kill(1, 2, 0, false, 0, 0, 0, 99)
 	var text := _get_entry_text(feed, 0)
-	_assert("KNIFE" in text, "knife_label_present")
+	_assert("MELEE" in text, "melee_label_present")
 	feed.queue_free()
 
 

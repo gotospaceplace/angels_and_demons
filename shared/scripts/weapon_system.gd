@@ -110,7 +110,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("weapon_2"):
 		_switch_to_slot(1)  # pistol (USP)
 	if event.is_action_pressed("weapon_3"):
-		_switch_to_slot(0)  # knife
+		_switch_to_slot(0)  # melee
 	if event.is_action_pressed("weapon_last"):
 		_switch_to_last()
 	if event.is_action_pressed("weapon_next"):
@@ -555,7 +555,7 @@ func _finish_reload() -> void:
 	recoil_shots = 0
 
 
-# --- Secondary action (scope / silencer toggle / knife stab) ---
+# --- Secondary action (scope / silencer toggle / melee stab) ---
 
 func _secondary_action() -> void:
 	if current.is_melee:
@@ -638,7 +638,7 @@ func _select_grenade() -> void:
 	is_switching = false
 	is_toggling = false
 	_unscope()
-	player.max_speed = MC.SPEED_KNIFE
+	player.max_speed = MC.SPEED_MELEE
 	if _grenade_count(current_grenade) <= 0:
 		_cycle_grenade()
 

@@ -452,12 +452,12 @@ func test_economy_kill_reward() -> void:
 	_advance_to_live(m)
 
 	var before := m.economy.get_money(6)
-	m.report_kill(6, 1, 0)  # knife kill
+	m.report_kill(6, 1, 0)  # melee kill
 	var after := m.economy.get_money(6)
 	var gained := after - before
 
 	if gained == Economy.get_kill_reward(0):
-		_pass("knife kill reward $%d during round" % gained)
+		_pass("melee kill reward $%d during round" % gained)
 	else:
 		_fail("expected $%d, got $%d" % [Economy.get_kill_reward(0), gained])
 

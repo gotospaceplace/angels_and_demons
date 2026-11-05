@@ -4,7 +4,7 @@ extends Node3D
 enum Mode { ALIVE, DEATHCAM, FOLLOW, FREECAM }
 
 const MC = preload("res://shared/scripts/movement_constants.gd")
-const WEAPON_NAMES := ["Knife", "USP", "AK-47", "M4A1", "AWP"]
+const WEAPON_NAMES := ["Melee", "USP", "AK-47", "M4A1", "AWP"]
 
 const DEATHCAM_DURATION := 2.0
 const FREECAM_SPEED := 10.0

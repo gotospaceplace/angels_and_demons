@@ -1,7 +1,7 @@
 class_name BuyCatalog
 extends RefCounted
 
-enum Slot { KNIFE, PISTOL, PRIMARY, ARMOR }
+enum Slot { MELEE, PISTOL, PRIMARY, ARMOR }
 enum Side { BOTH, ATTACK, DEFENSE }
 
 const ITEMS := [

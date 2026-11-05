@@ -108,7 +108,7 @@ func dequeue_input(current_tick: int) -> void:
 	body.simulate_tick(NetConstants.TICK_INTERVAL)
 
 
-const WEAPON_MAG_SIZES := [0, 12, 30, 30, 10]  # knife, usp, ak47, m4a1, awp
+const WEAPON_MAG_SIZES := [0, 12, 30, 30, 10]  # melee, usp, ak47, m4a1, awp
 const WEAPON_RELOAD_TICKS := [0, 346, 314, 390, 320]  # reload_time * 128 tick/s
 const WEAPON_COUNT := 5
 
@@ -119,7 +119,7 @@ func _check_weapon_switch(cmd: NetInput) -> void:
 	elif cmd.has_button(NetInput.BIT_WEAPON2):
 		new_idx = 1  # pistol (USP)
 	elif cmd.has_button(NetInput.BIT_WEAPON3):
-		new_idx = 0  # knife
+		new_idx = 0  # melee
 	elif cmd.has_button(NetInput.BIT_WEAPON4):
 		new_idx = 3
 	elif cmd.has_button(NetInput.BIT_WEAPON5):

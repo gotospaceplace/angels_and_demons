@@ -3,7 +3,7 @@ extends CanvasLayer
 const MAX_ENTRIES := 5
 const DISPLAY_TIME := 5.0
 const FADE_DURATION := 1.0
-const WEAPON_NAMES := ["Knife", "USP", "AK-47", "M4A1", "AWP"]
+const WEAPON_NAMES := ["Melee", "USP", "AK-47", "M4A1", "AWP"]
 
 var entries: Array = []
 var container: VBoxContainer
@@ -43,13 +43,13 @@ func add_kill(killer_id: int, victim_id: int, weapon_idx: int, headshot: bool,
 	var killer := "Player %d" % killer_id
 	var victim := "Player %d" % victim_id
 	var weapon: String = WEAPON_NAMES[weapon_idx] if weapon_idx < WEAPON_NAMES.size() else "???"
-	var is_knife := weapon_idx == 0
+	var is_melee := weapon_idx == 0
 
 	var text := "[right]"
 	text += _styled_name(killer, killer_id == local_peer_id, killer_team)
 	text += "  "
-	if is_knife:
-		text += "[color=#aaaaaa]KNIFE[/color]"
+	if is_melee:
+		text += "[color=#aaaaaa]MELEE[/color]"
 	else:
 		text += "[color=#aaaaaa]%s[/color]" % weapon
 	if headshot:

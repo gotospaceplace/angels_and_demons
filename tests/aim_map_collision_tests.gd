@@ -216,7 +216,7 @@ func _reset_player(pos: Vector3, yaw: float = -PI / 2.0) -> void:
 	player.wants_walk = false
 	player.wish_dir = Vector3.ZERO
 	player.wish_speed = 0.0
-	player.max_speed = MC.SPEED_KNIFE
+	player.max_speed = MC.SPEED_MELEE
 	player.rotation = Vector3(0, yaw, 0)
 
 
