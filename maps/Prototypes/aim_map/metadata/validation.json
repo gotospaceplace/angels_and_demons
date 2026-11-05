@@ -164,7 +164,9 @@
   "missing_textures": [
     "sky",
     "xcrate9d",
-    "aaatrigger",
+    "aaatrigger"
+  ],
+  "exported_embedded_textures": [
     "-0csSandWall",
     "-0Sand",
     "-1csSandWall",
@@ -181,7 +183,30 @@
     "SandWllDoor",
     "SandWllWndw"
   ],
-  "exported_embedded_textures": [],
+  "phase2c_texture_sources": {
+    "-0csSandWall": "cs_dust.wad",
+    "-0Sand": "cs_dust.wad",
+    "-1csSandWall": "cs_dust.wad",
+    "-1Sand": "cs_dust.wad",
+    "-2Sand": "cs_dust.wad",
+    "-3Sand": "cs_dust.wad",
+    "MltryCrteSd2": "cs_dust.wad",
+    "MltryCrteTp": "cs_dust.wad",
+    "SandCCrete": "cs_dust.wad",
+    "SandCrtLrgSd": "cs_dust.wad",
+    "SandCrtLrgTp": "cs_dust.wad",
+    "SandCrtSmSd": "cs_dust.wad",
+    "SandTrim": "cs_dust.wad",
+    "SandWllDoor": "cs_dust.wad",
+    "SandWllWndw": "cs_dust.wad"
+  },
+  "phase2c_unmatched_textures": [
+    "sky",
+    "xcrate9d",
+    "aaatrigger"
+  ],
+  "phase2c_textured_mesh_nodes": 47,
+  "phase2c_note": "Textures are original Counter-Strike WAD assets for local prototyping; distribution rights not established. Animated frames are static.",
   "triangles_by_material": {
     "SandTrim": 687,
     "-0csSandWall": 454,
@@ -201,8 +226,8 @@
     "No original GoldSrc lightmaps",
     "Brush model origin handling needs visual verification for moving entities",
     "Visible triangles are not a validated collision mesh",
-    "Texture PNGs are separate and not assigned to GLB materials",
-    "Texture UV tiling may need adjustment",
+    "Phase 2C: 15 WAD textures embedded in GLB materials; 3 non-visible excluded (sky, xcrate9d, aaatrigger)",
+    "Phase 2C: animated texture frames (-0, -1, etc.) are static; WAD animation not implemented",
     "No walkable-floor raycast performed; floor baseline is heuristic",
     "Clip hull BSP reconstruction is not implemented; invisible clip collision is not exported",
     "Brush solidity classification requires runtime entity handling; func_wall is ordinarily solid",
