@@ -714,7 +714,6 @@ func _throw_grenade() -> void:
 	var forward := -cam.basis.z
 	var spawn_pos := cam.origin + forward * WC.GRENADE_SPAWN_OFFSET
 
-	# Throw angle: small upward bias (5°) for gentle arc
 	var view_pitch := rad_to_deg(head.rotation.x)
 	var speed_gsrc := (90.0 + view_pitch) * 8.0
 	speed_gsrc = clampf(speed_gsrc, 0.0, WC.GRENADE_MAX_VEL_GSRC)
@@ -723,12 +722,21 @@ func _throw_grenade() -> void:
 	var speed_m := speed_gsrc * MC.METERS_PER_UNIT
 
 	var throw_dir := forward.rotated(cam.basis.x, deg_to_rad(5.0))
+	var throw_vel := throw_dir * speed_m + player.velocity
+
+	if player.is_local_client:
+		var packet := NetProtocol.pack_admin_grenade(
+			current_grenade, spawn_pos, throw_vel, cook_timer)
+		player.get_tree().get_multiplayer().send_bytes(packet, 1,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_ADMIN)
 
 	var grenade := RigidBody3D.new()
 	grenade.set_script(GrenadeProjectile)
+	grenade.visual_only = true
 	player.get_parent().add_child(grenade)
 	grenade.global_position = spawn_pos
-	grenade.linear_velocity = throw_dir * speed_m + player.velocity
+	grenade.linear_velocity = throw_vel
 	grenade.start(cook_timer, current_grenade)
 
 	_consume_grenade()
@@ -738,10 +746,20 @@ func _throw_grenade() -> void:
 
 
 func _grenade_detonate_in_hand() -> void:
+	var pos := camera.global_position
+
+	if player.is_local_client:
+		var packet := NetProtocol.pack_admin_grenade(
+			current_grenade, pos, Vector3.ZERO, 0.0)
+		player.get_tree().get_multiplayer().send_bytes(packet, 1,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_ADMIN)
+
 	var grenade := RigidBody3D.new()
 	grenade.set_script(GrenadeProjectile)
+	grenade.visual_only = true
 	player.get_parent().add_child(grenade)
-	grenade.global_position = camera.global_position
+	grenade.global_position = pos
 	grenade.start(0.0, current_grenade)
 
 	_consume_grenade()

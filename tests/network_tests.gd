@@ -28,6 +28,11 @@ func _ready() -> void:
 		&"test_weapon_switch_updates_ammo",
 		&"test_rewind_window_clamped",
 		&"test_server_msg_event_roundtrip",
+		&"test_grenade_admin_packet_roundtrip",
+		&"test_grenade_spawn_event_roundtrip",
+		&"test_grenade_detonate_event_roundtrip",
+		&"test_flash_event_roundtrip",
+		&"test_server_grenade_inventory",
 	]
 
 	print("=== Network Serialization Tests ===")
@@ -497,3 +502,112 @@ func test_server_msg_event_roundtrip() -> void:
 	if decoded != msg:
 		_fail("decoded '%s', expected '%s'" % [decoded, msg]); return
 	_pass("server msg event roundtrip: %d bytes, msg='%s'" % [packet.size(), decoded])
+
+
+func test_grenade_admin_packet_roundtrip() -> void:
+	var pos := Vector3(1.5, 2.0, -3.5)
+	var vel := Vector3(5.0, 8.0, -2.0)
+	var fuse := 2.1
+	var packet := NetProtocol.pack_admin_grenade(1, pos, vel, fuse)
+	if packet[0] != NetConstants.PROTOCOL_VERSION:
+		_fail("version byte: %d" % packet[0]); return
+	if packet[1] != NetProtocol.MSG_ADMIN:
+		_fail("msg_type: %d, expected MSG_ADMIN" % packet[1]); return
+	if packet[2] != NetProtocol.ADMIN_GRENADE:
+		_fail("admin_type: %d, expected ADMIN_GRENADE" % packet[2]); return
+	if packet[3] != 1:
+		_fail("grenade_type: %d, expected 1" % packet[3]); return
+	var d_pos := Vector3(packet.decode_float(4), packet.decode_float(8), packet.decode_float(12))
+	var d_vel := Vector3(packet.decode_float(16), packet.decode_float(20), packet.decode_float(24))
+	var d_fuse: float = packet.decode_float(28)
+	if not _approx(d_pos.x, pos.x) or not _approx(d_pos.y, pos.y) or not _approx(d_pos.z, pos.z):
+		_fail("pos mismatch: %s vs %s" % [d_pos, pos]); return
+	if not _approx(d_vel.x, vel.x) or not _approx(d_vel.y, vel.y) or not _approx(d_vel.z, vel.z):
+		_fail("vel mismatch: %s vs %s" % [d_vel, vel]); return
+	if not _approx(d_fuse, fuse):
+		_fail("fuse mismatch: %.3f vs %.3f" % [d_fuse, fuse]); return
+	_pass("grenade admin packet roundtrip: %d bytes" % packet.size())
+
+
+func test_grenade_spawn_event_roundtrip() -> void:
+	var pos := Vector3(10.0, 1.5, -5.0)
+	var vel := Vector3(3.0, 7.0, 1.0)
+	var fuse := 1.8
+	var packet := NetProtocol.pack_grenade_spawn_event(42, 7, 2, pos, vel, fuse)
+	if packet[2] != NetProtocol.EVT_GRENADE_SPAWN:
+		_fail("evt_type: %d, expected EVT_GRENADE_SPAWN" % packet[2]); return
+	var thrower := packet[3] | (packet[4] << 8)
+	var gid := packet[5] | (packet[6] << 8)
+	var gtype: int = packet[7]
+	if thrower != 42:
+		_fail("thrower: %d, expected 42" % thrower); return
+	if gid != 7:
+		_fail("grenade_id: %d, expected 7" % gid); return
+	if gtype != 2:
+		_fail("grenade_type: %d, expected 2" % gtype); return
+	var d_pos := Vector3(packet.decode_float(8), packet.decode_float(12), packet.decode_float(16))
+	var d_vel := Vector3(packet.decode_float(20), packet.decode_float(24), packet.decode_float(28))
+	var d_fuse: float = packet.decode_float(32)
+	if not _approx(d_pos.x, pos.x) or not _approx(d_pos.y, pos.y) or not _approx(d_pos.z, pos.z):
+		_fail("pos mismatch: %s vs %s" % [d_pos, pos]); return
+	if not _approx(d_vel.x, vel.x) or not _approx(d_vel.y, vel.y) or not _approx(d_vel.z, vel.z):
+		_fail("vel mismatch: %s vs %s" % [d_vel, vel]); return
+	if not _approx(d_fuse, fuse):
+		_fail("fuse mismatch: %.3f vs %.3f" % [d_fuse, fuse]); return
+	_pass("grenade spawn event roundtrip: %d bytes" % packet.size())
+
+
+func test_grenade_detonate_event_roundtrip() -> void:
+	var pos := Vector3(-2.0, 0.5, 4.0)
+	var packet := NetProtocol.pack_grenade_detonate_event(15, 0, pos)
+	if packet[2] != NetProtocol.EVT_GRENADE_DETONATE:
+		_fail("evt_type: %d, expected EVT_GRENADE_DETONATE" % packet[2]); return
+	var gid := packet[3] | (packet[4] << 8)
+	var gtype: int = packet[5]
+	if gid != 15:
+		_fail("grenade_id: %d, expected 15" % gid); return
+	if gtype != 0:
+		_fail("grenade_type: %d, expected 0" % gtype); return
+	var d_pos := Vector3(packet.decode_float(6), packet.decode_float(10), packet.decode_float(14))
+	if not _approx(d_pos.x, pos.x) or not _approx(d_pos.y, pos.y) or not _approx(d_pos.z, pos.z):
+		_fail("pos mismatch: %s vs %s" % [d_pos, pos]); return
+	_pass("grenade detonate event roundtrip: %d bytes" % packet.size())
+
+
+func test_flash_event_roundtrip() -> void:
+	var blind := 2.5
+	var fade := 4.0
+	var packet := NetProtocol.pack_flash_event(blind, fade)
+	if packet[2] != NetProtocol.EVT_FLASH:
+		_fail("evt_type: %d, expected EVT_FLASH" % packet[2]); return
+	var d_blind: float = packet.decode_float(3)
+	var d_fade: float = packet.decode_float(7)
+	if not _approx(d_blind, blind):
+		_fail("blind mismatch: %.3f vs %.3f" % [d_blind, blind]); return
+	if not _approx(d_fade, fade):
+		_fail("fade mismatch: %.3f vs %.3f" % [d_fade, fade]); return
+	_pass("flash event roundtrip: %d bytes" % packet.size())
+
+
+func test_server_grenade_inventory() -> void:
+	var sp = ServerPlayer.new()
+	if sp.grenade_he != 1:
+		_fail("initial HE: %d, expected 1" % sp.grenade_he); return
+	if sp.grenade_flash != 2:
+		_fail("initial flash: %d, expected 2" % sp.grenade_flash); return
+	if sp.grenade_smoke != 1:
+		_fail("initial smoke: %d, expected 1" % sp.grenade_smoke); return
+	if not sp.consume_grenade(0):
+		_fail("consume HE should succeed"); return
+	if sp.grenade_he != 0:
+		_fail("HE after consume: %d, expected 0" % sp.grenade_he); return
+	if sp.consume_grenade(0):
+		_fail("consume HE with 0 stock should fail"); return
+	if not sp.consume_grenade(1):
+		_fail("consume flash should succeed"); return
+	if sp.grenade_flash != 1:
+		_fail("flash after consume: %d, expected 1" % sp.grenade_flash); return
+	sp.respawn(Vector3.ZERO)
+	if sp.grenade_he != 1 or sp.grenade_flash != 2 or sp.grenade_smoke != 1:
+		_fail("grenades not reset on respawn"); return
+	_pass("grenade inventory: consume, depletion, and respawn reset")

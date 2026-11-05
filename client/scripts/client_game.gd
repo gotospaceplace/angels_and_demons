@@ -569,6 +569,39 @@ func _handle_event(packet: PackedByteArray) -> void:
 				print("[Client] Death report: gave=%d took=%d" % [
 					dr["report"].get("given", []).size(),
 					dr["report"].get("taken", []).size()])
+		NetProtocol.EVT_GRENADE_SPAWN:
+			if packet.size() >= 36:
+				var g_thrower := packet[3] | (packet[4] << 8)
+				var _g_id := packet[5] | (packet[6] << 8)
+				var g_type: int = packet[7]
+				var g_pos := Vector3(
+					packet.decode_float(8),
+					packet.decode_float(12),
+					packet.decode_float(16))
+				var g_vel := Vector3(
+					packet.decode_float(20),
+					packet.decode_float(24),
+					packet.decode_float(28))
+				var g_fuse: float = packet.decode_float(32)
+				if g_thrower != my_peer_id:
+					_spawn_remote_grenade(g_type, g_pos, g_vel, g_fuse)
+				print("[Client] GRENADE: Player %d threw type=%d" % [g_thrower, g_type])
+		NetProtocol.EVT_GRENADE_DETONATE:
+			if packet.size() >= 18:
+				var _det_id := packet[3] | (packet[4] << 8)
+				var det_type: int = packet[5]
+				var det_pos := Vector3(
+					packet.decode_float(6),
+					packet.decode_float(10),
+					packet.decode_float(14))
+				_on_grenade_detonate(det_type, det_pos)
+		NetProtocol.EVT_FLASH:
+			if packet.size() >= 11:
+				var blind_time: float = packet.decode_float(3)
+				var fade_time: float = packet.decode_float(7)
+				if local_player and local_player.has_method("apply_flash"):
+					local_player.apply_flash(blind_time, fade_time)
+				print("[Client] FLASHED: blind=%.1f fade=%.1f" % [blind_time, fade_time])
 
 
 func set_local_player(player: CharacterBody3D) -> void:
@@ -659,6 +692,27 @@ func _on_team_selected(team: int) -> void:
 	multiplayer.send_bytes(packet, 1,
 		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 		NetConstants.CHANNEL_ADMIN)
+
+
+func _spawn_remote_grenade(grenade_type: int, pos: Vector3, vel: Vector3, fuse: float) -> void:
+	var GrenadeProjectile := preload("res://shared/scripts/grenade_projectile.gd")
+	var grenade := RigidBody3D.new()
+	grenade.set_script(GrenadeProjectile)
+	grenade.visual_only = true
+	add_child(grenade)
+	grenade.global_position = pos
+	grenade.linear_velocity = vel
+	grenade.start(fuse, grenade_type)
+
+
+func _on_grenade_detonate(grenade_type: int, pos: Vector3) -> void:
+	match grenade_type:
+		2:
+			var SmokeCloudScript := preload("res://shared/scripts/smoke_cloud.gd")
+			var cloud := Node3D.new()
+			cloud.set_script(SmokeCloudScript)
+			add_child(cloud)
+			cloud.global_position = pos
 
 
 func _attempt_reconnect() -> void:

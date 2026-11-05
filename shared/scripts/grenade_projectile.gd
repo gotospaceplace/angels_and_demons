@@ -8,6 +8,7 @@ enum Type { HE, FLASH, SMOKE }
 
 var fuse_remaining: float = 0.0
 var type: int = Type.HE
+var visual_only: bool = false
 
 func _ready() -> void:
 	collision_layer = 4
@@ -55,6 +56,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _detonate() -> void:
+	if visual_only:
+		queue_free()
+		return
 	match type:
 		Type.HE:
 			_detonate_he()

@@ -28,6 +28,10 @@ var kills: int = 0
 var deaths: int = 0
 var respawn_tick: int = 0
 
+var grenade_he: int = 1
+var grenade_flash: int = 2
+var grenade_smoke: int = 1
+
 
 func create(p_peer_id: int, spawn_pos: Vector3, parent: Node) -> void:
 	peer_id = p_peer_id
@@ -213,6 +217,9 @@ func respawn(spawn_pos: Vector3) -> void:
 	next_fire_tick = 0
 	is_reloading = false
 	reload_pressed = false
+	grenade_he = 1
+	grenade_flash = 2
+	grenade_smoke = 1
 	input_buffer.clear()
 	body.global_position = spawn_pos
 	body.velocity = Vector3.ZERO
@@ -239,9 +246,31 @@ func teleport_to_spawn(spawn_pos: Vector3) -> void:
 	next_fire_tick = 0
 	is_reloading = false
 	reload_pressed = false
+	grenade_he = 1
+	grenade_flash = 2
+	grenade_smoke = 1
 	input_buffer.clear()
 	body.global_position = spawn_pos
 	body.velocity = Vector3.ZERO
+
+
+func consume_grenade(grenade_type: int) -> bool:
+	match grenade_type:
+		0:
+			if grenade_he <= 0:
+				return false
+			grenade_he -= 1
+		1:
+			if grenade_flash <= 0:
+				return false
+			grenade_flash -= 1
+		2:
+			if grenade_smoke <= 0:
+				return false
+			grenade_smoke -= 1
+		_:
+			return false
+	return true
 
 
 func destroy() -> void:
