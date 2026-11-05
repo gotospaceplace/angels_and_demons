@@ -2,7 +2,6 @@ extends CanvasLayer
 
 const RoundIconScene = preload("res://client/scripts/round_icon.gd")
 
-# TODO: Implement Casual 10v10 scoreboard (scrollable rows)
 
 var mode: StringName = &""
 var my_peer_id: int = 0
@@ -81,6 +80,16 @@ const TDM_CX_ASSIST := 400.0; const TDM_CW_ASSIST := 60.0
 const TDM_CX_KDR := 470.0;    const TDM_CW_KDR := 60.0
 const TDM_CX_DMG := 540.0;    const TDM_CW_DMG := 70.0
 
+const CAS_MAX_ROWS := 10
+const CAS_ROW_H := 22.0
+const CAS_TABLE_X := 82.0
+const CAS_TEAM_Y := 68.0
+const CAS_CX_NAME := 0.0;     const CAS_CW_NAME := 250.0
+const CAS_CX_KILLS := 260.0;  const CAS_CW_KILLS := 55.0
+const CAS_CX_DEATHS := 325.0; const CAS_CW_DEATHS := 55.0
+const CAS_CX_ASSIST := 390.0; const CAS_CW_ASSIST := 55.0
+const CAS_CX_SCORE := 455.0;  const CAS_CW_SCORE := 55.0
+
 var panel: Panel
 var _hdr_mode: Label
 var _hdr_time: Label
@@ -106,6 +115,13 @@ var _tdm_hdr_time: Label
 var _tdm_score_boxes := {}
 var _tdm_score_labels := {}
 var _tdm_rows := {}
+var _cas_root: Control
+var _cas_hdr_mode: Label
+var _cas_hdr_time: Label
+var _cas_score_boxes := {}
+var _cas_score_labels := {}
+var _cas_scroll := {}
+var _cas_rows := {}
 
 
 func _ready() -> void:
@@ -114,6 +130,7 @@ func _ready() -> void:
 	_build_competitive()
 	_build_ffa()
 	_build_tdm()
+	_build_casual()
 	_build_fallback()
 	panel.visible = false
 
@@ -595,6 +612,114 @@ func _tdm_stat(root: Control, cx: float, cw: float, y: float) -> Label:
 	return l
 
 
+func _build_casual() -> void:
+	_cas_root = Control.new()
+	_cas_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(_cas_root)
+	var root := _cas_root
+
+	var hdr_bg := _rect(COL_HDR_BG, Vector2(PANEL_W, HEADER_H))
+	hdr_bg.position = Vector2.ZERO
+	root.add_child(hdr_bg)
+
+	_cas_hdr_mode = _lbl(16, COL_TEXT)
+	_cas_hdr_mode.position = Vector2(12, 10)
+	_cas_hdr_mode.size = Vector2(400, 24)
+	root.add_child(_cas_hdr_mode)
+
+	_cas_hdr_time = _lbl(16, COL_DIM)
+	_cas_hdr_time.position = Vector2(PANEL_W - 200, 10)
+	_cas_hdr_time.size = Vector2(188, 24)
+	_cas_hdr_time.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	root.add_child(_cas_hdr_time)
+
+	var col_names := ["Name", "Kills", "Deaths", "Assists", "Score"]
+	var col_xs := [CAS_CX_NAME, CAS_CX_KILLS, CAS_CX_DEATHS, CAS_CX_ASSIST, CAS_CX_SCORE]
+	var col_ws := [CAS_CW_NAME, CAS_CW_KILLS, CAS_CW_DEATHS, CAS_CW_ASSIST, CAS_CW_SCORE]
+	for i in range(col_names.size()):
+		var l := _lbl(11, COL_HDR_TEXT)
+		l.text = col_names[i]
+		l.position = Vector2(CAS_TABLE_X + col_xs[i], COL_HDR_Y)
+		l.size = Vector2(col_ws[i], COL_HDR_H)
+		if i >= 1:
+			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		root.add_child(l)
+
+	_build_cas_team(root, Team.Id.ANGELS, CAS_TEAM_Y)
+	var demons_y := CAS_TEAM_Y + CAS_MAX_ROWS * CAS_ROW_H + GAP
+	_build_cas_team(root, Team.Id.DEMONS, demons_y)
+
+
+func _build_cas_team(root: Control, team: int, y: float) -> void:
+	var box_h := CAS_MAX_ROWS * CAS_ROW_H
+	var box := _make_panel(Color.WHITE, Vector2(SCORE_BOX_W, box_h))
+	box.position = Vector2(SCORE_BOX_X, y)
+	root.add_child(box)
+	_cas_score_boxes[team] = box
+
+	var num := _lbl(36, Color(0.1, 0.1, 0.1))
+	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	num.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	num.position = Vector2(0, 10)
+	num.size = Vector2(SCORE_BOX_W, 60)
+	box.add_child(num)
+	_cas_score_labels[team] = num
+
+	var tname := _lbl(11, Color(0.1, 0.1, 0.1))
+	tname.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tname.position = Vector2(0, 75)
+	tname.size = Vector2(SCORE_BOX_W, 16)
+	tname.text = Team.get_team_name(team)
+	box.add_child(tname)
+
+	_cas_rows[team] = []
+	for i in range(CAS_MAX_ROWS):
+		var row_y := y + i * CAS_ROW_H
+		var row_color: Color
+		if team == Team.Id.ANGELS:
+			row_color = COL_A_ROW if i % 2 == 0 else COL_A_ROW_ALT
+		else:
+			row_color = COL_D_ROW if i % 2 == 0 else COL_D_ROW_ALT
+		var r := _build_cas_row(root, row_y, row_color)
+		_cas_rows[team].append(r)
+
+
+func _build_cas_row(root: Control, y: float, bg_color: Color) -> Dictionary:
+	var bg := _rect(bg_color, Vector2(PANEL_W - CAS_TABLE_X + 4, CAS_ROW_H))
+	bg.position = Vector2(CAS_TABLE_X - 4, y)
+	root.add_child(bg)
+
+	var highlight := _rect(COL_LOCAL, Vector2(PANEL_W - CAS_TABLE_X + 4, CAS_ROW_H))
+	highlight.position = Vector2(CAS_TABLE_X - 4, y)
+	highlight.visible = false
+	root.add_child(highlight)
+
+	var name_lbl := _lbl(12, COL_TEXT)
+	name_lbl.position = Vector2(CAS_TABLE_X + CAS_CX_NAME, y + 3)
+	name_lbl.size = Vector2(CAS_CW_NAME, 16)
+	name_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	root.add_child(name_lbl)
+
+	var kills := _cas_stat(root, CAS_CX_KILLS, CAS_CW_KILLS, y)
+	var deaths := _cas_stat(root, CAS_CX_DEATHS, CAS_CW_DEATHS, y)
+	var assists := _cas_stat(root, CAS_CX_ASSIST, CAS_CW_ASSIST, y)
+	var score := _cas_stat(root, CAS_CX_SCORE, CAS_CW_SCORE, y)
+
+	return {
+		"bg": bg, "highlight": highlight, "name": name_lbl,
+		"kills": kills, "deaths": deaths, "assists": assists, "score": score,
+	}
+
+
+func _cas_stat(root: Control, cx: float, cw: float, y: float) -> Label:
+	var l := _lbl(11, COL_TEXT)
+	l.position = Vector2(CAS_TABLE_X + cx, y + 4)
+	l.size = Vector2(cw, 14)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(l)
+	return l
+
+
 func _build_fallback() -> void:
 	_fallback_root = Control.new()
 	_fallback_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -614,6 +739,7 @@ func _refresh() -> void:
 	_competitive_root.visible = false
 	_ffa_root.visible = false
 	_tdm_root.visible = false
+	_cas_root.visible = false
 	_fallback_root.visible = false
 
 	if mode == &"competitive":
@@ -634,6 +760,12 @@ func _refresh() -> void:
 		panel.position = Vector2((vp.x - PANEL_W) * 0.5, (vp.y - ph) * 0.5)
 		panel.size = Vector2(PANEL_W, ph)
 		_refresh_tdm()
+	elif mode == &"casual":
+		_cas_root.visible = true
+		var ph := CAS_TEAM_Y + CAS_MAX_ROWS * CAS_ROW_H + GAP + CAS_MAX_ROWS * CAS_ROW_H + GAP
+		panel.position = Vector2((vp.x - PANEL_W) * 0.5, (vp.y - ph) * 0.5)
+		panel.size = Vector2(PANEL_W, ph)
+		_refresh_casual()
 	else:
 		_fallback_root.visible = true
 		var ph := 360.0
@@ -816,6 +948,55 @@ func _fill_tdm_rows(team: int, team_roster: Array) -> void:
 			r["assists"].visible = false
 			r["kdr"].visible = false
 			r["dmg"].visible = false
+
+
+func _refresh_casual() -> void:
+	_cas_hdr_mode.text = "Casual 10v10 | Map"
+	_cas_hdr_time.text = "Round %d  •  %s" % [round_number, match_state]
+
+	_cas_score_labels[Team.Id.ANGELS].text = str(score_angels)
+	_cas_score_labels[Team.Id.DEMONS].text = str(score_demons)
+
+	var angels_roster := _get_sorted_team_roster(Team.Id.ANGELS)
+	var demons_roster := _get_sorted_team_roster(Team.Id.DEMONS)
+
+	_fill_cas_rows(Team.Id.ANGELS, angels_roster)
+	_fill_cas_rows(Team.Id.DEMONS, demons_roster)
+
+
+func _fill_cas_rows(team: int, team_roster: Array) -> void:
+	var rows: Array = _cas_rows[team]
+	for i in range(CAS_MAX_ROWS):
+		var r: Dictionary = rows[i]
+		if i < team_roster.size():
+			var entry: Dictionary = team_roster[i]
+			var pid: int = entry.get("id", 0)
+			var is_local := pid == my_peer_id
+
+			r["bg"].visible = true
+			r["highlight"].visible = is_local
+			r["name"].text = "Player %d" % pid
+			if is_local:
+				r["name"].add_theme_color_override("font_color", Color(0.95, 0.88, 0.3))
+			else:
+				r["name"].add_theme_color_override("font_color", COL_TEXT)
+			r["name"].visible = true
+			r["kills"].text = str(entry.get("kills", 0))
+			r["deaths"].text = str(entry.get("deaths", 0))
+			r["assists"].text = str(entry.get("assists", 0))
+			r["score"].text = str(entry.get("kills", 0))
+			r["kills"].visible = true
+			r["deaths"].visible = true
+			r["assists"].visible = true
+			r["score"].visible = true
+		else:
+			r["bg"].visible = false
+			r["highlight"].visible = false
+			r["name"].visible = false
+			r["kills"].visible = false
+			r["deaths"].visible = false
+			r["assists"].visible = false
+			r["score"].visible = false
 
 
 func _refresh_fallback() -> void:
