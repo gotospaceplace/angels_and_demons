@@ -22,6 +22,9 @@ func _ready() -> void:
 	test_yaw_rotated_90()
 	test_mid_transition()
 	test_wall_occlusion()
+	test_full_duck_headshot()
+	test_full_duck_standing_miss()
+	test_neck_gap_body_hit()
 
 	_print_summary()
 
@@ -233,6 +236,66 @@ func test_wall_occlusion() -> void:
 		_pass("wall_occlusion: t=%.3f >= wall=%.1f (blocked)" % [head_t, wall_dist])
 	else:
 		_fail("wall_occlusion: t=%.3f wall=%.1f" % [head_t, wall_dist])
+
+
+# 6.11: Fully ducked (duck_fraction=1.0) → head hit at crouched position
+func test_full_duck_headshot() -> void:
+	var eased: float = 1.0 * 1.0 * (3.0 - 2.0 * 1.0)
+	var hull_h: float = lerpf(MC.HULL_STANDING_HEIGHT, MC.HULL_DUCKING_HEIGHT, eased)
+	var cap_center := Vector3(0, hull_h * 0.5, 0)
+	var r := _reconstruct(cap_center, 1.0, 0.0)
+	var head: Vector3 = r["head_world"]
+	var eye := Vector3(0, head.y, -5.0)
+	var dir := Vector3(0, 0, 1)
+	var t := SLC._ray_box_hit(eye, dir, head, SLC.HEAD_HALF)
+	if t > 0.0:
+		if head.y < SLC.HEAD_STANDING.y:
+			_pass("full_duck_headshot: hit at lowered head y=%.3f" % head.y)
+		else:
+			_fail("full_duck_headshot: head not lowered y=%.3f" % head.y)
+	else:
+		_fail("full_duck_headshot: missed")
+
+
+# 6.12: Fully ducked, fire at standing head height → miss
+func test_full_duck_standing_miss() -> void:
+	var eased: float = 1.0 * 1.0 * (3.0 - 2.0 * 1.0)
+	var hull_h: float = lerpf(MC.HULL_STANDING_HEIGHT, MC.HULL_DUCKING_HEIGHT, eased)
+	var cap_center := Vector3(0, hull_h * 0.5, 0)
+	var r := _reconstruct(cap_center, 1.0, 0.0)
+	var standing_r := _reconstruct(Vector3(0, MC.HULL_STANDING_HEIGHT * 0.5, 0), 0.0, 0.0)
+	var standing_head_y: float = standing_r["head_world"].y
+	var ducked_head: Vector3 = r["head_world"]
+	var eye := Vector3(0, standing_head_y, -5.0)
+	var dir := Vector3(0, 0, 1)
+	var head_t := SLC._ray_box_hit(eye, dir, ducked_head, SLC.HEAD_HALF)
+	if head_t <= 0.0:
+		_pass("full_duck_standing_miss: standing height misses ducked head")
+	else:
+		_fail("full_duck_standing_miss: hit ducked head at standing height t=%.3f" % head_t)
+
+
+# 6.13: Neck gap — between head AABB bottom and body capsule top → body hit
+func test_neck_gap_body_hit() -> void:
+	var cap_center := Vector3(0, MC.HULL_STANDING_HEIGHT * 0.5, 0)
+	var r := _reconstruct(cap_center, 0.0, 0.0)
+	var head: Vector3 = r["head_world"]
+	var body_center: Vector3 = r["body_center"]
+	var body_h: float = r["body_h"]
+	var head_bottom_y: float = head.y - SLC.HEAD_HALF.y
+	var neck_y: float = head_bottom_y - 0.02
+	var eye := Vector3(0, neck_y, -5.0)
+	var dir := Vector3(0, 0, 1)
+
+	var head_t := SLC._ray_box_hit(eye, dir, head, SLC.HEAD_HALF)
+	var body_t := SLC._ray_capsule_vertical(eye, dir, body_center, body_h, SLC.BODY_RADIUS)
+
+	if head_t <= 0.0 and body_t > 0.0:
+		_pass("neck_gap: body hit (head miss, body t=%.3f)" % body_t)
+	elif head_t > 0.0:
+		_fail("neck_gap: head hit instead of body (head_t=%.3f)" % head_t)
+	else:
+		_fail("neck_gap: complete miss (head_t=%.3f body_t=%.3f)" % [head_t, body_t])
 
 
 func _print_summary() -> void:
