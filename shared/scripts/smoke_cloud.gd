@@ -10,6 +10,7 @@ var _meshes: Array[MeshInstance3D] = []
 var _base_radius: float = 0.0
 
 func _ready() -> void:
+	add_to_group("smoke_cloud")
 	_base_radius = WC.SMOKE_RADIUS_GSRC * MC.METERS_PER_UNIT
 	_total_time = WC.SMOKE_FADE_IN + WC.SMOKE_DURATION + WC.SMOKE_FADE_OUT
 
