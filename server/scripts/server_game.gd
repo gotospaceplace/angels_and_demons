@@ -198,16 +198,22 @@ func _process_fire_commands() -> void:
 
 		var cmd: NetInput = sp.last_input
 		var wants_fire: bool = cmd.has_button(NetInput.BIT_FIRE)
+		var wants_fire2: bool = cmd.has_button(NetInput.BIT_FIRE2)
 
 		if sp.is_reloading:
 			sp.fire_pressed = wants_fire
+			sp.fire2_pressed = wants_fire2
 			continue
 
 		var should_fire := false
+		var is_stab := false
 		var weapon = lag_comp.get_weapon(sp.weapon_idx)
 
 		if weapon.is_melee:
-			if wants_fire and not sp.fire_pressed and server_tick >= sp.next_fire_tick:
+			if wants_fire2 and not sp.fire2_pressed and server_tick >= sp.next_fire_tick:
+				should_fire = true
+				is_stab = true
+			elif wants_fire and not sp.fire_pressed and server_tick >= sp.next_fire_tick:
 				should_fire = true
 		elif weapon.is_automatic:
 			if wants_fire and server_tick >= sp.next_fire_tick and sp.ammo_mag > 0:
@@ -217,6 +223,7 @@ func _process_fire_commands() -> void:
 				should_fire = true
 
 		sp.fire_pressed = wants_fire
+		sp.fire2_pressed = wants_fire2
 
 		if not should_fire:
 			continue
@@ -229,9 +236,10 @@ func _process_fire_commands() -> void:
 			if sp.ammo_mag <= 0:
 				sp.start_reload(server_tick)
 
-		sp.next_fire_tick = server_tick + maxi(1, int(weapon.cycle_time * float(NetConstants.TICK_RATE)))
+		var cycle: float = weapon.stab_cycle_time if is_stab else weapon.cycle_time
+		sp.next_fire_tick = server_tick + maxi(1, int(cycle * float(NetConstants.TICK_RATE)))
 
-		var hit := lag_comp.process_fire(peer_id, cmd, server_tick, players, space)
+		var hit := lag_comp.process_fire(peer_id, cmd, server_tick, players, space, is_stab)
 		if hit.is_empty():
 			continue
 
