@@ -552,7 +552,7 @@ func _ladder_move(delta: float) -> void:
 	# Ledge mount: pushing toward wall near top vaults player onto platform
 	if wish_vel.dot(ladder_normal) < -0.3 and global_position.y > _ladder_top_y - 1.0:
 		on_ladder = false
-		velocity = -ladder_normal * 2.0
+		velocity = ladder_normal * 2.0
 		velocity.y = MC.JUMP_SPEED
 		on_ground = false
 		return
@@ -585,7 +585,7 @@ func _on_ladder_entered(area: Area3D) -> void:
 			_ladder_top_y = area.global_position.y + shape_node.shape.size.y * 0.5
 
 func _on_ladder_exited(area: Area3D) -> void:
-	if area is LadderVolume:
+	if area is LadderVolume and on_ladder:
 		on_ladder = false
 		velocity.y = 0.0
 
