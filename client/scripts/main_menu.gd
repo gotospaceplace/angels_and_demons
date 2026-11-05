@@ -168,6 +168,12 @@ func _build_options_ui() -> void:
 	sens_row.add_child(sensitivity_value)
 	vbox.add_child(sens_row)
 
+	var keybinds_btn := Button.new()
+	keybinds_btn.text = "Key Bindings..."
+	keybinds_btn.custom_minimum_size = Vector2(300, 36)
+	keybinds_btn.pressed.connect(_on_key_bindings)
+	vbox.add_child(keybinds_btn)
+
 	vbox.add_child(_spacer(16))
 
 	# --- Buttons ---
@@ -204,6 +210,10 @@ func _on_options_apply() -> void:
 	GameSettings.mouse_sensitivity = sensitivity_slider.value * 0.001
 	GameSettings.save_settings()
 	GameSettings.apply_all()
+
+
+func _on_key_bindings() -> void:
+	KeyBindingsMenu.open()
 
 
 # --- Helpers ---
