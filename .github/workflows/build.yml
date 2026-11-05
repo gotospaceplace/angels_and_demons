@@ -139,6 +139,54 @@ jobs:
       - name: Validation tests
         run: timeout 30 godot --headless --path . -- --test-validation
 
+      - name: Kill feed tests (Phase 6)
+        run: |
+          if [ -f tests/kill_feed_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-killfeed
+          else
+            echo "Skipping — kill feed tests not merged yet"
+          fi
+
+      - name: Round icon tests (Phase 6)
+        run: |
+          if [ -f tests/round_icon_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-roundicon
+          else
+            echo "Skipping — round icon tests not merged yet"
+          fi
+
+      - name: FFA scoreboard tests (Phase 6)
+        run: |
+          if [ -f tests/ffa_scoreboard_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-ffa
+          else
+            echo "Skipping — FFA scoreboard tests not merged yet"
+          fi
+
+      - name: TDM scoreboard tests (Phase 6)
+        run: |
+          if [ -f tests/tdm_scoreboard_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-tdm
+          else
+            echo "Skipping — TDM scoreboard tests not merged yet"
+          fi
+
+      - name: Casual scoreboard tests (Phase 6)
+        run: |
+          if [ -f tests/casual_scoreboard_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-casual
+          else
+            echo "Skipping — casual scoreboard tests not merged yet"
+          fi
+
+      - name: Key bindings tests (Phase 6)
+        run: |
+          if [ -f tests/key_bindings_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-keybindings
+          else
+            echo "Skipping — key bindings tests not merged yet"
+          fi
+
       - name: Performance benchmark
         run: timeout 60 godot --headless --path . -- --bench
 
