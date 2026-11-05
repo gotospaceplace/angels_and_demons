@@ -127,6 +127,10 @@ func _build_angels_side() -> void:
 	_add_box("CrateLargeR_A", Vector3(2.0, 1.13, 12.0), Vector3(2.29, 2.26, 1.93), CRATE_COLOR)
 	_add_box("CrateMedR_A", Vector3(3.9, 0.81, 12.9), Vector3(1.63, 1.63, 1.63), CRATE_COLOR)
 
+	# Cover crates at east ramp base
+	_add_box("CrateMedRamp_A", Vector3(12.5, 0.88, 13.5), Vector3(1.63, 1.75, 1.63), CRATE_COLOR)
+	_add_box("CrateSmRamp_A", Vector3(10.0, 0.46, 13.0), Vector3(0.79, 0.91, 0.81), CRATE_COLOR)
+
 
 # ---------------------------------------------------------------------------
 # Demons side (−Z) — T spawns, platform, cover
@@ -177,6 +181,10 @@ func _build_demons_side() -> void:
 	_add_box("CrateTallC_D", Vector3(8.5, 1.65, -12.0), Vector3(1.63, 3.30, 1.63), CRATE_COLOR)
 	_add_box("CrateLargeR_D", Vector3(-1.8, 1.13, -11.9), Vector3(2.29, 2.26, 1.93), CRATE_COLOR)
 	_add_box("CrateMedR_D", Vector3(-3.7, 0.81, -12.8), Vector3(1.63, 1.63, 1.63), CRATE_COLOR)
+
+	# Cover crates at west ramp base
+	_add_box("CrateMedRamp_D", Vector3(-12.3, 0.88, -13.5), Vector3(1.63, 1.75, 1.63), CRATE_COLOR)
+	_add_box("CrateSmRamp_D", Vector3(-9.8, 0.46, -13.0), Vector3(0.79, 0.91, 0.81), CRATE_COLOR)
 
 
 # ---------------------------------------------------------------------------
