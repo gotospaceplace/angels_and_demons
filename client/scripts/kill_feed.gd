@@ -37,15 +37,16 @@ func _process(delta: float) -> void:
 		i -= 1
 
 
-func add_kill(killer_id: int, victim_id: int, weapon_idx: int, headshot: bool) -> void:
-	var my_id := _get_local_peer_id()
+func add_kill(killer_id: int, victim_id: int, weapon_idx: int, headshot: bool,
+		kill_flags: int = 0, killer_team: int = 0, victim_team: int = 0,
+		local_peer_id: int = 0) -> void:
 	var killer := "Player %d" % killer_id
 	var victim := "Player %d" % victim_id
 	var weapon: String = WEAPON_NAMES[weapon_idx] if weapon_idx < WEAPON_NAMES.size() else "???"
 	var is_knife := weapon_idx == 0
 
 	var text := "[right]"
-	text += _styled_name(killer, killer_id == my_id)
+	text += _styled_name(killer, killer_id == local_peer_id, killer_team)
 	text += "  "
 	if is_knife:
 		text += "[color=#aaaaaa]KNIFE[/color]"
@@ -53,8 +54,14 @@ func add_kill(killer_id: int, victim_id: int, weapon_idx: int, headshot: bool) -
 		text += "[color=#aaaaaa]%s[/color]" % weapon
 	if headshot:
 		text += " [color=#ff3333]☠[/color]"
+	if kill_flags & NetProtocol.KILL_FLAG_WALLBANG:
+		text += " [color=#ff9933]▮[/color]"
+	if kill_flags & NetProtocol.KILL_FLAG_SMOKE:
+		text += " [color=#aaddff]☁[/color]"
+	if kill_flags & NetProtocol.KILL_FLAG_FLASH:
+		text += " [color=#ffffaa]✦[/color]"
 	text += "  "
-	text += _styled_name(victim, victim_id == my_id)
+	text += _styled_name(victim, victim_id == local_peer_id, victim_team)
 	text += "[/right]"
 
 	var label := RichTextLabel.new()
@@ -77,12 +84,8 @@ func add_kill(killer_id: int, victim_id: int, weapon_idx: int, headshot: bool) -
 		old["label"].queue_free()
 
 
-func _styled_name(player_name: String, is_local: bool) -> String:
+func _styled_name(player_name: String, is_local: bool, team: int = 0) -> String:
 	if is_local:
 		return "[color=#ffda33]%s[/color]" % player_name
-	return "[color=#ffffff]%s[/color]" % player_name
-
-
-func _get_local_peer_id() -> int:
-	var cg := get_tree().get_first_node_in_group("client_game")
-	return cg.my_peer_id if cg else 0
+	var color: Color = Team.get_color(team) if team > 0 else Color.WHITE
+	return "[color=#%s]%s[/color]" % [color.to_html(false), player_name]
