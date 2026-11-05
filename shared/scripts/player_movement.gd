@@ -387,6 +387,10 @@ func _walk_move(delta: float) -> void:
 		return
 
 	var on_slope := ground_normal.y < 0.93 and ground_normal.y >= MC.FLOOR_NORMAL_MIN
+
+	if on_slope:
+		move = move.slide(ground_normal)
+
 	global_position.y += 0.1
 
 	var did_step := false
@@ -440,7 +444,7 @@ func _walk_move(delta: float) -> void:
 					global_position += slide
 			else:
 				slide = remainder.slide(normal)
-				if slide.y > 0.0:
+				if slide.y > 0.0 and not on_slope:
 					slide.y = 0.0
 				if slide.length() > 0.001:
 					move_and_collide(slide)
