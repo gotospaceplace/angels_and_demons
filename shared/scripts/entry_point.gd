@@ -54,6 +54,10 @@ func _ready() -> void:
 		print("EntryPoint: launching consolidated match test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/match_test_scene.tscn")
 		return
+	if "--test-deathreport" in args:
+		print("EntryPoint: launching death report test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/death_report_test_scene.tscn")
+		return
 	if "--bench" in args:
 		print("EntryPoint: launching performance benchmark")
 		get_tree().change_scene_to_file.call_deferred("res://tests/perf_benchmark_scene.tscn")

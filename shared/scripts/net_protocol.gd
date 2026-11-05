@@ -17,6 +17,7 @@ const EVT_SESSION     := 6
 const EVT_MATCH_STATE := 7
 const EVT_BUY_RESULT  := 8
 const EVT_BUY_REQUEST := 9
+const EVT_DEATH_REPORT := 10
 
 # Admin subtypes (MSG_ADMIN payload)
 const ADMIN_REJOIN   := 1
@@ -366,3 +367,26 @@ static func pack_buy_request_event(requester_id: int, item_index: int) -> Packed
 	buf[4] = (requester_id >> 8) & 0xFF
 	buf[5] = item_index & 0xFF
 	return buf
+
+
+static func pack_death_report_event(victim_id: int, report: Dictionary) -> PackedByteArray:
+	var report_bytes := var_to_bytes(report)
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 3)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_DEATH_REPORT
+	buf[3] = victim_id & 0xFF
+	buf[4] = (victim_id >> 8) & 0xFF
+	buf.append_array(report_bytes)
+	return buf
+
+
+static func unpack_death_report_event(buf: PackedByteArray) -> Dictionary:
+	if buf.size() < HEADER_SIZE + 3:
+		return {}
+	var victim_id: int = buf[3] | (buf[4] << 8)
+	var report: Dictionary = {}
+	if buf.size() > 5:
+		report = bytes_to_var(buf.slice(5))
+	return {"victim_id": victim_id, "report": report}
