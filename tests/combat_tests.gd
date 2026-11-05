@@ -64,6 +64,13 @@ func _ready() -> void:
 		&"test_per_weapon_maxspeed",
 		&"test_movement_inaccuracy",
 		&"test_bullet_tag",
+		&"test_knife_slash_front_damage",
+		&"test_knife_slash_backstab_damage",
+		&"test_knife_stab_front_damage",
+		&"test_knife_stab_backstab_damage",
+		&"test_knife_backstab_angle",
+		&"test_knife_stab_range_shorter",
+		&"test_knife_stab_cycle_longer",
 	]
 
 	print("=== Combat Regression Tests ===")
@@ -311,6 +318,62 @@ func test_bullet_tag() -> void:
 			_pass("tag_timer=%.3f cap=%.3f" % [player.tag_timer, player.tag_base_cap])
 		else:
 			_fail("tag not applied: timer=%.3f cap=%.3f" % [player.tag_timer, player.tag_base_cap])
+
+
+func test_knife_slash_front_damage() -> void:
+	if _approx(knife.base_damage, 40.0):
+		_pass("knife slash front=%.0f" % knife.base_damage)
+	else:
+		_fail("knife slash front=%.0f, expected 40" % knife.base_damage)
+
+
+func test_knife_slash_backstab_damage() -> void:
+	if _approx(knife.backstab_damage, 65.0):
+		_pass("knife slash backstab=%.0f" % knife.backstab_damage)
+	else:
+		_fail("knife slash backstab=%.0f, expected 65" % knife.backstab_damage)
+
+
+func test_knife_stab_front_damage() -> void:
+	if _approx(knife.stab_damage, 55.0):
+		_pass("knife stab front=%.0f" % knife.stab_damage)
+	else:
+		_fail("knife stab front=%.0f, expected 55" % knife.stab_damage)
+
+
+func test_knife_stab_backstab_damage() -> void:
+	if _approx(knife.backstab_stab_damage, 180.0):
+		_pass("knife stab backstab=%.0f" % knife.backstab_stab_damage)
+	else:
+		_fail("knife stab backstab=%.0f, expected 180" % knife.backstab_stab_damage)
+
+
+func test_knife_backstab_angle() -> void:
+	# Attacker facing +Z, victim facing +Z → both same direction → dot > 0 → backstab
+	var atk_fwd := Vector3(0, 0, -1)
+	var vic_fwd := Vector3(0, 0, -1)
+	var dot_behind := atk_fwd.dot(vic_fwd)
+	# Attacker facing +Z, victim facing -Z → facing each other → dot < 0 → not backstab
+	var vic_fwd_front := Vector3(0, 0, 1)
+	var dot_front := atk_fwd.dot(vic_fwd_front)
+	if dot_behind > 0.0 and dot_front < 0.0:
+		_pass("backstab: behind=%.2f>0 front=%.2f<0" % [dot_behind, dot_front])
+	else:
+		_fail("backstab: behind=%.2f front=%.2f" % [dot_behind, dot_front])
+
+
+func test_knife_stab_range_shorter() -> void:
+	if knife.stab_range < knife.melee_range:
+		_pass("stab range=%.1fm < slash=%.1fm" % [knife.stab_range, knife.melee_range])
+	else:
+		_fail("stab range=%.1f not < slash=%.1f" % [knife.stab_range, knife.melee_range])
+
+
+func test_knife_stab_cycle_longer() -> void:
+	if knife.stab_cycle_time > knife.cycle_time:
+		_pass("stab cycle=%.1fs > slash=%.1fs" % [knife.stab_cycle_time, knife.cycle_time])
+	else:
+		_fail("stab cycle=%.1f not > slash=%.1f" % [knife.stab_cycle_time, knife.cycle_time])
 
 
 func _find_player() -> CharacterBody3D:

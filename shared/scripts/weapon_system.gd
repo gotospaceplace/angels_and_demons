@@ -555,13 +555,30 @@ func _finish_reload() -> void:
 	recoil_shots = 0
 
 
-# --- Secondary action (scope / silencer toggle) ---
+# --- Secondary action (scope / silencer toggle / knife stab) ---
 
 func _secondary_action() -> void:
-	if current.has_scope:
+	if current.is_melee:
+		_stab()
+	elif current.has_scope:
 		_toggle_scope()
 	elif current.has_silencer:
 		_toggle_silencer()
+
+
+func _stab() -> void:
+	var now := _now()
+	if not _can_fire(now):
+		return
+	next_fire_time = now + current.stab_cycle_time
+
+	if player.is_local_client and has_node("/root/SoundManager"):
+		SoundManager.play_fire(current_index)
+
+	var cam_xform := camera.global_transform
+	var origin := cam_xform.origin
+	var direction := -cam_xform.basis.z
+	_trace_bullet(origin, direction, current.stab_range)
 
 
 func _toggle_silencer() -> void:

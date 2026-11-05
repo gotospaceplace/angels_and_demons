@@ -24,12 +24,14 @@ var snapshots_received: int = 0
 var my_peer_id: int = 0
 var interpolation: Node = null
 var player_stats: Dictionary = {}
+var _team_map: Dictionary = {}
 var buy_menu: ClientBuyMenu
 var mode_loader: ClientModeLoader
 var hud: ClientHud
 var spectator: ClientSpectator
 var chat: ClientChat
 var team_select: ClientTeamSelect
+var death_report: ClientDeathReport
 var _team_select_shown: bool = false
 
 var session_token: int = 0
@@ -96,6 +98,10 @@ func _ready() -> void:
 	team_select.name = "TeamSelect"
 	add_child(team_select)
 	team_select.team_selected.connect(_on_team_selected)
+
+	death_report = ClientDeathReport.new()
+	death_report.name = "DeathReport"
+	add_child(death_report)
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
@@ -430,14 +436,18 @@ func _handle_event(packet: PackedByteArray) -> void:
 	var evt_type: int = packet[2]
 	match evt_type:
 		NetProtocol.EVT_KILL:
-			if packet.size() >= 8:
+			if packet.size() >= 9:
 				var killer_id := packet[3] | (packet[4] << 8)
 				var victim_id := packet[5] | (packet[6] << 8)
 				var weapon_byte := packet[7]
 				var headshot := (weapon_byte & 0x80) != 0
 				var weapon_idx := weapon_byte & 0x7F
+				var kill_flags := packet[8]
 				_track_kill(killer_id, victim_id)
-				KillFeed.add_kill(killer_id, victim_id, weapon_idx, headshot)
+				var killer_team := _get_player_team(killer_id)
+				var victim_team := _get_player_team(victim_id)
+				KillFeed.add_kill(killer_id, victim_id, weapon_idx, headshot,
+					kill_flags, killer_team, victim_team, my_peer_id)
 				if killer_id == my_peer_id:
 					SoundManager.play_hit_confirm(headshot)
 				if victim_id == my_peer_id:
@@ -524,6 +534,8 @@ func _handle_event(packet: PackedByteArray) -> void:
 					local_player.global_position = pos
 					local_player.velocity = Vector3.ZERO
 					prediction_buffer.clear()
+					if death_report and death_report.is_showing():
+						death_report.hide_report()
 					if spectator and spectator.is_spectating():
 						spectator.exit_spectator()
 						local_player.set_process_unhandled_input(true)
@@ -549,6 +561,14 @@ func _handle_event(packet: PackedByteArray) -> void:
 				buy_menu.show_request(requester_id, item_idx)
 				if not buy_menu.is_open:
 					buy_menu.open_menu()
+		NetProtocol.EVT_DEATH_REPORT:
+			var dr := NetProtocol.unpack_death_report_event(packet)
+			if not dr.is_empty() and dr["victim_id"] == my_peer_id:
+				if death_report:
+					death_report.show_report(dr["report"])
+				print("[Client] Death report: gave=%d took=%d" % [
+					dr["report"].get("given", []).size(),
+					dr["report"].get("taken", []).size()])
 
 
 func set_local_player(player: CharacterBody3D) -> void:
@@ -579,13 +599,16 @@ func _track_kill(killer_id: int, victim_id: int) -> void:
 
 
 func _update_team_colors(roster: Array) -> void:
-	var team_map: Dictionary = {}
 	for entry in roster:
-		team_map[entry.get("id", 0)] = entry.get("team", 0)
+		_team_map[entry.get("id", 0)] = entry.get("team", 0)
 	for pid in interpolation.remote_players:
 		var rp: Dictionary = interpolation.remote_players[pid]
-		var team: int = team_map.get(pid, Team.Id.UNASSIGNED)
+		var team: int = _team_map.get(pid, Team.Id.UNASSIGNED)
 		rp["node"].set_team_color(Team.get_color(team))
+
+
+func _get_player_team(peer_id: int) -> int:
+	return _team_map.get(peer_id, Team.Id.UNASSIGNED)
 
 
 func _setup_reconnect_overlay() -> void:
