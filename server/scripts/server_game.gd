@@ -428,16 +428,27 @@ func _handle_team_select(peer_id: int, requested_team: int) -> void:
 	var success: bool = mode.change_team(peer_id, requested_team)
 	if success:
 		var sp = players[peer_id]
-		var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)
-		if spawn_pos == Vector3.ZERO:
-			spawn_pos = spawn_points[next_spawn % spawn_points.size()]
-			next_spawn += 1
-		sp.respawn(spawn_pos)
-		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
-		for pid in players:
-			multiplayer.send_bytes(spawn_packet, pid,
-				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
-				NetConstants.CHANNEL_EVENTS)
+		var new_team: int = plugin_manager.dispatch_get_player_team(peer_id)
+		if new_team == Team.Id.SPECTATOR:
+			sp.is_dead = true
+			var collision: CollisionShape3D = sp.body.get_node_or_null("PlayerCollision")
+			if collision:
+				collision.disabled = true
+		else:
+			sp.is_dead = false
+			var collision: CollisionShape3D = sp.body.get_node_or_null("PlayerCollision")
+			if collision:
+				collision.disabled = false
+			var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)
+			if spawn_pos == Vector3.ZERO:
+				spawn_pos = spawn_points[next_spawn % spawn_points.size()]
+				next_spawn += 1
+			sp.respawn(spawn_pos)
+			var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
+			for pid in players:
+				multiplayer.send_bytes(spawn_packet, pid,
+					MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+					NetConstants.CHANNEL_EVENTS)
 		_broadcast_match_state()
 	else:
 		_send_server_msg(peer_id, "Team change denied: teams would be unbalanced")

@@ -144,7 +144,7 @@ func change_team(peer_id: int, requested_team: int) -> bool:
 	if old_team != actual_team and manager:
 		manager.plugin_event.emit(&"roster_changed", {})
 
-	return actual_team != Team.Id.SPECTATOR
+	return true
 
 
 func on_round_start(_round_number: int) -> void: pass
