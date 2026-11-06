@@ -201,7 +201,7 @@ func _physics_process(_delta: float) -> void:
 			local_player.rotation.y = visual_yaw
 			local_player.get_node("Head").rotation.x = visual_pitch
 
-	if client_tick % 2 == 0:
+	if client_tick % 2 == 0 and not _spectating:
 		_send_input()
 
 
@@ -541,12 +541,9 @@ func _handle_event(packet: PackedByteArray) -> void:
 					spectator.game_mode = ms["mode"]
 					spectator.update_roster(st.get("roster", []))
 					if my_team == Team.Id.SPECTATOR and not spectator.is_spectating() and local_player:
-						var head := local_player.get_node("Head")
-						spectator.enter_deathcam(
-							head.global_position,
-							local_player.rotation.y,
-							head.rotation.x)
-						local_player.set_process_unhandled_input(false)
+						_enter_spectator_from_player()
+					elif my_team != Team.Id.SPECTATOR and spectator.is_spectating():
+						_exit_spectator_to_player()
 				if team_select:
 					var tc: Dictionary = st.get("team_counts", {})
 					team_select.update_counts(
@@ -571,11 +568,7 @@ func _handle_event(packet: PackedByteArray) -> void:
 					if death_report and death_report.is_showing():
 						death_report.hide_report()
 					if spectator and spectator.is_spectating():
-						spectator.exit_spectator()
-						local_player.set_process_unhandled_input(true)
-						var cam := local_player.get_node_or_null("Head/Camera3D")
-						if cam:
-							cam.current = true
+						_exit_spectator_to_player()
 				print("[Client] SPAWN: Player %d at %s" % [spawned_id, pos])
 		NetProtocol.EVT_BUY_RESULT:
 			if packet.size() >= 7:
@@ -644,6 +637,36 @@ func set_local_player(player: CharacterBody3D) -> void:
 	local_player.is_local_client = true
 	local_player.set_physics_process(false)
 	local_player.set_physics_interpolation_mode(Node.PHYSICS_INTERPOLATION_MODE_OFF)
+
+
+func _enter_spectator_from_player() -> void:
+	var head := local_player.get_node("Head")
+	var player_cam := local_player.get_node_or_null("Head/Camera3D")
+	if player_cam:
+		player_cam.current = false
+	local_player.set_process_unhandled_input(false)
+	var ws := local_player.get_node_or_null("WeaponSystem")
+	if ws:
+		ws.set_process_unhandled_input(false)
+	if has_node("/root/Crosshair"):
+		get_node("/root/Crosshair").visible = false
+	spectator.enter_spectator_mode(
+		head.global_position,
+		local_player.rotation.y,
+		head.rotation.x)
+
+
+func _exit_spectator_to_player() -> void:
+	spectator.exit_spectator()
+	local_player.set_process_unhandled_input(true)
+	var ws := local_player.get_node_or_null("WeaponSystem")
+	if ws:
+		ws.set_process_unhandled_input(true)
+	var cam := local_player.get_node_or_null("Head/Camera3D")
+	if cam:
+		cam.current = true
+	if has_node("/root/Crosshair"):
+		get_node("/root/Crosshair").visible = true
 
 
 func _compute_tick_lead() -> int:
