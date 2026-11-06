@@ -3,6 +3,7 @@ extends CanvasLayer
 
 signal team_selected(team: int)
 
+var _root: Control
 var _panel: PanelContainer
 var _angels_btn: Button
 var _demons_btn: Button
@@ -16,28 +17,36 @@ var _is_open: bool = false
 func _ready() -> void:
 	layer = 18
 	_build_ui()
-	_panel.visible = false
+	_root.visible = false
 
 
 func _build_ui() -> void:
+	_root = Control.new()
+	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_root)
+
 	var bg := ColorRect.new()
 	bg.name = "Backdrop"
 	bg.color = Color(0, 0, 0, 0.6)
-	bg.anchors_preset = Control.PRESET_FULL_RECT
-	add_child(bg)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_STOP
+	_root.add_child(bg)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(center)
 
 	_panel = PanelContainer.new()
 	_panel.name = "TeamSelectPanel"
-	_panel.anchors_preset = Control.PRESET_CENTER
-	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_panel.custom_minimum_size = Vector2(360, 320)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.12, 0.12, 0.15, 0.95)
 	style.set_corner_radius_all(8)
 	style.set_content_margin_all(24)
 	_panel.add_theme_stylebox_override("panel", style)
-	add_child(_panel)
+	center.add_child(_panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 12)
@@ -114,8 +123,7 @@ func open_menu() -> void:
 	if _is_open:
 		return
 	_is_open = true
-	_panel.visible = true
-	get_child(0).visible = true
+	_root.visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
@@ -123,8 +131,7 @@ func close_menu() -> void:
 	if not _is_open:
 		return
 	_is_open = false
-	_panel.visible = false
-	get_child(0).visible = false
+	_root.visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
