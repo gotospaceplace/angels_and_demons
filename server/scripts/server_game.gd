@@ -593,6 +593,11 @@ func _spawn_new_player(peer_id: int) -> void:
 		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 		NetConstants.CHANNEL_EVENTS)
 
+	var map_packet := NetProtocol.pack_map_change_event(current_map_name)
+	multiplayer.send_bytes(map_packet, peer_id,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_EVENTS)
+
 	if team != Team.Id.SPECTATOR:
 		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
 		for pid in players:

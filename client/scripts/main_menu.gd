@@ -95,7 +95,7 @@ func _on_connect_pressed() -> void:
 
 func _on_connected() -> void:
 	status_label.text = "Connected! (Peer ID: %d)" % multiplayer.get_unique_id()
-	NetworkManager.loading_map_name = "MAP_DM_AIM"
+	NetworkManager.loading_map_name = "Connecting..."
 	get_tree().change_scene_to_file("res://client/scenes/loading_screen.tscn")
 
 
