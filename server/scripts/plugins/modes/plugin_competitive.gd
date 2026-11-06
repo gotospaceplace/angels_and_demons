@@ -65,15 +65,12 @@ func on_tick(_tick: int, delta: float) -> void:
 
 
 func on_player_connect(peer_id: int) -> bool:
-	var team := _pick_team()
-	server_match.set_team(peer_id, team)
-	var color_idx: int = _next_color.get(team, 0) % Team.PLAYER_COLORS.size()
-	player_colors[peer_id] = color_idx
-	_next_color[team] = color_idx + 1
-	_player_alive[peer_id] = true
+	server_match.set_team(peer_id, Team.Id.SPECTATOR)
+	_player_alive[peer_id] = false
 	_player_stats[peer_id] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
-	print("[Competitive] Player %d assigned to %s (color %d)" % [
-		peer_id, Team.get_team_name(team), color_idx])
+	if manager:
+		manager.plugin_event.emit(&"roster_changed", {})
+	print("[Competitive] Player %d connected as spectator, awaiting team selection" % peer_id)
 	return true
 
 
