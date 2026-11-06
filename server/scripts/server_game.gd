@@ -427,6 +427,17 @@ func _handle_team_select(peer_id: int, requested_team: int) -> void:
 		return
 	var success: bool = mode.change_team(peer_id, requested_team)
 	if success:
+		var sp = players[peer_id]
+		var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)
+		if spawn_pos == Vector3.ZERO:
+			spawn_pos = spawn_points[next_spawn % spawn_points.size()]
+			next_spawn += 1
+		sp.respawn(spawn_pos)
+		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
+		for pid in players:
+			multiplayer.send_bytes(spawn_packet, pid,
+				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+				NetConstants.CHANNEL_EVENTS)
 		_broadcast_match_state()
 	else:
 		_send_server_msg(peer_id, "Team change denied: teams would be unbalanced")
