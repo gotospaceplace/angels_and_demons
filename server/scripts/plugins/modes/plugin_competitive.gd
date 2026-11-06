@@ -302,6 +302,8 @@ func change_team(peer_id: int, requested_team: int) -> bool:
 
 	var old_team: int = server_match.get_team(peer_id)
 	server_match.set_team(peer_id, actual_team)
+	if not _player_stats.has(peer_id):
+		_player_stats[peer_id] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
 
 	if Team.is_playing_team(actual_team):
 		var color_idx: int = _next_color.get(actual_team, 0) % Team.PLAYER_COLORS.size()
