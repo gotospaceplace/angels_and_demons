@@ -34,8 +34,6 @@ var objective_label: Label
 var minimap_bg: Control
 var area_label: Label
 
-# Chatbox
-var chatbox_panel: Panel
 
 # Weapon slots
 var weapon_container: VBoxContainer
@@ -174,14 +172,7 @@ func _build_minimap() -> void:
 
 
 func _build_chatbox() -> void:
-	chatbox_panel = _make_panel(Color(0.3, 0.3, 0.3, 0.25), Vector2(280, 200))
-	chatbox_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(chatbox_panel)
-
-	var chat_label := _make_label(13, Color(0.5, 0.5, 0.5))
-	chat_label.text = "Chat"
-	chat_label.position = Vector2(10, 10)
-	chatbox_panel.add_child(chat_label)
+	pass
 
 
 func _build_weapon_slots() -> void:
@@ -339,9 +330,8 @@ func _layout_minimap(vp: Vector2) -> void:
 	area_label.size = Vector2(120, 20)
 
 
-func _layout_chatbox(vp: Vector2) -> void:
-	chatbox_panel.position = Vector2(16, vp.y * 0.45)
-	chatbox_panel.size = Vector2(280, vp.y * 0.25)
+func _layout_chatbox(_vp: Vector2) -> void:
+	pass
 
 
 func _layout_weapon_slots(vp: Vector2) -> void:
