@@ -5,7 +5,7 @@ const WC = preload("res://shared/scripts/weapon_constants.gd")
 const ServerPlayer = preload("res://server/scripts/server_player.gd")
 const ServerLagComp = preload("res://server/scripts/server_lag_comp.gd")
 const ServerConsole = preload("res://server/scripts/server_console.gd")
-const MapScene = preload("res://shared/scenes/map_dm_aim.tscn")
+var current_map_name: String = "MAP_DM_AIM"
 
 var server_tick: int = 0
 var players: Dictionary = {}
@@ -47,7 +47,9 @@ func _ready() -> void:
 	Engine.physics_ticks_per_second = NetConstants.TICK_RATE
 	process_physics_priority = 1
 
-	var map := MapScene.instantiate()
+	var map_path := MapRegistry.get_scene_path(current_map_name)
+	var map_scene: PackedScene = load(map_path)
+	var map := map_scene.instantiate()
 	map.name = "World"
 	add_child(map)
 	world_node = map
@@ -1131,14 +1133,19 @@ func _cmd_chat_mode(peer_id: int, args: String) -> void:
 
 
 func _cmd_chat_map(peer_id: int, args: String) -> void:
-	var map_name := args.to_lower()
+	var map_name := args.to_upper()
+	var available := ", ".join(MapRegistry.get_all_names())
 	if map_name.is_empty():
-		_send_server_msg(peer_id, "Current map: MAP_DM_AIM. Usage: /map <name>")
+		_send_server_msg(peer_id, "Current map: %s. Usage: /map <name>. Available: %s" % [current_map_name, available])
 		return
-	if map_name == "map_dm_aim":
-		_send_server_msg(peer_id, "Already on MAP_DM_AIM")
-	else:
-		_send_server_msg(peer_id, "Unknown map: %s. Available: MAP_DM_AIM" % map_name)
+	if not MapRegistry.is_valid(map_name):
+		_send_server_msg(peer_id, "Unknown map: %s. Available: %s" % [map_name, available])
+		return
+	if map_name == current_map_name:
+		_send_server_msg(peer_id, "Already on %s" % current_map_name)
+		return
+	_change_map(map_name)
+	_broadcast_server_msg("Map changed to %s by Player %d" % [map_name, peer_id])
 
 
 func _cmd_chat_restart(peer_id: int) -> void:
@@ -1148,7 +1155,8 @@ func _cmd_chat_restart(peer_id: int) -> void:
 
 
 func _cmd_chat_help(peer_id: int) -> void:
-	_send_server_msg(peer_id, "Commands: /mode <%s>, /map <name>, /restart, /help" % "|".join(VALID_MODES))
+	var maps := ", ".join(MapRegistry.get_all_names())
+	_send_server_msg(peer_id, "Commands: /mode <%s>, /map <%s>, /restart, /help" % ["|".join(VALID_MODES), maps])
 
 
 func _change_mode(mode_name: String) -> void:
@@ -1167,6 +1175,49 @@ func _change_mode(mode_name: String) -> void:
 	_reset_round_players()
 	_broadcast_match_state()
 	print("[Server] Mode changed to: %s" % mode_name)
+
+
+func _change_map(map_name: String) -> void:
+	var map_path := MapRegistry.get_scene_path(map_name)
+	var new_scene: PackedScene = load(map_path)
+	if new_scene == null:
+		push_error("[Server] Failed to load map: %s" % map_path)
+		return
+
+	var packet := NetProtocol.pack_map_change_event(map_name)
+	for pid in players:
+		multiplayer.send_bytes(packet, pid,
+			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+			NetConstants.CHANNEL_EVENTS)
+
+	for g in active_grenades:
+		if is_instance_valid(g["body"]):
+			g["body"].queue_free()
+	active_grenades.clear()
+
+	for child in get_children():
+		if child.is_in_group("smoke_cloud"):
+			child.queue_free()
+
+	world_node.queue_free()
+
+	var map := new_scene.instantiate()
+	map.name = "World"
+	add_child(map)
+	world_node = map
+	current_map_name = map_name
+
+	if map.spawn_points.size() > 0:
+		spawn_points = map.spawn_points
+
+	if map.get("angels_spawns") and map.get("demons_spawns"):
+		plugin_manager.set_map_spawns(map.angels_spawns, map.demons_spawns)
+	if map.get("portal_sites"):
+		plugin_manager.set_map_portal_sites(map.portal_sites)
+
+	_reset_round_players()
+	_broadcast_match_state()
+	print("[Server] Map changed to: %s (%s)" % [map_name, map_path])
 
 
 const VALID_MODES := ["deathmatch", "competitive", "tdm", "casual"]

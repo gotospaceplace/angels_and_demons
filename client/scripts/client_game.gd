@@ -68,6 +68,14 @@ func _ready() -> void:
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
+	var existing_map := get_node_or_null("MAP_DM_AIM")
+	if existing_map == null:
+		var map_scene: PackedScene = load(NetworkManager.current_map_path)
+		if map_scene:
+			var map := map_scene.instantiate()
+			map.name = "World"
+			add_child(map)
+
 	var player := get_node_or_null("Player")
 	if player:
 		set_local_player(player)
@@ -629,6 +637,8 @@ func _handle_event(packet: PackedByteArray) -> void:
 				if local_player and local_player.has_method("apply_flash"):
 					local_player.apply_flash(blind_time, fade_time)
 				print("[Client] FLASHED: blind=%.1f fade=%.1f" % [blind_time, fade_time])
+		NetProtocol.EVT_MAP_CHANGE:
+			_handle_map_change(packet)
 
 
 func set_local_player(player: CharacterBody3D) -> void:
@@ -777,3 +787,20 @@ func _attempt_reconnect() -> void:
 	var err := NetworkManager.join_server(server_address, server_port)
 	if err != OK:
 		print("[Client] Reconnect attempt failed: %s" % error_string(err))
+
+
+func _handle_map_change(packet: PackedByteArray) -> void:
+	if packet.size() < 5:
+		return
+	var name_len := packet[3] | (packet[4] << 8)
+	if packet.size() < 5 + name_len:
+		return
+	var map_name := packet.slice(5, 5 + name_len).get_string_from_utf8()
+	var map_path := MapRegistry.get_scene_path(map_name)
+	if map_path.is_empty():
+		push_error("[Client] Unknown map from server: %s" % map_name)
+		return
+	NetworkManager.current_map_path = map_path
+	NetworkManager.loading_map_name = map_name
+	print("[Client] Map change to: %s" % map_name)
+	get_tree().change_scene_to_file("res://client/scenes/loading_screen.tscn")

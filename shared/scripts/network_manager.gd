@@ -13,6 +13,7 @@ var peer: ENetMultiplayerPeer
 var last_server_address: String = ""
 var last_server_port: int = DEFAULT_PORT
 var loading_map_name: String = ""
+var current_map_path: String = "res://shared/scenes/map_dm_aim.tscn"
 
 func host_server(port: int = DEFAULT_PORT) -> Error:
 	peer = ENetMultiplayerPeer.new()
