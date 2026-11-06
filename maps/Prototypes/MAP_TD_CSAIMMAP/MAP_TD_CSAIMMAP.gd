@@ -1,6 +1,6 @@
 extends Node3D
 
-## BSP-imported aim_map — GoldSrc BSP30 → Godot 4.7 conversion (Phase 2A).
+## BSP-imported MAP_TD_CSAIMMAP — GoldSrc BSP30 → Godot 4.7 conversion (Phase 2A).
 ## Coordinate contract: Godot XYZ = ((BSP_X - center_x), (BSP_Z + 467), -(BSP_Y - center_y)) * 0.0254
 ## Floor baseline corrected to BSP Z = -467; geometry centered on XZ origin.
 
@@ -59,9 +59,9 @@ func _ready() -> void:
 
 
 func _load_geometry() -> void:
-	var glb_scene: PackedScene = load("res://maps/Prototypes/aim_map/geometry/aim_map.glb")
+	var glb_scene: PackedScene = load("res://maps/Prototypes/MAP_TD_CSAIMMAP/geometry/aim_map.glb")
 	if glb_scene == null:
-		push_error("[AimMap] Failed to load aim_map.glb")
+		push_error("[MAP_TD_CSAIMMAP] Failed to load aim_map.glb")
 		return
 	var world := glb_scene.instantiate()
 	world.name = "WorldGeometry"

@@ -10,7 +10,7 @@ metadata={
 
 [deps]
 
-source_file="res://maps/Prototypes/aim_map/textures/MltryCrteTp.png"
+source_file="res://maps/Prototypes/MAP_TD_CSAIMMAP/textures/MltryCrteTp.png"
 dest_files=["res://.godot/imported/MltryCrteTp.png-5a0c038474841c70c6e774b9868d98fb.ctex"]
 
 [params]

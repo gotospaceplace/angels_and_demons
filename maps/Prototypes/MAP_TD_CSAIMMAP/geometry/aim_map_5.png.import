@@ -14,7 +14,7 @@ generator_parameters={
 
 [deps]
 
-source_file="res://maps/Prototypes/aim_map/geometry/aim_map_5.png"
+source_file="res://maps/Prototypes/MAP_TD_CSAIMMAP/geometry/aim_map_5.png"
 dest_files=["res://.godot/imported/aim_map_5.png-4cad45bd159da9f43f9385f022d6e24f.s3tc.ctex"]
 
 [params]

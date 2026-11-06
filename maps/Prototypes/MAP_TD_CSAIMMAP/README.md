@@ -1,4 +1,4 @@
-# aim_map — Phase 2A corrected extraction
+# MAP_TD_CSAIMMAP — Phase 2A corrected extraction
 
 This package replaces the Phase 1 geometry and entity files. **Do not retain the Phase 1 +0.889 m WorldGeometry/spawn offsets**: these are now baked into both the GLB and JSON coordinates. Do not apply a second offset.
 

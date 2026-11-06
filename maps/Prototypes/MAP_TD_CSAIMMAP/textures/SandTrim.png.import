@@ -10,7 +10,7 @@ metadata={
 
 [deps]
 
-source_file="res://maps/Prototypes/aim_map/textures/SandTrim.png"
+source_file="res://maps/Prototypes/MAP_TD_CSAIMMAP/textures/SandTrim.png"
 dest_files=["res://.godot/imported/SandTrim.png-60a489d7355c5d4e29252600c3cb6f50.ctex"]
 
 [params]

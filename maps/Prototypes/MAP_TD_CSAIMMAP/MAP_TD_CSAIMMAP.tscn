@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://maps/Prototypes/aim_map/aim_map.gd" id="1_aim"]
+[ext_resource type="Script" path="res://maps/Prototypes/MAP_TD_CSAIMMAP/MAP_TD_CSAIMMAP.gd" id="1_aim"]
 
-[node name="AimMap" type="Node3D"]
+[node name="MAP_TD_CSAIMMAP" type="Node3D"]
 script = ExtResource("1_aim")

@@ -8,7 +8,7 @@ path="res://.godot/imported/aim_map.glb-f9a62ae6053defbaa94b8aa4d1aea7cb.scn"
 
 [deps]
 
-source_file="res://maps/Prototypes/aim_map/geometry/aim_map.glb"
+source_file="res://maps/Prototypes/MAP_TD_CSAIMMAP/geometry/aim_map.glb"
 dest_files=["res://.godot/imported/aim_map.glb-f9a62ae6053defbaa94b8aa4d1aea7cb.scn"]
 
 [params]
