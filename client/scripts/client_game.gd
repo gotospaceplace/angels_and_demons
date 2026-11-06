@@ -650,7 +650,6 @@ func set_local_player(player: CharacterBody3D) -> void:
 
 
 func _enter_spectator_from_player() -> void:
-	var head := local_player.get_node("Head")
 	var player_cam := local_player.get_node_or_null("Head/Camera3D")
 	if player_cam:
 		player_cam.current = false
@@ -660,10 +659,20 @@ func _enter_spectator_from_player() -> void:
 		ws.set_process_unhandled_input(false)
 	if has_node("/root/Crosshair"):
 		get_node("/root/Crosshair").visible = false
-	spectator.enter_spectator_mode(
-		head.global_position,
-		local_player.rotation.y,
-		head.rotation.x)
+
+	var overview_pos := Vector3(0, 40, 0)
+	var overview_pitch := -1.2
+	var world := get_node_or_null("World")
+	if world and world.get("spawn_points") and world.spawn_points.size() > 0:
+		var center := Vector3.ZERO
+		for sp: Vector3 in world.spawn_points:
+			center += sp
+		center /= world.spawn_points.size()
+		var max_spread := 0.0
+		for sp: Vector3 in world.spawn_points:
+			max_spread = maxf(max_spread, Vector2(sp.x - center.x, sp.z - center.z).length())
+		overview_pos = Vector3(center.x, maxf(max_spread, 15.0) + 20.0, center.z)
+	spectator.enter_spectator_mode(overview_pos, 0.0, overview_pitch)
 
 
 func _exit_spectator_to_player() -> void:
