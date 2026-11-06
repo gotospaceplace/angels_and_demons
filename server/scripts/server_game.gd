@@ -569,7 +569,7 @@ func _spawn_new_player(peer_id: int) -> void:
 	var team: int = plugin_manager.dispatch_get_player_team(peer_id)
 	if team == Team.Id.SPECTATOR:
 		sp.is_dead = true
-		var collision := sp.body.get_node_or_null("PlayerCollision")
+		var collision: CollisionShape3D = sp.body.get_node_or_null("PlayerCollision")
 		if collision:
 			collision.disabled = true
 	else:
