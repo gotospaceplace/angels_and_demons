@@ -644,9 +644,11 @@ func apply_flash(blind_time: float, fade_time: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if _flash_blind > 0.0:
+		_flash_blind -= delta
 	if _flash_overlay and _flash_overlay.visible:
 		if _flash_blind > 0.0:
-			_flash_blind -= delta
+			pass
 		elif _flash_fade > 0.0:
 			_flash_fade -= delta
 			var alpha := _flash_fade / _flash_fade_total if _flash_fade_total > 0.0 else 0.0
