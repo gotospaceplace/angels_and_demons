@@ -55,7 +55,7 @@ func _ready() -> void:
 		spawn_points = map.spawn_points
 
 	var port := NetworkManager.DEFAULT_PORT
-	var mode_name := "deathmatch"
+	var mode_name := "tdm"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--port="):
 			port = arg.get_slice("=", 1).to_int()
@@ -565,22 +565,31 @@ func _spawn_new_player(peer_id: int) -> void:
 	players[peer_id] = sp
 	peer_tokens[peer_id] = token
 	plugin_manager.dispatch_on_player_connect(peer_id)
-	plugin_manager.dispatch_on_player_spawn(peer_id, spawn_pos)
+
+	var team: int = plugin_manager.dispatch_get_player_team(peer_id)
+	if team == Team.Id.SPECTATOR:
+		sp.is_dead = true
+		var collision := sp.body.get_node_or_null("PlayerCollision")
+		if collision:
+			collision.disabled = true
+	else:
+		plugin_manager.dispatch_on_player_spawn(peer_id, spawn_pos)
 
 	var session_packet := NetProtocol.pack_session_event(token)
 	multiplayer.send_bytes(session_packet, peer_id,
 		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 		NetConstants.CHANNEL_EVENTS)
 
-	var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
-	for pid in players:
-		multiplayer.send_bytes(spawn_packet, pid,
-			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
-			NetConstants.CHANNEL_EVENTS)
+	if team != Team.Id.SPECTATOR:
+		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
+		for pid in players:
+			multiplayer.send_bytes(spawn_packet, pid,
+				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+				NetConstants.CHANNEL_EVENTS)
 
 	_send_match_state_to(peer_id)
-	print("[Server] New player %d spawned at %s (token=%d, total: %d)" % [
-		peer_id, spawn_pos, token, players.size()])
+	print("[Server] New player %d %s (token=%d, total: %d)" % [
+		peer_id, "joined as spectator" if team == Team.Id.SPECTATOR else "spawned at %s" % spawn_pos, token, players.size()])
 
 
 func _restore_player(peer_id: int, token: int) -> void:
