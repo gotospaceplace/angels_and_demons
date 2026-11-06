@@ -66,6 +66,26 @@ func enter_deathcam(death_pos: Vector3, death_yaw: float, death_pitch: float) ->
 	print("[Spectator] Deathcam at %s" % death_pos)
 
 
+func enter_spectator_mode(pos: Vector3, yaw: float, pitch: float) -> void:
+	mode = Mode.FREECAM
+	global_position = pos
+	_freecam_yaw = yaw
+	_freecam_pitch = pitch
+	rotation.y = yaw
+	camera.rotation.x = pitch
+	camera.current = true
+	_hud_layer.visible = true
+	_mode_label.text = "SPECTATOR"
+	_target_label.text = ""
+	_hp_label.text = ""
+	_armor_label.text = ""
+	_weapon_label.text = ""
+	_hint_label.visible = true
+	_hint_label.text = "Select a team to play  |  WASD: Move  |  SPACE / CTRL: Up / Down"
+	set_process_unhandled_input(true)
+	print("[Spectator] Entered spectator mode at %s" % pos)
+
+
 func exit_spectator() -> void:
 	mode = Mode.ALIVE
 	spectate_target = 0
