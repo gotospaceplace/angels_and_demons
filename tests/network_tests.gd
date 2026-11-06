@@ -451,23 +451,28 @@ func test_damage_server_authority() -> void:
 
 func test_weapon_switch_updates_ammo() -> void:
 	var sp = ServerPlayer.new()
-	sp.weapon_idx = 2
-	sp.ammo_mag = 30
-	var cmd := NetInput.create(1, 0, 0.0, 0.0)
-	cmd.set_button(NetInput.BIT_WEAPON5, true)
-	sp._check_weapon_switch(cmd)
+	sp.set_weapon(4)
 	if sp.weapon_idx != 4:
-		_fail("weapon_idx: %d, expected 4 (AWP)" % sp.weapon_idx); return
+		_fail("weapon_idx: %d, expected 4 (AWP) after buy" % sp.weapon_idx); return
 	if sp.ammo_mag != 10:
-		_fail("ammo_mag: %d, expected 10 (AWP mag)" % sp.ammo_mag); return
-	cmd = NetInput.create(2, 0, 0.0, 0.0)
+		_fail("ammo_mag: %d, expected 10 (AWP mag) after buy" % sp.ammo_mag); return
+	if sp.primary_weapon_idx != 4:
+		_fail("primary_weapon_idx: %d, expected 4" % sp.primary_weapon_idx); return
+	var cmd := NetInput.create(1, 0, 0.0, 0.0)
 	cmd.set_button(NetInput.BIT_WEAPON3, true)
 	sp._check_weapon_switch(cmd)
 	if sp.weapon_idx != 0:
 		_fail("weapon_idx: %d, expected 0 (melee)" % sp.weapon_idx); return
 	if sp.ammo_mag != 0:
 		_fail("ammo_mag: %d, expected 0 (melee)" % sp.ammo_mag); return
-	_pass("weapon switch updates idx and ammo correctly")
+	cmd = NetInput.create(2, 0, 0.0, 0.0)
+	cmd.set_button(NetInput.BIT_WEAPON1, true)
+	sp._check_weapon_switch(cmd)
+	if sp.weapon_idx != 4:
+		_fail("weapon_idx: %d, expected 4 (AWP) via slot 1" % sp.weapon_idx); return
+	if sp.ammo_mag != 10:
+		_fail("ammo_mag: %d, expected 10 (AWP mag) via slot 1" % sp.ammo_mag); return
+	_pass("weapon switch tracks owned primary and updates ammo correctly")
 
 
 func test_rewind_window_clamped() -> void:

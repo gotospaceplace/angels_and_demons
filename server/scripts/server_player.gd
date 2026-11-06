@@ -11,6 +11,7 @@ var last_acked_tick: int = 0
 var hp: int = 100
 var armor: int = 0
 var weapon_idx: int = 2
+var primary_weapon_idx: int = 2
 var ammo_mag: int = 30
 var is_dead: bool = false
 
@@ -115,15 +116,11 @@ const WEAPON_COUNT := 5
 func _check_weapon_switch(cmd: NetInput) -> void:
 	var new_idx := -1
 	if cmd.has_button(NetInput.BIT_WEAPON1):
-		new_idx = 2  # primary (AK/M4/AWP)
+		new_idx = primary_weapon_idx
 	elif cmd.has_button(NetInput.BIT_WEAPON2):
 		new_idx = 1  # pistol (USP)
 	elif cmd.has_button(NetInput.BIT_WEAPON3):
 		new_idx = 0  # melee
-	elif cmd.has_button(NetInput.BIT_WEAPON4):
-		new_idx = 3
-	elif cmd.has_button(NetInput.BIT_WEAPON5):
-		new_idx = 4
 	if new_idx >= 0 and new_idx < WEAPON_COUNT and new_idx != weapon_idx:
 		weapon_idx = new_idx
 		ammo_mag = WEAPON_MAG_SIZES[new_idx]
@@ -211,6 +208,7 @@ func respawn(spawn_pos: Vector3) -> void:
 	hp = 100
 	armor = 0
 	weapon_idx = 2
+	primary_weapon_idx = 2
 	ammo_mag = 30
 	fire_pressed = false
 	fire2_pressed = false
@@ -232,6 +230,8 @@ func set_weapon(new_weapon_idx: int) -> void:
 	if new_weapon_idx < 0 or new_weapon_idx >= WEAPON_COUNT:
 		return
 	weapon_idx = new_weapon_idx
+	if new_weapon_idx >= 2:
+		primary_weapon_idx = new_weapon_idx
 	ammo_mag = WEAPON_MAG_SIZES[new_weapon_idx]
 	fire_pressed = false
 	fire2_pressed = false
