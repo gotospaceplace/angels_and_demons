@@ -88,21 +88,26 @@ func _on_quit() -> void:
 
 
 func _build_ui() -> void:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(root)
+
 	_overlay = ColorRect.new()
 	_overlay.color = Color(0, 0, 0, 0.5)
-	_overlay.anchors_preset = Control.PRESET_FULL_RECT
+	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(_overlay)
+	root.add_child(_overlay)
 
-	_build_menu_panel()
-	_build_options_panel()
+	_build_menu_panel(root)
+	_build_options_panel(root)
 
 
-func _build_menu_panel() -> void:
+func _build_menu_panel(root: Control) -> void:
 	var center := CenterContainer.new()
-	center.anchors_preset = Control.PRESET_FULL_RECT
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(center)
+	root.add_child(center)
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.08, 0.08, 0.12, 0.95)
@@ -143,11 +148,11 @@ func _build_menu_panel() -> void:
 	_menu_vbox.add_child(quit_btn)
 
 
-func _build_options_panel() -> void:
+func _build_options_panel(root: Control) -> void:
 	var center := CenterContainer.new()
-	center.anchors_preset = Control.PRESET_FULL_RECT
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(center)
+	root.add_child(center)
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.08, 0.08, 0.12, 0.95)
