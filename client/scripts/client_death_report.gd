@@ -292,7 +292,7 @@ func _build_ui() -> void:
 	add_child(_layer)
 
 	var root := Control.new()
-	root.anchors_preset = Control.PRESET_FULL_RECT
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(root)
 
@@ -321,12 +321,12 @@ func _build_ui() -> void:
 	bg_style.border_width_left = 1
 	bg_style.border_width_right = 1
 	bg.add_theme_stylebox_override("panel", bg_style)
-	bg.anchors_preset = Control.PRESET_FULL_RECT
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(bg)
 
 	_content = VBoxContainer.new()
 	_content.add_theme_constant_override("separation", 0)
-	_content.anchors_preset = Control.PRESET_FULL_RECT
+	_content.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(_content)
