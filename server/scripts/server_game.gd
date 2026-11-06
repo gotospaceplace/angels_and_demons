@@ -130,7 +130,13 @@ func _physics_process(delta: float) -> void:
 
 func _on_peer_connected(peer_id: int) -> void:
 	pending_peers[peer_id] = server_tick
-	print("[Server] Peer %d connected, waiting for rejoin or timeout" % peer_id)
+
+	var map_packet := NetProtocol.pack_map_change_event(current_map_name)
+	multiplayer.send_bytes(map_packet, peer_id,
+		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+		NetConstants.CHANNEL_EVENTS)
+
+	print("[Server] Peer %d connected, sent map=%s, waiting for rejoin or timeout" % [peer_id, current_map_name])
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
@@ -590,11 +596,6 @@ func _spawn_new_player(peer_id: int) -> void:
 
 	var session_packet := NetProtocol.pack_session_event(token)
 	multiplayer.send_bytes(session_packet, peer_id,
-		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
-		NetConstants.CHANNEL_EVENTS)
-
-	var map_packet := NetProtocol.pack_map_change_event(current_map_name)
-	multiplayer.send_bytes(map_packet, peer_id,
 		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 		NetConstants.CHANNEL_EVENTS)
 
