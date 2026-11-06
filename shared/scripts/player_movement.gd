@@ -440,6 +440,9 @@ func _walk_move(delta: float) -> void:
 
 			if not did_step:
 				global_position = pre_step_pos
+			else:
+				velocity.x *= MC.STAIR_SPEED_FACTOR
+				velocity.z *= MC.STAIR_SPEED_FACTOR
 
 		if not did_step:
 			var slide: Vector3
