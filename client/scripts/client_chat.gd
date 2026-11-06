@@ -31,7 +31,7 @@ func _build_ui() -> void:
 	_margin.name = "ChatMargin"
 	_margin.anchors_preset = Control.PRESET_FULL_RECT
 	_margin.add_theme_constant_override("margin_left", 16)
-	_margin.add_theme_constant_override("margin_bottom", 216)
+	_margin.add_theme_constant_override("margin_bottom", 80)
 	_margin.add_theme_constant_override("margin_right", 984)
 	_margin.add_theme_constant_override("margin_top", 324)
 	add_child(_margin)
@@ -96,8 +96,8 @@ func _process(delta: float) -> void:
 	var vp := get_viewport().get_visible_rect().size
 	if vp != _last_vp_size and vp.y > 0:
 		_last_vp_size = vp
-		_margin.add_theme_constant_override("margin_top", int(vp.y * 0.45))
-		_margin.add_theme_constant_override("margin_bottom", int(vp.y * 0.30))
+		_margin.add_theme_constant_override("margin_top", int(vp.y * 0.55))
+		_margin.add_theme_constant_override("margin_bottom", 80)
 		_margin.add_theme_constant_override("margin_right", int(vp.x - 296))
 
 	for i in range(_fade_timers.size()):
