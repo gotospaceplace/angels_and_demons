@@ -276,7 +276,6 @@ func _process_fire_commands() -> void:
 			plugin_manager.last_death_position = victim_sp.body.global_position
 			plugin_manager.dispatch_on_player_kill(peer_id, victim_id, sp.weapon_idx, hit["headshot"])
 			plugin_manager.dispatch_on_player_death(victim_id, peer_id)
-			_send_death_report(victim_id)
 			var kill_flags := 0
 			if hit.get("wallbang", false):
 				kill_flags |= NetProtocol.KILL_FLAG_WALLBANG
@@ -290,6 +289,7 @@ func _process_fire_commands() -> void:
 				multiplayer.send_bytes(kill_packet, pid,
 					MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 					NetConstants.CHANNEL_EVENTS)
+			_send_death_report(victim_id)
 			print("[Server] KILL: Player %d → Player %d (%s, dmg=%.1f%s) [K:%d D:%d]" % [
 				peer_id, victim_id, hit["hitgroup"], final_damage,
 				_kill_flags_str(kill_flags),
@@ -874,7 +874,6 @@ func _detonate_he_server(thrower_id: int, pos: Vector3) -> void:
 			plugin_manager.last_death_position = sp.body.global_position
 			plugin_manager.dispatch_on_player_kill(thrower_id, peer_id, -1, false)
 			plugin_manager.dispatch_on_player_death(peer_id, thrower_id)
-			_send_death_report(peer_id)
 			var kill_flags := 0
 			if _is_in_smoke(pos) or _is_in_smoke(sp.body.global_position):
 				kill_flags |= NetProtocol.KILL_FLAG_SMOKE
@@ -884,6 +883,7 @@ func _detonate_he_server(thrower_id: int, pos: Vector3) -> void:
 				multiplayer.send_bytes(kill_packet, pid,
 					MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 					NetConstants.CHANNEL_EVENTS)
+			_send_death_report(peer_id)
 			print("[Server] GRENADE KILL: Player %d → Player %d (HE, dmg=%.1f)" % [
 				thrower_id, peer_id, final_damage])
 
