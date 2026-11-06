@@ -111,9 +111,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("jump"):
 		if mode == Mode.FOLLOW:
 			_enter_freecam()
-		else:
-			_enter_follow()
-		get_viewport().set_input_as_handled()
+			get_viewport().set_input_as_handled()
 
 	if mode == Mode.FREECAM and event is InputEventMouseMotion:
 		var sens: float = GameSettings.mouse_sensitivity
@@ -145,7 +143,7 @@ func _enter_freecam() -> void:
 	_armor_label.text = ""
 	_weapon_label.text = ""
 	_hint_label.visible = true
-	_hint_label.text = "WASD: Move  |  SHIFT: Fast  |  LMB / RMB: Follow player"
+	_hint_label.text = "WASD: Move  |  SPACE / CTRL: Up / Down  |  SHIFT: Fast  |  LMB / RMB: Follow player"
 	print("[Spectator] Free camera")
 
 
