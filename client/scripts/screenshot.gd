@@ -5,15 +5,21 @@ var _flash: ColorRect
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	add_child(layer)
+
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(root)
+
 	_flash = ColorRect.new()
 	_flash.color = Color(1, 1, 1, 0.6)
 	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_flash.anchors_preset = Control.PRESET_FULL_RECT
+	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_flash.visible = false
-	var layer := CanvasLayer.new()
-	layer.layer = 100
-	layer.add_child(_flash)
-	add_child(layer)
+	root.add_child(_flash)
 
 
 func _unhandled_input(event: InputEvent) -> void:
