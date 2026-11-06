@@ -34,6 +34,7 @@ var team_select: ClientTeamSelect
 var death_report: ClientDeathReport
 var esc_menu: ClientEscMenu
 var _team_select_shown: bool = false
+var _last_killer_id: int = 0
 
 var session_token: int = 0
 var server_address: String = "127.0.0.1"
@@ -459,6 +460,7 @@ func _handle_event(packet: PackedByteArray) -> void:
 				if killer_id == my_peer_id:
 					SoundManager.play_hit_confirm(headshot)
 				if victim_id == my_peer_id:
+					_last_killer_id = killer_id
 					SoundManager.play_death()
 					if spectator and local_player:
 						var head := local_player.get_node("Head")
@@ -573,7 +575,7 @@ func _handle_event(packet: PackedByteArray) -> void:
 			var dr := NetProtocol.unpack_death_report_event(packet)
 			if not dr.is_empty() and dr["victim_id"] == my_peer_id:
 				if death_report:
-					death_report.show_report(dr["report"])
+					death_report.show_report(dr["report"], _last_killer_id)
 				print("[Client] Death report: gave=%d took=%d" % [
 					dr["report"].get("given", []).size(),
 					dr["report"].get("taken", []).size()])
