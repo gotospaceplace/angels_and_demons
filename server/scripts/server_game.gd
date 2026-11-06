@@ -100,15 +100,7 @@ func _init_plugins(mode_name: String) -> void:
 	plugin_manager.load_plugin(PlatformAnticheat.new())
 	plugin_manager.load_plugin(PlatformReporting.new())
 
-	var mode_plugin: GamePlugin
-	match mode_name:
-		"deathmatch":
-			mode_plugin = PluginDeathmatch.new()
-		"competitive":
-			mode_plugin = PluginCompetitive.new()
-		_:
-			push_warning("Unknown mode '%s', falling back to deathmatch" % mode_name)
-			mode_plugin = PluginDeathmatch.new()
+	var mode_plugin := _create_mode_plugin(mode_name)
 	plugin_manager.load_plugin(mode_plugin)
 	plugin_manager.load_plugin(PluginChat.new())
 
@@ -1089,10 +1081,10 @@ func _cmd_chat_mode(peer_id: int, args: String) -> void:
 	var mode_name := args.to_lower()
 	if mode_name.is_empty():
 		var current := plugin_manager.get_client_mode()
-		_send_server_msg(peer_id, "Current mode: %s. Usage: /mode <deathmatch|competitive>" % current)
+		_send_server_msg(peer_id, "Current mode: %s. Usage: /mode <%s>" % [current, "|".join(VALID_MODES)])
 		return
-	if mode_name != "deathmatch" and mode_name != "competitive":
-		_send_server_msg(peer_id, "Unknown mode: %s. Available: deathmatch, competitive" % mode_name)
+	if mode_name not in VALID_MODES:
+		_send_server_msg(peer_id, "Unknown mode: %s. Available: %s" % [mode_name, ", ".join(VALID_MODES)])
 		return
 	if mode_name == String(plugin_manager.get_client_mode()):
 		_send_server_msg(peer_id, "Already in %s mode" % mode_name)
@@ -1119,7 +1111,7 @@ func _cmd_chat_restart(peer_id: int) -> void:
 
 
 func _cmd_chat_help(peer_id: int) -> void:
-	_send_server_msg(peer_id, "Commands: /mode <deathmatch|competitive>, /map <name>, /restart, /help")
+	_send_server_msg(peer_id, "Commands: /mode <%s>, /map <name>, /restart, /help" % "|".join(VALID_MODES))
 
 
 func _change_mode(mode_name: String) -> void:
@@ -1127,14 +1119,7 @@ func _change_mode(mode_name: String) -> void:
 	if old_mode:
 		plugin_manager.unload_plugin(old_mode)
 
-	var new_mode: GamePlugin
-	match mode_name:
-		"deathmatch":
-			new_mode = PluginDeathmatch.new()
-		"competitive":
-			new_mode = PluginCompetitive.new()
-		_:
-			return
+	var new_mode := _create_mode_plugin(mode_name)
 	plugin_manager.load_plugin(new_mode)
 
 	if world_node.get("angels_spawns") and world_node.get("demons_spawns"):
@@ -1145,6 +1130,23 @@ func _change_mode(mode_name: String) -> void:
 	_reset_round_players()
 	_broadcast_match_state()
 	print("[Server] Mode changed to: %s" % mode_name)
+
+
+const VALID_MODES := ["deathmatch", "competitive", "tdm", "casual"]
+
+func _create_mode_plugin(mode_name: String) -> GamePlugin:
+	match mode_name:
+		"deathmatch":
+			return PluginDeathmatch.new()
+		"competitive":
+			return PluginCompetitive.new()
+		"tdm":
+			return PluginTeamDeathmatch.new()
+		"casual":
+			return PluginCasual.new()
+		_:
+			push_warning("Unknown mode '%s', falling back to deathmatch" % mode_name)
+			return PluginDeathmatch.new()
 
 
 func _send_server_msg(peer_id: int, message: String) -> void:
