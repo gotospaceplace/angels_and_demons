@@ -35,6 +35,7 @@ const JUMP_SPEED := 268.33 * METERS_PER_UNIT  # 6.815 m/s
 # GoldSrc: sv_stepsize = 18 u
 const STEP_SIZE := 18.0 * METERS_PER_UNIT  # 0.457 m
 const STEP_SMOOTH_TIME := 0.1  # seconds to smooth out stair camera snap
+const STAIR_SPEED_FACTOR := 0.85  # horizontal speed penalty per step-up
 
 # --- Hull dimensions ---
 # GoldSrc: standing hull height = 72 u (from -36 to 36)
