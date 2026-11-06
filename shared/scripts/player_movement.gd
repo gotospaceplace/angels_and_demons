@@ -568,8 +568,8 @@ func _ladder_move(delta: float) -> void:
 		velocity = ladder_normal * MC.MAX_CLIMB_SPEED * 0.5
 		return
 
-	# Ledge mount: pushing toward wall near top vaults player onto platform
-	if wish_vel.dot(ladder_normal) < -0.3 and global_position.y > _ladder_top_y - 1.0:
+	# Ledge mount: pushing toward wall near top while climbing UP vaults player onto platform
+	if wish_vel.dot(ladder_normal) < -0.3 and global_position.y > _ladder_top_y - 1.0 and wish_vel.y > 0.0:
 		on_ladder = false
 		velocity = -ladder_normal * 2.0
 		velocity.y = MC.JUMP_SPEED
