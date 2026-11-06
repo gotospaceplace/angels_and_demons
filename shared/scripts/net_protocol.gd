@@ -21,6 +21,7 @@ const EVT_DEATH_REPORT := 10
 const EVT_GRENADE_SPAWN := 11
 const EVT_GRENADE_DETONATE := 12
 const EVT_FLASH := 13
+const EVT_MAP_CHANGE := 14
 
 # Admin subtypes (MSG_ADMIN payload)
 const ADMIN_REJOIN   := 1
@@ -469,4 +470,17 @@ static func pack_flash_event(blind_time: float, fade_time: float) -> PackedByteA
 	buf[2] = EVT_FLASH
 	buf.encode_float(3, blind_time)
 	buf.encode_float(7, fade_time)
+	return buf
+
+
+static func pack_map_change_event(map_name: String) -> PackedByteArray:
+	var name_bytes := map_name.to_utf8_buffer()
+	var buf := PackedByteArray()
+	buf.resize(HEADER_SIZE + 3)
+	buf[0] = NetConstants.PROTOCOL_VERSION
+	buf[1] = MSG_EVENT
+	buf[2] = EVT_MAP_CHANGE
+	buf[3] = name_bytes.size() & 0xFF
+	buf[4] = (name_bytes.size() >> 8) & 0xFF
+	buf.append_array(name_bytes)
 	return buf
