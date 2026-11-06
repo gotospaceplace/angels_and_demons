@@ -411,12 +411,10 @@ func _walk_move(delta: float) -> void:
 		var remainder := flat_collision.get_remainder()
 		var normal := flat_collision.get_normal()
 
-		# Attempt step-up on any collision while on flat ground.
-		# Unconditional on normal.y because the ducked capsule (mostly
-		# hemisphere) produces high-Y normals even against vertical stair
-		# faces. The height-gain and step-down checks prevent false
-		# positives against walls and slopes.
-		if not on_slope:
+		# Attempt step-up when on flat ground (any collision) or
+		# when on a slope hitting a wall-like obstruction (e.g. the
+		# landing lip at the top of a ramp).
+		if not on_slope or normal.y < MC.FLOOR_NORMAL_MIN:
 			var pre_step_pos := global_position
 
 			var step_up_col := move_and_collide(Vector3(0, MC.STEP_SIZE, 0))
