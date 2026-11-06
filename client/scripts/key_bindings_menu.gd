@@ -22,7 +22,7 @@ var _visible := false
 
 
 func _ready() -> void:
-	layer = 14
+	layer = 18
 	_build_ui()
 	_panel.visible = false
 
