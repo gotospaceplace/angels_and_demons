@@ -290,10 +290,10 @@ func _ground_move(delta: float) -> void:
 	# Ground acceleration
 	_apply_ground_acceleration(delta)
 
-	# Clamp horizontal ground speed
+	# Clamp horizontal ground speed to weapon's maxspeed
 	var h_speed := Vector3(velocity.x, 0, velocity.z).length()
-	if h_speed > MC.GROUND_SPEED_CLAMP:
-		var scale_f := MC.GROUND_SPEED_CLAMP / h_speed
+	if h_speed > max_speed:
+		var scale_f := max_speed / h_speed
 		velocity.x *= scale_f
 		velocity.z *= scale_f
 
