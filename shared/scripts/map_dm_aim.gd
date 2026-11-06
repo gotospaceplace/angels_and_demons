@@ -342,16 +342,17 @@ func _add_ladder(base_name: String, pos: Vector3, height: float,
 		mi.position = Vector3(pos.x, rung_y, pos.z)
 		add_child(mi)
 
-	# Climbing trigger — layer 2, 1m deep (matches movement range)
+	# Climbing trigger — extends above platform so player can vault onto deck
 	var area := LadderVolume.new()
 	area.name = base_name + "_Zone"
 	area.face_normal = fd
+	var zone_h := height + 1.5
 	var col := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(width + 0.4, height, 1.0)
+	shape.size = Vector3(width + 0.4, zone_h, 1.0)
 	col.shape = shape
 	area.add_child(col)
-	area.position = Vector3(pos.x + fd.x * 0.2, height * 0.5, pos.z + fd.z * 0.2)
+	area.position = Vector3(pos.x + fd.x * 0.2, zone_h * 0.5, pos.z + fd.z * 0.2)
 	area.add_to_group("ladder")
 	add_child(area)
 
