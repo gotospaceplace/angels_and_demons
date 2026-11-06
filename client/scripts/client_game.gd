@@ -575,6 +575,8 @@ func _handle_event(packet: PackedByteArray) -> void:
 					prediction_buffer.clear()
 					if death_report and death_report.is_showing():
 						death_report.hide_report()
+					if team_select and team_select.is_open():
+						team_select.close_menu()
 					if spectator and spectator.is_spectating():
 						_exit_spectator_to_player()
 				print("[Client] SPAWN: Player %d at %s" % [spawned_id, pos])
