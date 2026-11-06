@@ -76,6 +76,7 @@ func _ready() -> void:
 	for i in range(_crate_tops.size()):
 		test_queue.append(StringName("test_crate_top_%d" % i))
 	test_queue.append(&"test_walk_on_ground")
+	test_queue.append(&"test_walk_up_ramp")
 	test_queue.append(&"test_wall_collision")
 
 	print("=== aim_map Collision Tests (Phase 2B) ===")
@@ -100,6 +101,8 @@ func _physics_process(_delta: float) -> void:
 		_run_crate_test(idx)
 	elif current_test == "test_walk_on_ground":
 		_run_walk_test()
+	elif current_test == "test_walk_up_ramp":
+		_run_ramp_test()
 	elif current_test == "test_wall_collision":
 		_run_wall_test()
 
@@ -174,6 +177,25 @@ func _run_walk_test() -> void:
 		else:
 			_pass("walk: moving at %.1f u/s, on ground at Y=%.3f" % [
 				speed * MC.UNITS_PER_METER, y])
+
+
+func _run_ramp_test() -> void:
+	if tick == 1:
+		_reset_player(Vector3(11.25, 0.9, 15.0), PI)
+		_set_input(1.0)
+		test_state["start_y"] = player.global_position.y
+	if tick >= 128:
+		var y := player.global_position.y
+		var start_y: float = test_state["start_y"]
+		var gained := y - start_y
+
+		if gained < 1.0:
+			_fail("ramp: couldn't ascend (gained %.3fm, Y=%.3f → %.3f)" % [
+				gained, start_y, y])
+		elif y < -10.0:
+			_fail("ramp: fell through (Y=%.3f)" % y)
+		else:
+			_pass("ramp: ascended %.1fm (Y=%.3f → %.3f)" % [gained, start_y, y])
 
 
 func _run_wall_test() -> void:

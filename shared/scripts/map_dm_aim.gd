@@ -258,23 +258,36 @@ func _add_ramp(node_name: String, base_pos: Vector3, height: float,
 		width: float, depth: float, flip: bool, color: Color) -> void:
 	var body := StaticBody3D.new()
 	body.name = node_name
-	body.position = base_pos + Vector3(0, height * 0.5, 0)
+	body.position = base_pos
 
+	var hw := width * 0.5
+	var hd := depth * 0.5
+	var pts := PackedVector3Array()
+	if flip:
+		pts.append(Vector3(-hw, 0, -hd))
+		pts.append(Vector3( hw, 0, -hd))
+		pts.append(Vector3(-hw, 0,  hd))
+		pts.append(Vector3( hw, 0,  hd))
+		pts.append(Vector3(-hw, height,  hd))
+		pts.append(Vector3( hw, height,  hd))
+	else:
+		pts.append(Vector3(-hw, 0, -hd))
+		pts.append(Vector3( hw, 0, -hd))
+		pts.append(Vector3(-hw, 0,  hd))
+		pts.append(Vector3( hw, 0,  hd))
+		pts.append(Vector3(-hw, height, -hd))
+		pts.append(Vector3( hw, height, -hd))
+	var col := CollisionShape3D.new()
+	var shape := ConvexPolygonShape3D.new()
+	shape.points = pts
+	col.shape = shape
+	body.add_child(col)
+
+	# Visual mesh: smooth tilted slab
 	var angle := atan2(height, depth)
 	if flip:
 		angle = -angle
-
 	var hyp := depth / cos(absf(angle))
-
-	# Thick collision slab to prevent fall-through
-	var col := CollisionShape3D.new()
-	var shape := BoxShape3D.new()
-	shape.size = Vector3(width, 0.5, hyp)
-	col.shape = shape
-	col.rotation.x = angle
-	body.add_child(col)
-
-	# Visual mesh stays thin
 	var mesh_inst := MeshInstance3D.new()
 	var box_mesh := BoxMesh.new()
 	box_mesh.size = Vector3(width, 0.15, hyp)
@@ -282,6 +295,7 @@ func _add_ramp(node_name: String, base_pos: Vector3, height: float,
 	mat.albedo_color = color
 	box_mesh.material = mat
 	mesh_inst.mesh = box_mesh
+	mesh_inst.position.y = height * 0.5
 	mesh_inst.rotation.x = angle
 	body.add_child(mesh_inst)
 
