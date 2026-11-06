@@ -40,4 +40,4 @@ RUN mkdir -p config logs && chown -R gameserver:gameserver /opt/angels-and-demon
 USER gameserver
 EXPOSE 27050/udp
 
-ENTRYPOINT ["./angels_and_demons_server.x86_64", "--headless"]
+ENTRYPOINT ["./angels_and_demons_server.x86_64", "--headless", "--verbose"]

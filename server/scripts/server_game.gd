@@ -1210,6 +1210,13 @@ func _change_map(map_name: String) -> void:
 		if child.is_in_group("smoke_cloud"):
 			child.queue_free()
 
+	# Reparent player bodies out of the old world before freeing it,
+	# otherwise queue_free destroys them and ServerPlayer.body becomes invalid.
+	for peer_id in players:
+		var sp = players[peer_id]
+		if is_instance_valid(sp.body) and sp.body.get_parent() == world_node:
+			world_node.remove_child(sp.body)
+
 	world_node.queue_free()
 
 	var map := new_scene.instantiate()
@@ -1217,6 +1224,11 @@ func _change_map(map_name: String) -> void:
 	add_child(map)
 	world_node = map
 	current_map_name = map_name
+
+	for peer_id in players:
+		var sp = players[peer_id]
+		if is_instance_valid(sp.body) and sp.body.get_parent() == null:
+			world_node.add_child(sp.body)
 
 	if map.spawn_points.size() > 0:
 		spawn_points = map.spawn_points
