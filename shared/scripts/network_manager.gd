@@ -15,6 +15,30 @@ var last_server_port: int = DEFAULT_PORT
 var loading_map_name: String = ""
 var current_map_path: String = "res://shared/scenes/map_dm_aim.tscn"
 
+
+func _ready() -> void:
+	multiplayer.peer_packet.connect(_on_raw_peer_packet)
+
+
+func _on_raw_peer_packet(_peer_id: int, packet: PackedByteArray) -> void:
+	if packet.size() < 5:
+		return
+	if packet[0] != NetConstants.PROTOCOL_VERSION:
+		return
+	if packet[1] != NetProtocol.MSG_EVENT:
+		return
+	if packet[2] != NetProtocol.EVT_MAP_CHANGE:
+		return
+	var name_len := packet[3] | (packet[4] << 8)
+	if packet.size() < 5 + name_len:
+		return
+	var map_name := packet.slice(5, 5 + name_len).get_string_from_utf8()
+	var map_path := MapRegistry.get_scene_path(map_name)
+	if not map_path.is_empty():
+		current_map_path = map_path
+		loading_map_name = map_name
+
+
 func host_server(port: int = DEFAULT_PORT) -> Error:
 	peer = ENetMultiplayerPeer.new()
 	var err := peer.create_server(port, MAX_CLIENTS)
