@@ -553,6 +553,7 @@ func _spawn_new_player(peer_id: int) -> void:
 	sp.create(peer_id, spawn_pos, world_node)
 	players[peer_id] = sp
 	peer_tokens[peer_id] = token
+	plugin_manager.dispatch_on_player_connect(peer_id)
 	plugin_manager.dispatch_on_player_spawn(peer_id, spawn_pos)
 
 	var session_packet := NetProtocol.pack_session_event(token)
@@ -585,6 +586,7 @@ func _restore_player(peer_id: int, token: int) -> void:
 	sp.deaths = saved["deaths"]
 	players[peer_id] = sp
 	peer_tokens[peer_id] = token
+	plugin_manager.dispatch_on_player_connect(peer_id)
 
 	var session_packet := NetProtocol.pack_session_event(token)
 	multiplayer.send_bytes(session_packet, peer_id,
