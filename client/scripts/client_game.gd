@@ -238,6 +238,20 @@ func _process(delta: float) -> void:
 		reconnect_label.text = "Reconnecting... (%.0fs)" % (RECONNECT_MAX_TIME - reconnect_elapsed)
 
 
+func _is_ui_active() -> bool:
+	if esc_menu and esc_menu.is_open():
+		return true
+	if buy_menu and buy_menu.is_open:
+		return true
+	if team_select and team_select.is_open():
+		return true
+	if chat and chat.is_chat_open():
+		return true
+	if KeyBindingsMenu.is_open():
+		return true
+	return false
+
+
 func _sample_input() -> NetInput:
 	var cmd := NetInput.new()
 	cmd.tick = client_tick
@@ -249,6 +263,9 @@ func _sample_input() -> NetInput:
 		cmd.yaw = float(yaw_q) / NetConstants.YAW_SCALE
 		var pitch_q := clampi(int(cmd.pitch * NetConstants.PITCH_SCALE), -32768, 32767)
 		cmd.pitch = float(pitch_q) / NetConstants.PITCH_SCALE
+
+	if _is_ui_active():
+		return cmd
 
 	cmd.set_button(NetInput.BIT_FORWARD, Input.is_action_pressed("move_forward"))
 	cmd.set_button(NetInput.BIT_BACK, Input.is_action_pressed("move_backward"))
