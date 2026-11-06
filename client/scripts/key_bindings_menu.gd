@@ -127,35 +127,38 @@ func _build_ui() -> void:
 	vbox.add_child(btn_row)
 
 
-func _build_row(action: String, index: int) -> HBoxContainer:
-	var row := HBoxContainer.new()
+func _build_row(action: String, index: int) -> PanelContainer:
+	var row := PanelContainer.new()
 	row.custom_minimum_size = Vector2(PANEL_W - 24, ROW_H)
-	row.add_theme_constant_override("separation", 0)
 
-	var bg := ColorRect.new()
-	bg.color = COL_ROW if index % 2 == 0 else COL_ROW_ALT
-	bg.custom_minimum_size = Vector2(PANEL_W - 24, ROW_H)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	row.add_child(bg)
+	var row_style := StyleBoxFlat.new()
+	row_style.bg_color = COL_ROW if index % 2 == 0 else COL_ROW_ALT
+	row_style.content_margin_left = 12.0
+	row_style.content_margin_right = 8.0
+	row.add_theme_stylebox_override("panel", row_style)
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	row.add_child(hbox)
 
 	var name_lbl := Label.new()
 	name_lbl.text = KeyBindings.get_display_name(action)
 	name_lbl.add_theme_font_size_override("font_size", 14)
 	name_lbl.add_theme_color_override("font_color", COL_TEXT)
-	name_lbl.custom_minimum_size = Vector2(NAME_W, ROW_H)
+	name_lbl.custom_minimum_size = Vector2(NAME_W, 0)
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(name_lbl)
+	hbox.add_child(name_lbl)
 
 	var key_btn := Button.new()
 	key_btn.text = KeyBindings.get_action_label(action)
 	key_btn.custom_minimum_size = Vector2(KEY_W, ROW_H - 4)
 	key_btn.add_theme_font_size_override("font_size", 13)
 	key_btn.pressed.connect(_on_key_pressed.bind(action))
-	row.add_child(key_btn)
+	hbox.add_child(key_btn)
 
-	row.set_meta("controls", {"bg": bg, "name": name_lbl, "key_btn": key_btn})
+	row.set_meta("controls", {"row": row, "name": name_lbl, "key_btn": key_btn})
 	return row
 
 
@@ -163,12 +166,13 @@ func _refresh_all() -> void:
 	for action in _rows:
 		var c: Dictionary = _rows[action]
 		c["key_btn"].text = KeyBindings.get_action_label(action)
+		var style: StyleBoxFlat = c["row"].get_theme_stylebox("panel")
 		if action == _listening_action:
-			c["bg"].color = COL_LISTENING
+			style.bg_color = COL_LISTENING
 			c["key_btn"].text = "Press a key..."
 		else:
 			var idx := KeyBindings.BINDABLE_ACTIONS.find(action)
-			c["bg"].color = COL_ROW if idx % 2 == 0 else COL_ROW_ALT
+			style.bg_color = COL_ROW if idx % 2 == 0 else COL_ROW_ALT
 
 	var vp := get_viewport().get_visible_rect().size
 	if vp == Vector2.ZERO:
