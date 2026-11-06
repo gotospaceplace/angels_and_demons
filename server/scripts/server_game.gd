@@ -427,6 +427,17 @@ func _handle_team_select(peer_id: int, requested_team: int) -> void:
 		return
 	var success: bool = mode.change_team(peer_id, requested_team)
 	if success:
+		var sp = players[peer_id]
+		var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)
+		if spawn_pos == Vector3.ZERO:
+			spawn_pos = spawn_points[next_spawn % spawn_points.size()]
+			next_spawn += 1
+		sp.respawn(spawn_pos)
+		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
+		for pid in players:
+			multiplayer.send_bytes(spawn_packet, pid,
+				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+				NetConstants.CHANNEL_EVENTS)
 		_broadcast_match_state()
 	else:
 		_send_server_msg(peer_id, "Team change denied: teams would be unbalanced")
@@ -553,6 +564,7 @@ func _spawn_new_player(peer_id: int) -> void:
 	sp.create(peer_id, spawn_pos, world_node)
 	players[peer_id] = sp
 	peer_tokens[peer_id] = token
+	plugin_manager.dispatch_on_player_connect(peer_id)
 	plugin_manager.dispatch_on_player_spawn(peer_id, spawn_pos)
 
 	var session_packet := NetProtocol.pack_session_event(token)
@@ -585,6 +597,7 @@ func _restore_player(peer_id: int, token: int) -> void:
 	sp.deaths = saved["deaths"]
 	players[peer_id] = sp
 	peer_tokens[peer_id] = token
+	plugin_manager.dispatch_on_player_connect(peer_id)
 
 	var session_packet := NetProtocol.pack_session_event(token)
 	multiplayer.send_bytes(session_packet, peer_id,
