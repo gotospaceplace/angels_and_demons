@@ -528,7 +528,7 @@ func _handle_event(packet: PackedByteArray) -> void:
 					team_select.update_counts(
 						tc.get(Team.Id.ANGELS, 0),
 						tc.get(Team.Id.DEMONS, 0))
-					if not _team_select_shown and ms["mode"] == &"competitive":
+					if not _team_select_shown and (ms["mode"] == &"competitive" or ms["mode"] == &"team_deathmatch"):
 						_team_select_shown = true
 						team_select.open_menu()
 				if interpolation:

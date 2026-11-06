@@ -21,8 +21,7 @@ func register_settings(config) -> void:
 
 
 func on_player_connect(peer_id: int) -> bool:
-	var team := _pick_team()
-	_player_teams[peer_id] = team
+	_player_teams[peer_id] = Team.Id.SPECTATOR
 	_player_stats[peer_id] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
 	if manager:
 		manager.plugin_event.emit(&"roster_changed", {})
@@ -39,8 +38,9 @@ func on_player_disconnect(peer_id: int) -> void:
 		manager.plugin_event.emit(&"roster_changed", {})
 
 
-func can_player_respawn(_peer_id: int) -> bool:
-	return true
+func can_player_respawn(peer_id: int) -> bool:
+	var team: int = _player_teams.get(peer_id, Team.Id.SPECTATOR)
+	return Team.is_playing_team(team)
 
 
 func get_spawn_position(_peer_id: int) -> Vector3:
@@ -95,6 +95,10 @@ func get_client_state() -> Dictionary:
 	}
 
 
+func get_player_team(peer_id: int) -> int:
+	return _player_teams.get(peer_id, Team.Id.SPECTATOR)
+
+
 func get_team_counts() -> Dictionary:
 	return _get_team_counts()
 
@@ -115,6 +119,32 @@ func _pick_team() -> int:
 	if counts[Team.Id.ANGELS] <= counts[Team.Id.DEMONS]:
 		return Team.Id.ANGELS
 	return Team.Id.DEMONS
+
+
+func change_team(peer_id: int, requested_team: int) -> bool:
+	var actual_team := requested_team
+	if requested_team == Team.Id.UNASSIGNED:
+		actual_team = _pick_team()
+
+	if Team.is_playing_team(actual_team):
+		var counts := _get_team_counts()
+		var other_team := Team.get_opposing(actual_team)
+		var current_team: int = _player_teams.get(peer_id, Team.Id.SPECTATOR)
+		var target_count: int = counts.get(actual_team, 0)
+		var other_count: int = counts.get(other_team, 0)
+		if current_team != actual_team:
+			if target_count > other_count:
+				return false
+
+	var old_team: int = _player_teams.get(peer_id, Team.Id.SPECTATOR)
+	_player_teams[peer_id] = actual_team
+	if not _player_stats.has(peer_id):
+		_player_stats[peer_id] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
+
+	if old_team != actual_team and manager:
+		manager.plugin_event.emit(&"roster_changed", {})
+
+	return actual_team != Team.Id.SPECTATOR
 
 
 func on_round_start(_round_number: int) -> void: pass
