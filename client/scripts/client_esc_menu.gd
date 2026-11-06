@@ -81,10 +81,14 @@ func _on_options() -> void:
 	_open_options()
 
 
-func _on_quit() -> void:
+func _on_main_menu() -> void:
 	close_menu()
 	NetworkManager.disconnect_from_server()
 	get_tree().change_scene_to_file("res://client/scenes/main_menu.tscn")
+
+
+func _on_quit() -> void:
+	get_tree().quit()
 
 
 func _build_ui() -> void:
@@ -143,7 +147,11 @@ func _build_menu_panel(root: Control) -> void:
 	options_btn.pressed.connect(_on_options)
 	_menu_vbox.add_child(options_btn)
 
-	var quit_btn := _make_button("Quit Game", Color(0.5, 0.2, 0.2))
+	var main_menu_btn := _make_button("Main Menu", Color(0.5, 0.35, 0.2))
+	main_menu_btn.pressed.connect(_on_main_menu)
+	_menu_vbox.add_child(main_menu_btn)
+
+	var quit_btn := _make_button("Quit", Color(0.5, 0.2, 0.2))
 	quit_btn.pressed.connect(_on_quit)
 	_menu_vbox.add_child(quit_btn)
 
