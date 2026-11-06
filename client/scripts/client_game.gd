@@ -540,6 +540,13 @@ func _handle_event(packet: PackedByteArray) -> void:
 					spectator.my_team = my_team
 					spectator.game_mode = ms["mode"]
 					spectator.update_roster(st.get("roster", []))
+					if my_team == Team.Id.SPECTATOR and not spectator.is_spectating() and local_player:
+						var head := local_player.get_node("Head")
+						spectator.enter_deathcam(
+							head.global_position,
+							local_player.rotation.y,
+							head.rotation.x)
+						local_player.set_process_unhandled_input(false)
 				if team_select:
 					var tc: Dictionary = st.get("team_counts", {})
 					team_select.update_counts(
