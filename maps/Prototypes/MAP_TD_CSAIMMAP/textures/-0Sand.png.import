@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b2exd4q2s7xdb"
-path="res://.godot/imported/-0Sand.png-44b26673e32152003fde6c10fea099b8.ctex"
+path="res://.godot/imported/-0Sand.png-c4d2a9cc8b8af998148f7e4a4ac8274b.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://maps/Prototypes/MAP_TD_CSAIMMAP/textures/-0Sand.png"
-dest_files=["res://.godot/imported/-0Sand.png-44b26673e32152003fde6c10fea099b8.ctex"]
+dest_files=["res://.godot/imported/-0Sand.png-c4d2a9cc8b8af998148f7e4a4ac8274b.ctex"]
 
 [params]
 

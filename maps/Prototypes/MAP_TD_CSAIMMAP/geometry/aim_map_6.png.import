@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://m0vics0ngo3a"
-path.s3tc="res://.godot/imported/aim_map_6.png-c69b252dd125b6f261634c11ba53757f.s3tc.ctex"
+path.s3tc="res://.godot/imported/aim_map_6.png-10cc30b5b107af06aa4974edd102b474.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://maps/Prototypes/MAP_TD_CSAIMMAP/geometry/aim_map_6.png"
-dest_files=["res://.godot/imported/aim_map_6.png-c69b252dd125b6f261634c11ba53757f.s3tc.ctex"]
+dest_files=["res://.godot/imported/aim_map_6.png-10cc30b5b107af06aa4974edd102b474.s3tc.ctex"]
 
 [params]
 

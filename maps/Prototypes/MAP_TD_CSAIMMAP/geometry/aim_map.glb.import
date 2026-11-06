@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://fvoq46wk2c4s"
-path="res://.godot/imported/aim_map.glb-f9a62ae6053defbaa94b8aa4d1aea7cb.scn"
+path="res://.godot/imported/aim_map.glb-0c3a8cd622481b35e4864febf37ab39a.scn"
 
 [deps]
 
 source_file="res://maps/Prototypes/MAP_TD_CSAIMMAP/geometry/aim_map.glb"
-dest_files=["res://.godot/imported/aim_map.glb-f9a62ae6053defbaa94b8aa4d1aea7cb.scn"]
+dest_files=["res://.godot/imported/aim_map.glb-0c3a8cd622481b35e4864febf37ab39a.scn"]
 
 [params]
 

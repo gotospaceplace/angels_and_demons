@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://j012antbj37f"
-path="res://.godot/imported/SandWllWndw.png-bcc2b796db72a5a51c425092470c020a.ctex"
+path="res://.godot/imported/SandWllWndw.png-03fbc8df95407117af397286c3df2a0f.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://maps/Prototypes/MAP_TD_CSAIMMAP/textures/SandWllWndw.png"
-dest_files=["res://.godot/imported/SandWllWndw.png-bcc2b796db72a5a51c425092470c020a.ctex"]
+dest_files=["res://.godot/imported/SandWllWndw.png-03fbc8df95407117af397286c3df2a0f.ctex"]
 
 [params]
 
