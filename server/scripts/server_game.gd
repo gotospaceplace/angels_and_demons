@@ -844,6 +844,7 @@ func _detonate_he_server(thrower_id: int, pos: Vector3) -> void:
 		var check_to := target_pos + Vector3(0, 0.5, 0)
 		var los_params := PhysicsRayQueryParameters3D.create(check_from, check_to)
 		los_params.collision_mask = 1
+		los_params.exclude = [sp.body.get_rid()]
 		var los_result := space.intersect_ray(los_params)
 		if los_result:
 			continue
