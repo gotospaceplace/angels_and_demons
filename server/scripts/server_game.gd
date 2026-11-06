@@ -588,8 +588,12 @@ func _spawn_new_player(peer_id: int) -> void:
 				NetConstants.CHANNEL_EVENTS)
 
 	_send_match_state_to(peer_id)
-	print("[Server] New player %d %s (token=%d, total: %d)" % [
-		peer_id, "joined as spectator" if team == Team.Id.SPECTATOR else "spawned at %s" % spawn_pos, token, players.size()])
+	if team == Team.Id.SPECTATOR:
+		print("[Server] New player %d joined as spectator (token=%d, total: %d)" % [
+			peer_id, token, players.size()])
+	else:
+		print("[Server] New player %d spawned at %s (token=%d, total: %d)" % [
+			peer_id, spawn_pos, token, players.size()])
 
 
 func _restore_player(peer_id: int, token: int) -> void:
