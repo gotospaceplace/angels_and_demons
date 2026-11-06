@@ -1108,6 +1108,8 @@ func _handle_chat_command(peer_id: int, raw: String) -> void:
 			_cmd_chat_mode(peer_id, args)
 		"/map":
 			_cmd_chat_map(peer_id, args)
+		"/listmaps":
+			_cmd_chat_listmaps(peer_id)
 		"/restart":
 			_cmd_chat_restart(peer_id)
 		"/help":
@@ -1148,6 +1150,11 @@ func _cmd_chat_map(peer_id: int, args: String) -> void:
 	_broadcast_server_msg("Map changed to %s by Player %d" % [map_name, peer_id])
 
 
+func _cmd_chat_listmaps(peer_id: int) -> void:
+	var names := MapRegistry.get_all_names()
+	_send_server_msg(peer_id, "Available maps (%d): %s. Current: %s" % [names.size(), ", ".join(names), current_map_name])
+
+
 func _cmd_chat_restart(peer_id: int) -> void:
 	_broadcast_server_msg("Round restarted by Player %d" % peer_id)
 	_reset_round_players()
@@ -1155,8 +1162,7 @@ func _cmd_chat_restart(peer_id: int) -> void:
 
 
 func _cmd_chat_help(peer_id: int) -> void:
-	var maps := ", ".join(MapRegistry.get_all_names())
-	_send_server_msg(peer_id, "Commands: /mode <%s>, /map <%s>, /restart, /help" % ["|".join(VALID_MODES), maps])
+	_send_server_msg(peer_id, "Commands: /mode, /map, /listmaps, /restart, /help")
 
 
 func _change_mode(mode_name: String) -> void:
