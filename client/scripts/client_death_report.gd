@@ -194,9 +194,9 @@ func _add_damage_row(entry: Dictionary, alt: bool) -> void:
 	in_col.add_theme_constant_override("separation", 0)
 	hbox.add_child(in_col)
 
-	var in_dmg := entry.get("in_dmg", 0)
-	var in_hits := entry.get("in_hits", 0)
-	var in_hs := entry.get("in_hs", 0)
+	var in_dmg: int = entry.get("in_dmg", 0)
+	var in_hits: int = entry.get("in_hits", 0)
+	var in_hs: int = entry.get("in_hs", 0)
 
 	var in_dmg_lbl := Label.new()
 	in_dmg_lbl.text = str(in_dmg) if in_dmg > 0 else "-"
@@ -245,9 +245,9 @@ func _add_damage_row(entry: Dictionary, alt: bool) -> void:
 	out_col.add_theme_constant_override("separation", 0)
 	hbox.add_child(out_col)
 
-	var out_dmg := entry.get("out_dmg", 0)
-	var out_hits := entry.get("out_hits", 0)
-	var out_hs := entry.get("out_hs", 0)
+	var out_dmg: int = entry.get("out_dmg", 0)
+	var out_hits: int = entry.get("out_hits", 0)
+	var out_hs: int = entry.get("out_hs", 0)
 
 	var out_dmg_lbl := Label.new()
 	out_dmg_lbl.text = str(out_dmg) if out_dmg > 0 else "-"
