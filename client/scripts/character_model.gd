@@ -38,6 +38,14 @@ const WEAPON_CATEGORY := {0: "melee", 1: "pistol", 2: "rifle", 3: "rifle", 4: "r
 const HOLD_ANIM_MAP := {"melee": &"melee_hold", "pistol": &"pistol_hold", "rifle": &"rifle_hold"}
 const FIRE_ANIM_MAP := {"melee": &"melee_slash", "pistol": &"pistol_fire", "rifle": &"rifle_fire"}
 
+const WEAPON_MODEL_PATHS := {
+	0: "res://assets/weapons/melee/melee_world.glb",
+	1: "res://assets/weapons/usp/usp_world.glb",
+	2: "res://assets/weapons/ak47/ak47_world.glb",
+	3: "res://assets/weapons/m4a1/m4a1_world.glb",
+	4: "res://assets/weapons/awp/awp_world.glb",
+}
+
 
 func setup(faction: String = "angels") -> void:
 	var path: String = MODEL_PATHS.get(faction, MODEL_PATHS["angels"])
@@ -490,13 +498,23 @@ func _apply_color(color: Color) -> void:
 # --- Weapons ---
 
 
-func set_weapon_model(_weapon_idx: int) -> void:
+func set_weapon_model(weapon_idx: int) -> void:
 	if current_weapon_visual:
 		current_weapon_visual.queue_free()
 		current_weapon_visual = null
 
 	if not weapon_attach:
 		return
+
+	var path: String = WEAPON_MODEL_PATHS.get(weapon_idx, "")
+	if path != "":
+		var scene: PackedScene = load(path)
+		if scene:
+			var inst := scene.instantiate()
+			inst.name = "WeaponVisual"
+			weapon_attach.add_child(inst)
+			current_weapon_visual = inst
+			return
 
 	var box := BoxMesh.new()
 	box.size = Vector3(0.08, 0.08, 0.35)
