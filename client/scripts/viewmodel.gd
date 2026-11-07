@@ -106,7 +106,7 @@ func _process(delta: float) -> void:
 		AnimState.FIRE:
 			_anim_time += delta
 			var t := clampf(_anim_time / _anim_duration, 0.0, 1.0)
-			var kick := FIRE_KICK.get(_current_weapon_idx, DEFAULT_KICK)
+			var kick: Vector2 = FIRE_KICK.get(_current_weapon_idx, DEFAULT_KICK)
 			# Sharp attack, smooth decay
 			var intensity: float
 			if t < 0.2:
