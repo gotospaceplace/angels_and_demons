@@ -120,6 +120,8 @@ func _ready() -> void:
 	esc_menu.name = "EscMenu"
 	add_child(esc_menu)
 
+	_enter_spectator_from_player()
+
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		my_peer_id = multiplayer.get_unique_id() & 0xFFFF
 		print("[Client] Already connected (peer ID: %d)" % my_peer_id)
