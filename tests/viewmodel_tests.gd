@@ -8,7 +8,7 @@ var vm: Viewmodel
 
 func _ready() -> void:
 	print("=== Viewmodel Tests ===")
-	print("FP arms loading, weapon swap, render layer, visibility")
+	print("FP arms, weapon swap, render layer, animations")
 	print("")
 
 	vm = Viewmodel.new()
@@ -27,6 +27,13 @@ func _ready() -> void:
 	test_switch_weapon_replaces_visual()
 	test_invalid_weapon_fallback()
 	test_visibility_toggle()
+	test_idle_state_default()
+	test_play_fire_sets_state()
+	test_play_reload_sets_state()
+	test_play_equip_sets_state()
+	test_fire_kick_per_weapon()
+	test_fire_anim_durations_defined()
+	test_bob_constants()
 
 	vm.queue_free()
 	_print_summary()
@@ -178,3 +185,85 @@ func test_visibility_toggle() -> void:
 	else:
 		_fail("test_visibility_toggle",
 			"hidden=%s shown=%s" % [hidden, shown])
+
+
+func test_idle_state_default() -> void:
+	vm.set_weapon(2)
+	if vm.get_anim_state() == Viewmodel.AnimState.IDLE:
+		_pass("test_idle_state_default",
+			"default anim state is IDLE")
+	else:
+		_fail("test_idle_state_default",
+			"expected IDLE(0), got %d" % vm.get_anim_state())
+
+
+func test_play_fire_sets_state() -> void:
+	vm.play_fire()
+	if vm.get_anim_state() == Viewmodel.AnimState.FIRE:
+		_pass("test_play_fire_sets_state",
+			"play_fire() sets state to FIRE")
+	else:
+		_fail("test_play_fire_sets_state",
+			"expected FIRE(1), got %d" % vm.get_anim_state())
+	vm._anim_state = Viewmodel.AnimState.IDLE
+
+
+func test_play_reload_sets_state() -> void:
+	vm.play_reload(2.5)
+	if vm.get_anim_state() == Viewmodel.AnimState.RELOAD:
+		_pass("test_play_reload_sets_state",
+			"play_reload() sets state to RELOAD")
+	else:
+		_fail("test_play_reload_sets_state",
+			"expected RELOAD(2), got %d" % vm.get_anim_state())
+	vm._anim_state = Viewmodel.AnimState.IDLE
+
+
+func test_play_equip_sets_state() -> void:
+	vm.play_equip(1.0)
+	if vm.get_anim_state() == Viewmodel.AnimState.EQUIP:
+		_pass("test_play_equip_sets_state",
+			"play_equip() sets state to EQUIP")
+	else:
+		_fail("test_play_equip_sets_state",
+			"expected EQUIP(3), got %d" % vm.get_anim_state())
+	vm._anim_state = Viewmodel.AnimState.IDLE
+
+
+func test_fire_kick_per_weapon() -> void:
+	var missing := []
+	for i in range(5):
+		if not Viewmodel.FIRE_KICK.has(i):
+			missing.append(i)
+	if missing.is_empty():
+		_pass("test_fire_kick_per_weapon",
+			"all 5 weapons have fire kick parameters")
+	else:
+		_fail("test_fire_kick_per_weapon",
+			"missing kick data: %s" % str(missing))
+
+
+func test_fire_anim_durations_defined() -> void:
+	var missing := []
+	for i in range(5):
+		if not Viewmodel.FIRE_ANIM_DURATIONS.has(i):
+			missing.append(i)
+	if missing.is_empty():
+		_pass("test_fire_anim_durations_defined",
+			"all 5 weapons have fire animation durations")
+	else:
+		_fail("test_fire_anim_durations_defined",
+			"missing durations: %s" % str(missing))
+
+
+func test_bob_constants() -> void:
+	var ok := (Viewmodel.IDLE_BOB_SPEED > 0.0
+		and Viewmodel.WALK_BOB_SPEED > Viewmodel.IDLE_BOB_SPEED
+		and Viewmodel.WALK_BOB_X > Viewmodel.IDLE_BOB_X
+		and Viewmodel.WALK_BOB_Y > Viewmodel.IDLE_BOB_Y)
+	if ok:
+		_pass("test_bob_constants",
+			"walk bob faster/larger than idle bob")
+	else:
+		_fail("test_bob_constants",
+			"walk bob should be faster and larger than idle bob")
