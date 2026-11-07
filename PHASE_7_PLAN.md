@@ -436,18 +436,15 @@ For the initial integration (WB1–WB2), low-poly placeholder models are accepta
 2. ~~**WB2** (3P character scene)~~ — DONE PR #82
 3. ~~**WB3** (locomotion animations)~~ — DONE PR #83
 4. ~~**WB4** (combat animations)~~ — DONE PR #84
-5. **WB5** (weapon models) — next up
-6. **WB6** (viewmodel system)
-7. **WB7** (viewmodel animations)
-8. **WB8** (grenade models)
-9. **WB9** (death animation)
-10. **WB10** (D1 Brute)
-11. **WB11** (integration testing)
+5. ~~**WB5** (weapon models)~~ — DONE PR #85
+6. ~~**WB6** (viewmodel system)~~ — DONE PR #86
+7. ~~**WB7** (viewmodel animations)~~ — DONE PR #87
+8. ~~**WB8** (grenade models)~~ — DONE PR #88
+9. ~~**WB9** (death animation)~~ — DONE PR #89
+10. ~~**WB10** (D1 Brute)~~ — DONE PR #90
+11. ~~**WB11** (integration testing)~~ — DONE PR #91
 
 ---
 
 ## Immediate next steps
-1. **WB5** — Third-person weapon models: replace placeholder box with per-weapon GLB geometry on `hand_r`
-2. **WB6** — First-person viewmodel system: arms rig, render layer separation, camera-relative positioning
-3. **WB7** — First-person viewmodel animations: fire/reload/switch/idle per weapon
-4. Address protocol event flags (melee fire, reload start, grenade throw) — can be bundled into a single networking WB or deferred to playtesting phase
+All WBs complete. Phase 7 is done. Remaining deferred items (protocol event flags for melee fire, reload start, grenade throw) are tracked above for resolution in a follow-up phase.

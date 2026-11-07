@@ -110,6 +110,10 @@ func _ready() -> void:
 		print("EntryPoint: launching D1 Brute character test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/d1_brute_test_scene.tscn")
 		return
+	if "--test-phase7" in args:
+		print("EntryPoint: launching Phase 7 integration test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/phase7_integration_test_scene.tscn")
+		return
 	if "--bench" in args:
 		print("EntryPoint: launching performance benchmark")
 		get_tree().change_scene_to_file.call_deferred("res://tests/perf_benchmark_scene.tscn")
