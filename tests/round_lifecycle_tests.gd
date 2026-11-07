@@ -83,6 +83,7 @@ func _make_match() -> ServerMatch:
 	m.rounds_per_half = 12
 	m.rounds_to_win = 13
 	m.warmup_min_players = 2
+	m.warmup_time = 0.0
 	return m
 
 
