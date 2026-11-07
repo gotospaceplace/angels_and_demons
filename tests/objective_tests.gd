@@ -375,6 +375,7 @@ func test_portal_opened_ends_round() -> void:
 	var plugin := _create_plugin()
 	plugin.load_map_portal_sites({&"A": SITE_A, &"B": SITE_B})
 	plugin.on_map_load("test")
+	plugin.server_match.warmup_time = 0.0
 
 	plugin.server_match.set_team(1, Team.Id.DEMONS)
 	plugin.server_match.set_team(2, Team.Id.ANGELS)
@@ -404,6 +405,7 @@ func test_portal_sealed_ends_round() -> void:
 	var plugin := _create_plugin()
 	plugin.load_map_portal_sites({&"A": SITE_A, &"B": SITE_B})
 	plugin.on_map_load("test")
+	plugin.server_match.warmup_time = 0.0
 
 	plugin.server_match.set_team(1, Team.Id.DEMONS)
 	plugin.server_match.set_team(2, Team.Id.ANGELS)
