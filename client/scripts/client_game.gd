@@ -652,11 +652,24 @@ func set_local_player(player: CharacterBody3D) -> void:
 	local_player.set_physics_process(false)
 	local_player.set_physics_interpolation_mode(Node.PHYSICS_INTERPOLATION_MODE_OFF)
 
+	var cam := local_player.get_node_or_null("Head/Camera3D")
+	if cam and not cam.has_node("Viewmodel"):
+		var vm := Viewmodel.new()
+		vm.name = "Viewmodel"
+		cam.add_child(vm)
+		vm.setup("angels")
+		var ws := local_player.get_node_or_null("WeaponSystem")
+		if ws:
+			ws.viewmodel = vm
+
 
 func _enter_spectator_from_player() -> void:
 	var player_cam := local_player.get_node_or_null("Head/Camera3D")
 	if player_cam:
 		player_cam.current = false
+		var vm := player_cam.get_node_or_null("Viewmodel")
+		if vm:
+			vm.visible = false
 	local_player.set_process_unhandled_input(false)
 	var ws := local_player.get_node_or_null("WeaponSystem")
 	if ws:
@@ -680,6 +693,9 @@ func _exit_spectator_to_player() -> void:
 	var cam := local_player.get_node_or_null("Head/Camera3D")
 	if cam:
 		cam.current = true
+		var vm := cam.get_node_or_null("Viewmodel")
+		if vm:
+			vm.visible = true
 	if has_node("/root/Crosshair"):
 		get_node("/root/Crosshair").visible = true
 

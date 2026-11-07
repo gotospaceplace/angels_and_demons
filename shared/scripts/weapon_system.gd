@@ -43,6 +43,7 @@ var prev_index: int = 0
 # Input
 var fire_held: bool = false
 var fire_queued: bool = false
+var viewmodel: Node3D = null
 
 # Scope
 var is_scoped: bool = false
@@ -79,6 +80,7 @@ func _ready() -> void:
 	player = get_parent() as CharacterBody3D
 	head = player.get_node("Head")
 	camera = player.get_node("Head/Camera3D")
+	viewmodel = camera.get_node_or_null("Viewmodel")
 	weapons = WR.create_all()
 	for w in weapons:
 		magazine.append(w.magazine_size)
@@ -526,6 +528,8 @@ func _equip(index: int) -> void:
 	zoom_level = 0
 	silencer_on = false
 	camera.fov = 75.0
+	if viewmodel and viewmodel.has_method("set_weapon"):
+		viewmodel.set_weapon(index)
 
 
 # --- Reload ---
