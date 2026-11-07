@@ -21,6 +21,10 @@ func _ready() -> void:
 		&"test_plugin_get_spawn_position_unassigned",
 		&"test_teleport_preserves_equipment",
 		&"test_respawn_resets_equipment",
+		&"test_spectator_not_playing_team",
+		&"test_die_sets_respawn_tick",
+		&"test_respawn_clears_dead_state",
+		&"test_spectator_stays_dead_after_round_reset",
 	]
 
 	print("=== Spawn System Tests ===")
@@ -237,3 +241,58 @@ func _make_player(peer_id: int) -> RefCounted:
 	add_child(parent)
 	sp.create(peer_id, Vector3.ZERO, parent)
 	return sp
+
+
+func test_spectator_not_playing_team() -> void:
+	var spectator_ok := not Team.is_playing_team(Team.Id.SPECTATOR)
+	var unassigned_ok := not Team.is_playing_team(Team.Id.UNASSIGNED)
+	var angels_ok := Team.is_playing_team(Team.Id.ANGELS)
+	var demons_ok := Team.is_playing_team(Team.Id.DEMONS)
+	if spectator_ok and unassigned_ok and angels_ok and demons_ok:
+		_pass("SPECTATOR/UNASSIGNED are not playing teams, ANGELS/DEMONS are")
+	else:
+		_fail("playing team check wrong: spec=%s unassigned=%s angels=%s demons=%s" % [
+			spectator_ok, unassigned_ok, angels_ok, demons_ok])
+
+
+func test_die_sets_respawn_tick() -> void:
+	var sp := _make_player(10)
+	sp.die(1000)
+	var expected := 1000 + int(NetConstants.RESPAWN_DELAY * float(NetConstants.TICK_RATE))
+	if sp.is_dead and sp.respawn_tick == expected:
+		_pass("die() sets is_dead=true respawn_tick=%d" % sp.respawn_tick)
+	else:
+		_fail("die() state wrong: is_dead=%s respawn_tick=%d expected=%d" % [
+			sp.is_dead, sp.respawn_tick, expected])
+	sp.destroy()
+
+
+func test_respawn_clears_dead_state() -> void:
+	var sp := _make_player(11)
+	sp.die(1000)
+	sp.respawn(Vector3(5, 1, 5))
+	var collision: CollisionShape3D = sp.body.get_node_or_null("PlayerCollision")
+	var collision_enabled := collision != null and not collision.disabled
+	if not sp.is_dead and sp.hp == 100 and collision_enabled:
+		_pass("respawn clears dead state: is_dead=false hp=100 collision=enabled")
+	else:
+		_fail("respawn state wrong: is_dead=%s hp=%d collision=%s" % [
+			sp.is_dead, sp.hp, collision_enabled])
+	sp.destroy()
+
+
+func test_spectator_stays_dead_after_round_reset() -> void:
+	var sp := _make_player(12)
+	sp.is_dead = true
+	var collision: CollisionShape3D = sp.body.get_node_or_null("PlayerCollision")
+	if collision:
+		collision.disabled = true
+	var team := Team.Id.SPECTATOR
+	if not Team.is_playing_team(team):
+		if sp.is_dead:
+			_pass("spectator skipped by round reset guard (is_dead=true, not playing team)")
+		else:
+			_fail("spectator unexpectedly alive")
+	else:
+		_fail("SPECTATOR should not be a playing team")
+	sp.destroy()

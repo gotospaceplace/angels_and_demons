@@ -93,13 +93,28 @@ func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
 	var best_hit := {}
 	var best_dist := scan_dist
 
+	var check_states: Dictionary = {}
 	for pid in state["players"]:
+		check_states[pid] = state["players"][pid]
+	for pid in players:
+		if pid in check_states:
+			continue
+		var sp = players[pid]
+		if sp.is_dead:
+			continue
+		check_states[pid] = {
+			"position": sp.body.global_position,
+			"duck_fraction": sp.body.duck_fraction,
+			"yaw": sp.body.rotation.y,
+		}
+
+	for pid in check_states:
 		if pid == shooter_id:
 			continue
 		if not players.has(pid):
 			continue
 
-		var ps: Dictionary = state["players"][pid]
+		var ps: Dictionary = check_states[pid]
 		var target_pos: Vector3 = ps["position"]
 		var duck_frac: float = ps["duck_fraction"]
 		var eased: float = duck_frac * duck_frac * (3.0 - 2.0 * duck_frac)
@@ -164,7 +179,7 @@ func process_fire(shooter_id: int, cmd: NetInput, current_tick: int,
 
 	if weapon.is_melee:
 		var victim_id: int = best_hit["victim_id"]
-		var victim_ps: Dictionary = state["players"].get(victim_id, {})
+		var victim_ps: Dictionary = check_states.get(victim_id, {})
 		var is_backstab := false
 		if not victim_ps.is_empty():
 			var atk_yaw := deg_to_rad(cmd.yaw)

@@ -631,19 +631,34 @@ func _restore_player(peer_id: int, token: int) -> void:
 	peer_tokens[peer_id] = token
 	plugin_manager.dispatch_on_player_connect(peer_id)
 
+	var team: int = plugin_manager.dispatch_get_player_team(peer_id)
+	if team == Team.Id.SPECTATOR:
+		sp.is_dead = true
+		var collision: CollisionShape3D = sp.body.get_node_or_null("PlayerCollision")
+		if collision:
+			collision.disabled = true
+	else:
+		plugin_manager.dispatch_on_player_spawn(peer_id, spawn_pos)
+
 	var session_packet := NetProtocol.pack_session_event(token)
 	multiplayer.send_bytes(session_packet, peer_id,
 		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 		NetConstants.CHANNEL_EVENTS)
 
-	var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
-	for pid in players:
-		multiplayer.send_bytes(spawn_packet, pid,
-			MultiplayerPeer.TRANSFER_MODE_RELIABLE,
-			NetConstants.CHANNEL_EVENTS)
+	if team != Team.Id.SPECTATOR:
+		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
+		for pid in players:
+			multiplayer.send_bytes(spawn_packet, pid,
+				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
+				NetConstants.CHANNEL_EVENTS)
 
-	print("[Server] Player %d reconnected (token=%d, K:%d D:%d, total: %d)" % [
-		peer_id, token, sp.kills, sp.deaths, players.size()])
+	_send_match_state_to(peer_id)
+	if team == Team.Id.SPECTATOR:
+		print("[Server] Player %d reconnected as spectator (token=%d, K:%d D:%d, total: %d)" % [
+			peer_id, token, sp.kills, sp.deaths, players.size()])
+	else:
+		print("[Server] Player %d reconnected at %s (token=%d, K:%d D:%d, total: %d)" % [
+			peer_id, spawn_pos, token, sp.kills, sp.deaths, players.size()])
 
 
 func _process_pending_peers() -> void:
@@ -1088,8 +1103,13 @@ func _reset_round_players() -> void:
 		if is_instance_valid(g["body"]):
 			g["body"].queue_free()
 	active_grenades.clear()
+	var respawned := 0
 	for peer_id in players:
 		var sp = players[peer_id]
+		var team: int = plugin_manager.dispatch_get_player_team(peer_id)
+		if not Team.is_playing_team(team):
+			continue
+
 		var spawn_pos: Vector3 = plugin_manager.dispatch_get_spawn_position(peer_id)
 		if spawn_pos == Vector3.ZERO:
 			spawn_pos = spawn_points[randi() % spawn_points.size()]
@@ -1098,13 +1118,14 @@ func _reset_round_players() -> void:
 			sp.respawn(spawn_pos)
 		else:
 			sp.teleport_to_spawn(spawn_pos)
+		respawned += 1
 
 		var spawn_packet := NetProtocol.pack_spawn_event(peer_id, spawn_pos)
 		for pid in players:
 			multiplayer.send_bytes(spawn_packet, pid,
 				MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 				NetConstants.CHANNEL_EVENTS)
-	print("[Server] Round reset: %d players respawned" % players.size())
+	print("[Server] Round reset: %d players respawned" % respawned)
 
 
 func _handle_chat_command(peer_id: int, raw: String) -> void:
