@@ -243,6 +243,14 @@ jobs:
             echo "Skipping — D1 Brute tests not merged yet"
           fi
 
+      - name: Phase 7 integration tests
+        run: |
+          if [ -f tests/phase7_integration_tests.gd ]; then
+            timeout 60 godot --headless --path . -- --test-phase7
+          else
+            echo "Skipping — Phase 7 integration tests not merged yet"
+          fi
+
       - name: Performance benchmark
         run: timeout 60 godot --headless --path . -- --bench
 
