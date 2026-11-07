@@ -85,6 +85,15 @@ func get_client_state() -> Dictionary:
 	}
 
 
+func reset_match() -> void:
+	_round_damage.clear()
+	for pid in _player_stats:
+		_player_stats[pid] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
+	if manager:
+		manager.plugin_event.emit(&"roster_changed", {})
+	print("[Deathmatch] Match reset — all stats cleared")
+
+
 func on_round_start(_round_number: int) -> void:
 	pass
 

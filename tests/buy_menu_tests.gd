@@ -192,6 +192,7 @@ func _create_match() -> ServerMatch:
 	var m := ServerMatch.new()
 	m.register_settings(config)
 	m.apply_settings(config)
+	m.warmup_time = 0.0
 	return m
 
 
@@ -254,6 +255,7 @@ func _create_competitive_plugin() -> PluginCompetitive:
 	var plugin := PluginCompetitive.new()
 	var pm := PluginManager.new()
 	pm.load_plugin(plugin)
+	plugin.server_match.warmup_time = 0.0
 
 	var angels_spawns: Array[Vector3] = [
 		Vector3(0, 1, -18), Vector3(2, 1, -18), Vector3(-2, 1, -18),

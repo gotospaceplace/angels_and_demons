@@ -55,6 +55,7 @@ func _create_match() -> ServerMatch:
 	var m := ServerMatch.new()
 	m.register_settings(config)
 	m.apply_settings(config)
+	m.warmup_time = 0.0
 	return m
 
 
@@ -62,6 +63,7 @@ func _create_plugin() -> PluginCompetitive:
 	var plugin := PluginCompetitive.new()
 	var pm := PluginManager.new()
 	pm.load_plugin(plugin)
+	plugin.server_match.warmup_time = 0.0
 	return plugin
 
 
@@ -373,6 +375,7 @@ func test_portal_opened_ends_round() -> void:
 	var plugin := _create_plugin()
 	plugin.load_map_portal_sites({&"A": SITE_A, &"B": SITE_B})
 	plugin.on_map_load("test")
+	plugin.server_match.warmup_time = 0.0
 
 	plugin.server_match.set_team(1, Team.Id.DEMONS)
 	plugin.server_match.set_team(2, Team.Id.ANGELS)
@@ -402,6 +405,7 @@ func test_portal_sealed_ends_round() -> void:
 	var plugin := _create_plugin()
 	plugin.load_map_portal_sites({&"A": SITE_A, &"B": SITE_B})
 	plugin.on_map_load("test")
+	plugin.server_match.warmup_time = 0.0
 
 	plugin.server_match.set_team(1, Team.Id.DEMONS)
 	plugin.server_match.set_team(2, Team.Id.ANGELS)

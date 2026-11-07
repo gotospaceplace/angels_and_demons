@@ -74,6 +74,7 @@ func get_player_team(_peer_id: int) -> int: return 0
 # --- Chat / admin ---
 func on_chat_message(_peer_id: int, _message: String, _team_only: bool) -> String: return _message
 func on_console_command(_cmd: String, _args: String) -> bool: return false
+func reset_match() -> void: pass
 
 # --- Client notification ---
 func get_client_mode() -> StringName: return &""

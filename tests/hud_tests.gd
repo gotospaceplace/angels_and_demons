@@ -474,6 +474,7 @@ func _test_hud_timer_format() -> void:
 	_assert(timer_color.is_equal_approx(ClientHud.COL_TIMER_WARN), "timer_red_under_10s")
 
 	hud.match_state = "WARMUP"
+	hud.round_timer = 0.0
 	hud._update_timer()
 	_assert(hud.timer_label.text == "WARMUP", "timer_warmup_text")
 

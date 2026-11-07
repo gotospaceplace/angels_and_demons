@@ -36,6 +36,9 @@ var buy_time: float = 15.0
 var round_over_time: float = 5.0
 var halftime_time: float = 15.0
 var warmup_min_players: int = 2
+var warmup_time: float = 10.0
+var _warmup_countdown: float = 0.0
+var _warmup_counting: bool = false
 
 var economy: ServerEconomy
 var round_timer_paused: bool = false
@@ -58,6 +61,7 @@ func register_settings(config: MatchConfig) -> void:
 	config.register("mp_halftime", halftime_time, "Halftime duration in seconds", &"competitive")
 	config.register("mp_rounds_per_half", rounds_per_half, "Rounds per half", &"competitive")
 	config.register("mp_warmup_min_players", warmup_min_players, "Min players to start match", &"competitive")
+	config.register("mp_warmup_time", warmup_time, "Warmup countdown in seconds", &"competitive")
 
 
 func apply_settings(config: MatchConfig) -> void:
@@ -68,14 +72,19 @@ func apply_settings(config: MatchConfig) -> void:
 	halftime_time = config.get_float("mp_halftime")
 	rounds_per_half = config.get_int("mp_rounds_per_half")
 	warmup_min_players = config.get_int("mp_warmup_min_players")
+	warmup_time = config.get_float("mp_warmup_time")
 	rounds_to_win = rounds_per_half + 1
 	max_rounds = rounds_per_half * 2
 
 
 func tick(delta: float, player_count: int) -> void:
+	if state != State.WARMUP and state != State.MATCH_OVER:
+		if player_count < warmup_min_players:
+			_return_to_warmup()
+			return
 	match state:
 		State.WARMUP:
-			_tick_warmup(player_count)
+			_tick_warmup(delta, player_count)
 		State.FREEZE:
 			_tick_freeze(delta)
 		State.LIVE:
@@ -145,8 +154,27 @@ func is_buy_period() -> bool:
 	return false
 
 
+func reset() -> void:
+	state = State.WARMUP
+	round_number = 0
+	score[Team.Id.ANGELS] = 0
+	score[Team.Id.DEMONS] = 0
+	state_timer = 0.0
+	round_timer = 0.0
+	round_timer_paused = false
+	catalyst_activated = false
+	_warmup_countdown = 0.0
+	_warmup_counting = false
+	_alive_count[Team.Id.ANGELS] = 0
+	_alive_count[Team.Id.DEMONS] = 0
+	_round_winner = Team.Id.UNASSIGNED
+	economy.reset_economy()
+
+
 func get_remaining_time() -> float:
 	match state:
+		State.WARMUP:
+			return _warmup_countdown if _warmup_counting else 0.0
 		State.LIVE: return round_timer
 		State.FREEZE: return state_timer
 		State.ROUND_OVER: return state_timer
@@ -162,9 +190,29 @@ func _change_state(new_state: int) -> void:
 	state_changed.emit(old, new_state)
 
 
-func _tick_warmup(player_count: int) -> void:
+func _return_to_warmup() -> void:
+	round_timer_paused = false
+	catalyst_activated = false
+	_warmup_counting = false
+	_warmup_countdown = 0.0
+	_change_state(State.WARMUP)
+
+
+func _tick_warmup(delta: float, player_count: int) -> void:
 	if player_count >= warmup_min_players:
-		_start_round()
+		if not _warmup_counting:
+			_warmup_counting = true
+			_warmup_countdown = warmup_time
+			state_changed.emit(State.WARMUP, State.WARMUP)
+		_warmup_countdown -= delta
+		if _warmup_countdown <= 0.0:
+			_warmup_counting = false
+			_warmup_countdown = 0.0
+			_start_round()
+	elif _warmup_counting:
+		_warmup_counting = false
+		_warmup_countdown = 0.0
+		state_changed.emit(State.WARMUP, State.WARMUP)
 
 
 func _tick_freeze(delta: float) -> void:

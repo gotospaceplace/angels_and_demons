@@ -400,7 +400,11 @@ func _update_ammo() -> void:
 
 func _update_timer() -> void:
 	if match_state == "WARMUP":
-		timer_label.text = "WARMUP"
+		if round_timer > 0.0:
+			var secs: int = ceili(round_timer)
+			timer_label.text = "MATCH START: %d" % secs
+		else:
+			timer_label.text = "WARMUP"
 		timer_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.2))
 	elif match_state == "MATCH_OVER":
 		timer_label.text = "MATCH OVER"
@@ -467,7 +471,10 @@ func _update_objective() -> void:
 		"HALFTIME":
 			objective_label.text = "HALFTIME"
 		"WARMUP":
-			objective_label.text = "Waiting for players"
+			if round_timer > 0.0:
+				objective_label.text = "Match starting..."
+			else:
+				objective_label.text = "Waiting for players"
 		"MATCH_OVER":
 			objective_label.text = ""
 		_:
