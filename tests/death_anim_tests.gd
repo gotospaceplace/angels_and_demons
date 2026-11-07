@@ -149,8 +149,8 @@ func test_remote_player_apply_death() -> void:
 	rp.create(999)
 	add_child(rp)
 	rp.apply_death()
-	var dead := rp.character_model._is_dead
-	var label_hidden := not rp.name_label.visible
+	var dead: bool = rp.character_model._is_dead
+	var label_hidden: bool = not rp.name_label.visible
 	if dead and label_hidden:
 		_pass("test_remote_player_apply_death",
 			"apply_death() triggers model death + hides label")
