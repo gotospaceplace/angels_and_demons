@@ -222,8 +222,7 @@ func _load_arms() -> void:
 	_arms_skeleton = _find_typed(_arms_root, &"Skeleton3D") as Skeleton3D
 	_arms_mesh = _find_typed(_arms_root, &"MeshInstance3D") as MeshInstance3D
 
-	if _arms_mesh:
-		_arms_mesh.layers = 1 << (RENDER_LAYER - 1)
+	_set_render_layer_recursive(_arms_root, RENDER_LAYER)
 
 	if _arms_skeleton:
 		var hand_r_idx := _arms_skeleton.find_bone("hand_r")

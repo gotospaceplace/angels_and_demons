@@ -125,6 +125,7 @@ func _apply_dead_state(rp: Dictionary, is_dead: bool) -> void:
 	elif not is_dead and rp["is_dead"]:
 		rp["is_dead"] = false
 		rp["node"].visible = true
+		rp["node"].apply_respawn()
 	elif not is_dead:
 		rp["node"].visible = true
 
