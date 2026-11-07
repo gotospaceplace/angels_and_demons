@@ -20,6 +20,9 @@ var _weapon_hold_node: AnimationNodeAnimation = null
 var _weapon_action_node: AnimationNodeAnimation = null
 var _current_weapon_idx: int = -1
 var _prev_ammo: int = -1
+var _is_dead := false
+
+const DEATH_DURATION := 0.8
 
 const MODEL_PATHS := {
 	"angels": "res://assets/characters/angel_templar/angel_templar.glb",
@@ -529,6 +532,24 @@ func set_weapon_model(weapon_idx: int) -> void:
 
 
 # --- Ducking ---
+
+
+func play_death() -> void:
+	if _is_dead:
+		return
+	_is_dead = true
+	if anim_tree:
+		anim_tree.active = false
+	var tween := create_tween()
+	tween.tween_property(self, "rotation_degrees:x", 90.0, DEATH_DURATION)\
+		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(self, "position:y",
+		position.y - 0.4, DEATH_DURATION)\
+		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+
+
+func is_dead() -> bool:
+	return _is_dead
 
 
 func set_ducked(ducked: bool) -> void:
