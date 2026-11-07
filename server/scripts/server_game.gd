@@ -1078,6 +1078,9 @@ func _send_death_report(victim_id: int) -> void:
 		MultiplayerPeer.TRANSFER_MODE_RELIABLE,
 		NetConstants.CHANNEL_EVENTS)
 
+	damage_log = damage_log.filter(func(e):
+		return e["attacker"] != victim_id and e["victim"] != victim_id)
+
 
 func _reset_round_players() -> void:
 	damage_log.clear()
