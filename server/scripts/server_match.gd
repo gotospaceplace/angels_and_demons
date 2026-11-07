@@ -31,7 +31,7 @@ var max_rounds: int = 24
 var rounds_to_win: int = 13
 
 var round_time: float = 115.0
-var freeze_time: float = 5.0
+var freeze_time: float = 1.0
 var buy_time: float = 15.0
 var round_over_time: float = 5.0
 var halftime_time: float = 15.0
