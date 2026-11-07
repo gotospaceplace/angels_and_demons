@@ -6,6 +6,8 @@ var peer_id: int = 0
 var head: Node3D
 var name_label: Label3D
 var character_model: CharacterModel
+var _prev_position := Vector3.ZERO
+var _has_prev := false
 
 
 func create(p_peer_id: int) -> void:
@@ -49,3 +51,16 @@ func apply_state(pos: Vector3, yaw_deg: float, pitch_deg: float, ducked: bool) -
 
 	if character_model:
 		character_model.set_ducked(ducked)
+
+		if _has_prev:
+			var dt := get_process_delta_time()
+			if dt > 0.001:
+				var world_vel := (pos - _prev_position) / dt
+				var local_vel := world_vel.rotated(Vector3.UP, -deg_to_rad(yaw_deg))
+				var on_ground := absf(world_vel.y) < 1.0
+				character_model.update_movement(local_vel, on_ground)
+		else:
+			character_model.update_movement(Vector3.ZERO, true)
+
+		_prev_position = pos
+		_has_prev = true
