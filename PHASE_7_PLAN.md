@@ -1,5 +1,5 @@
 # PHASE 7 — Character Models & Animation Integration
-**Status:** Not started | **Version:** 1.0 | **Date:** 2026-11-06
+**Status:** In progress (WB1–WB4 complete) | **Version:** 1.1 | **Date:** 2026-11-07
 
 ## Scope
 Replace all placeholder geometry (capsules, spheres, boxes) with production-ready character models, weapon models, first-person arms, and grenade visuals. Integrate the shared 23-bone rig from the Character Production Draft 0.1 into the game, wire up animations for all core gameplay states, and ensure the models work with the existing server-authoritative hit detection, lag compensation, and networking systems.
@@ -29,17 +29,19 @@ Replace all placeholder geometry (capsules, spheres, boxes) with production-read
 
 ## Current state
 
-All player visuals are procedural placeholder geometry with no skeleton or animation:
+WB1–WB4 complete. Character model pipeline proven, locomotion and combat animations wired:
 
-| Element | Current | Target |
-|---------|---------|--------|
-| Third-person body | `CapsuleMesh` (0.35r, 1.829m) in `remote_player.gd:15-24` | Skinned A1/D1 mesh on Skeleton3D |
-| Third-person head | `SphereMesh` (0.15r) on Head node in `remote_player.gd:31-39` | Part of character skeleton, head bone |
-| Third-person weapon | `BoxMesh` (0.08x0.08x0.35) on Head in `remote_player.gd:41-49` | Weapon model attached to `hand_r` bone |
-| First-person view | No viewmodel — camera only in `player_controller.gd` | First-person arms + weapon viewmodel |
-| Grenade projectile | `SphereMesh` (radius 0.05) in `grenade_projectile.gd:36-44` | Grenade model (HE/flash/smoke variants) |
-| Server hit detection | Ray-AABB (head) + ray-capsule (body) in `server_lag_comp.gd` | Must align with skeleton pose |
-| Team color | `set_team_color()` on capsule material | Material swap or shader parameter on character mesh |
+| Element | Status | Description |
+|---------|--------|-------------|
+| Asset pipeline | **Done (WB1, PR #81)** | Python-generated placeholder GLB with 23-bone skeleton, 354 verts |
+| Third-person body | **Done (WB2, PR #82)** | `CharacterModel` class loads GLB, discovers skeleton, creates bone attachments |
+| Third-person head | **Done (WB2)** | Head bone at y=1.618 matches `server_lag_comp.gd` HEAD_STANDING |
+| Third-person weapon mount | **Done (WB2)** | `BoneAttachment3D` on `hand_r`, placeholder box mesh swapped per weapon |
+| Locomotion animations | **Done (WB3, PR #83)** | AnimationTree with idle/walk/crouch blending, velocity-driven, smooth duck blend |
+| Combat animations | **Done (WB4, PR #84)** | Upper-body weapon overlay, hold/fire/slash/switch anims, snapshot event wiring |
+| First-person view | Not started | No viewmodel — camera only in `player_controller.gd` |
+| Grenade projectile | Not started | `SphereMesh` (radius 0.05) in `grenade_projectile.gd` |
+| Team color | **Done (WB2)** | `set_team_color()` applies material override on character mesh |
 
 ### Prototype history
 Character prototypes v0.1–v0.4 explored mannequin proportions, the 23-bone shared skeleton hierarchy, and damage zone visualization. The v0.4 prototype has the final symmetrical low crouch, hitbox groups, and non-targetable cosmetics (halo/horns). None of these prototypes are integrated into the actual game — they are standalone Godot projects under `Prototypes/Characters/`.
@@ -179,62 +181,43 @@ Each `.glb` is a simple static mesh (no skeleton needed). The grenade type index
 
 ## Work breakdown
 
-### WB1: Asset directory and import pipeline
-- [ ] Create `assets/characters/`, `assets/weapons/`, `assets/grenades/` directory structure
-- [ ] Create or source placeholder `.glb` files for one character (A1 Templar) using the shared 23-bone rig
-  - Standing A-pose mesh, skinned to skeleton, 3,000–5,500 triangles
-  - Team-colored material (albedo + roughness, blue/ivory palette)
-- [ ] Verify Godot 4.7.2 imports the `.glb` correctly: skeleton names match, mesh renders, no transform issues
-- [ ] Document the import settings that work (scale, bone naming, animation settings)
-- [ ] Create `.import` override if needed for consistent reimport
+### WB1: Asset directory and import pipeline — COMPLETE (PR #81)
+- [x] Create `assets/characters/`, `assets/weapons/`, `assets/grenades/` directory structure
+- [x] Create placeholder `.glb` for A1 Templar using Python glTF 2.0 generator (23-bone rig, 354 verts, 704 tris)
+- [x] Verify Godot imports `.glb` correctly via CI (skeleton names match, no transform issues)
+- [x] Import settings: runtime `load()` instead of `preload()` to avoid compile-time resolution failures
 
-### WB2: Third-person character scene
-- [ ] Create `client/scenes/character_model.tscn` — reusable character scene
-  - Skeleton3D with the shared rig
-  - MeshInstance3D for the skinned character mesh
-  - BoneAttachment3D on `hand_r` for weapon mount
-  - BoneAttachment3D on `head` for cosmetic mount
-  - AnimationPlayer (initially with just idle)
-- [ ] Create `client/scripts/character_model.gd` — manages mesh swapping (A1 vs D1) and weapon attachment
-  - `set_faction(faction: String)` — swaps character mesh
-  - `set_weapon_model(weapon_idx: int)` — swaps weapon on hand_r
-  - `set_team_color(color: Color)` — sets material parameter
-- [ ] Update `remote_player.gd` to instantiate `character_model.tscn` instead of procedural capsule/sphere/box
-- [ ] Verify remote players render with the new model in multiplayer
-- [ ] Verify team colors work on the new model
-- [ ] Verify head position from skeleton matches existing `MC.VIEW_OFFSET_STANDING` / `MC.VIEW_OFFSET_DUCKING`
+### WB2: Third-person character scene — COMPLETE (PR #82)
+- [x] Create `CharacterModel` class (pure code, no .tscn) — runtime GLB loading, skeleton discovery, bone attachments
+- [x] `set_faction()`, `set_weapon_model()`, `set_team_color()` all implemented
+- [x] Fallback to procedural capsule if GLB fails to load
+- [x] `remote_player.gd` refactored to use `CharacterModel`
+- [x] Head bone at y=1.618 matches `server_lag_comp.gd` HEAD_STANDING
+- [x] Model positioned at `-HULL_STANDING_HEIGHT/2` from capsule center (feet at y=0)
 
-### WB3: Third-person animations — locomotion
-- [ ] Create or source animation clips for the shared rig:
-  - `idle_stand` — weapon-ready standing idle (loop)
-  - `idle_crouch` — weapon-ready crouched idle (loop)
-  - `walk_forward` / `walk_backward` / `strafe_left` / `strafe_right` — standing (loop)
-  - `crouch_forward` / `crouch_backward` / `crouch_strafe_left` / `crouch_strafe_right` — crouched (loop)
-  - `jump_start` / `jump_loop` / `jump_land` — airborne sequence
-  - `stand_to_crouch` / `crouch_to_stand` — transitions
-- [ ] Set up `AnimationTree` with blend tree / state machine:
-  - Movement blend space: idle ↔ directional movement based on velocity
-  - Crouch layer: blend between standing and crouched animation sets via `duck_fraction`
-  - Airborne state: jump start → loop → land
-- [ ] Wire AnimationTree parameters to remote player state (velocity, duck_fraction, on_ground)
-- [ ] Verify animations play correctly at gameplay speed (250 u/s walking)
-- [ ] Verify no foot sliding at normal movement speed
+### WB3: Third-person animations — locomotion — COMPLETE (PR #83)
+- [x] Procedural bone-rotation animation clips: idle, walk, crouch_idle, crouch_walk
+- [x] AnimationTree with BlendTree: stand_blend (idle↔walk) + crouch_speed (crouch_idle↔crouch_walk) + duck_blend
+- [x] Velocity-derived blending: position deltas → local velocity → speed_norm against GROUND_SPEED_CLAMP
+- [x] Smooth duck blending via `_process()` interpolation over DUCK_TIME (0.4s)
+- [x] Fallback to Y-scale when no AnimationTree (no skeleton loaded)
 
-### WB4: Third-person animations — combat
-- [ ] Create or source animation clips:
-  - `rifle_hold` — AK/M4 idle pose overlay
-  - `rifle_fire` — single shot recoil (one-shot, ~0.1s)
-  - `rifle_reload` — magazine swap (~2.5s)
-  - `pistol_hold` / `pistol_fire` / `pistol_reload`
-  - `melee_slash` / `melee_stab` — melee attacks
-  - `awp_hold` / `awp_fire` / `awp_reload` — bolt-action specific
-  - `weapon_switch` — lower current → raise new (~0.5s)
-  - `grenade_throw` — wind up → release
-- [ ] Add weapon pose layer to AnimationTree:
-  - Upper body overrides locomotion with weapon-specific pose
-  - Fire/reload/switch are one-shot animations that play over the hold pose
-- [ ] Wire fire/reload/switch events from snapshot data to trigger animations on remote players
-- [ ] Verify weapon model stays aligned to hand during all animations
+**Deferred from WB3:** Jump/airborne animations, directional strafe blending (walk is forward-only currently)
+
+### WB4: Third-person animations — combat — COMPLETE (PR #84)
+- [x] Procedural combat clips: rifle_hold/fire, pistol_hold/fire, melee_hold/slash, weapon_switch
+- [x] Upper-body weapon overlay: filtered AnimationNodeBlend2 on 13 upper-body bones
+- [x] AnimationNodeOneShot for fire/switch actions (fadein 0.02s, fadeout 0.08s)
+- [x] Event wiring: `client_interpolation` → `remote_player.apply_weapon_state()` → `character_model.apply_weapon_state()`
+- [x] Fire detection from ammo_mag decrease, weapon switch from weapon_idx change
+- [x] 16 tests in `combat_anim_tests.gd`
+
+**Deferred from WB4:**
+- Reload animations (rifle_reload, pistol_reload, awp_reload) — need reload-start event flag in protocol
+- Melee fire triggering — ammo is always 0 for melee, needs event flag
+- AWP-specific bolt-action animation — uses rifle_fire for now
+- Grenade throw animation — no snapshot field for grenade events
+- Melee stab animation — separate from slash, needs stab event distinction
 
 ### WB5: Third-person weapon models
 - [ ] Create or source `.glb` models for each weapon:
@@ -385,6 +368,43 @@ Each `.glb` is a simple static mesh (no skeleton needed). The grenade type index
 
 ---
 
+## Deferred items (accumulated across WB1–WB4)
+
+Items deferred from completed work blocks. These are tracked here for resolution in later WBs or a follow-up phase.
+
+### Needs network protocol event flags
+These items cannot be driven from snapshot state alone (weapon_idx + ammo_mag). They require adding event bits to `net_snapshot.gd` or a separate event channel.
+
+| Item | Origin | Why deferred | Resolution |
+|------|--------|-------------|------------|
+| Melee fire triggering | WB4 | ammo_mag is always 0 for melee — no state change to detect | Add `fire_event` flag to snapshot |
+| Reload-start animation | WB4 | Only reload completion detectable (ammo increase); start is invisible | Add `reload_event` flag to snapshot |
+| Grenade throw animation | WB4 | No snapshot field for grenade events | Add `grenade_event` flag or use existing grenade spawn RPC |
+| Melee stab vs slash distinction | WB4 | Both are fire events on weapon_idx 0; no way to distinguish attack type | Add `is_stab` flag or use attack-type field |
+
+### Needs additional animation clips
+These are animation gaps that don't block gameplay but reduce visual fidelity.
+
+| Item | Origin | Why deferred | Resolution |
+|------|--------|-------------|------------|
+| Jump/airborne animations | WB3 | Locomotion focused on ground movement first | Add jump_start/loop/land clips, airborne state in blend tree |
+| Directional strafe blending | WB3 | Walk animation is forward-only; no left/right/back variants | Add strafe clips + 2D blend space based on local velocity direction |
+| AWP bolt-action animation | WB4 | Uses generic rifle_fire; AWP should have distinct bolt-pull recoil | Create awp_fire clip with longer recovery, bolt-pull motion |
+| Reload animations (all weapons) | WB4 | Needs protocol event flag + per-weapon reload clips (2.5s rifle, 2.2s pistol) | Create clips after event flag is added |
+
+### Needs additional model assets
+These are planned but not yet created; they don't block other WBs.
+
+| Item | Origin | Status | Notes |
+|------|--------|--------|-------|
+| D1 Brute character GLB | WB10 | Not started | Same skeleton as A1, different mesh/palette |
+| D1 first-person arms | WB10 | Not started | Charcoal sleeves variant |
+| Per-weapon world models | WB5 | Not started | Currently using placeholder box mesh |
+| First-person arms GLB | WB6 | Not started | Arms-only rig for viewmodel |
+| Grenade models (HE/flash/smoke) | WB8 | Not started | Currently using placeholder sphere |
+
+---
+
 ## Rollback
 Each WB is committed independently:
 - WB1 (pipeline) is directory structure only — safe to revert
@@ -411,22 +431,23 @@ For the initial integration (WB1–WB2), low-poly placeholder models are accepta
 
 ---
 
-## Suggested work order
-1. **WB1** (asset pipeline) — prove `.glb` → Godot import works with shared rig
-2. **WB2** (3P character scene) — replace capsule with real model, biggest visual impact
-3. **WB5** (weapon models) — get weapons visible on characters
-4. **WB3** (locomotion animations) — characters move believably
-5. **WB6** (viewmodel system) — first-person arms and weapon rendering
-6. **WB7** (viewmodel animations) — first-person fire/reload/switch feel
-7. **WB4** (combat animations) — third-person fire/reload visible to others
-8. **WB8** (grenade models) — replace sphere with real grenades
-9. **WB9** (death animation) — death looks intentional, not instant vanish
-10. **WB10** (D1 Brute) — second faction model
-11. **WB11** (integration testing) — verify everything works together
+## Actual work order
+1. ~~**WB1** (asset pipeline)~~ — DONE PR #81
+2. ~~**WB2** (3P character scene)~~ — DONE PR #82
+3. ~~**WB3** (locomotion animations)~~ — DONE PR #83
+4. ~~**WB4** (combat animations)~~ — DONE PR #84
+5. **WB5** (weapon models) — next up
+6. **WB6** (viewmodel system)
+7. **WB7** (viewmodel animations)
+8. **WB8** (grenade models)
+9. **WB9** (death animation)
+10. **WB10** (D1 Brute)
+11. **WB11** (integration testing)
 
 ---
 
 ## Immediate next steps
-1. Decide how models will be sourced: original Blender work, open-source assets, AI-assisted, or a mix
-2. Set up the `assets/` directory structure (WB1)
-3. Get one character `.glb` imported into Godot with the shared skeleton and verify it works
+1. **WB5** — Third-person weapon models: replace placeholder box with per-weapon GLB geometry on `hand_r`
+2. **WB6** — First-person viewmodel system: arms rig, render layer separation, camera-relative positioning
+3. **WB7** — First-person viewmodel animations: fire/reload/switch/idle per weapon
+4. Address protocol event flags (melee fire, reload start, grenade throw) — can be bundled into a single networking WB or deferred to playtesting phase
