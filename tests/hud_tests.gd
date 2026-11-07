@@ -113,6 +113,8 @@ func _test_roster_in_client_state() -> void:
 
 	plugin.on_player_connect(1)
 	plugin.on_player_connect(2)
+	plugin.change_team(1, Team.Id.ANGELS)
+	plugin.change_team(2, Team.Id.DEMONS)
 
 	var state := plugin.get_client_state()
 	_assert(state.has("roster"), "client_state_has_roster")
@@ -142,6 +144,9 @@ func _test_player_color_assignment() -> void:
 	plugin.on_player_connect(1)
 	plugin.on_player_connect(2)
 	plugin.on_player_connect(3)
+	plugin.change_team(1, Team.Id.ANGELS)
+	plugin.change_team(2, Team.Id.DEMONS)
+	plugin.change_team(3, Team.Id.ANGELS)
 
 	_assert(plugin.player_colors.has(1), "player_1_has_color")
 	_assert(plugin.player_colors.has(2), "player_2_has_color")
@@ -160,6 +165,8 @@ func _test_player_alive_tracking() -> void:
 
 	plugin.on_player_connect(1)
 	plugin.on_player_connect(2)
+	plugin.change_team(1, Team.Id.ANGELS)
+	plugin.change_team(2, Team.Id.DEMONS)
 
 	_assert(plugin._player_alive.get(1, false) == true, "player_1_initially_alive")
 	_assert(plugin._player_alive.get(2, false) == true, "player_2_initially_alive")
@@ -183,6 +190,7 @@ func _test_player_disconnect_cleanup() -> void:
 	plugin.on_load(mgr)
 
 	plugin.on_player_connect(1)
+	plugin.change_team(1, Team.Id.ANGELS)
 	_assert(plugin.player_colors.has(1), "color_exists_before_dc")
 	_assert(plugin._player_alive.has(1), "alive_exists_before_dc")
 
