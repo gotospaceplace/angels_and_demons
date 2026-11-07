@@ -64,3 +64,8 @@ func apply_state(pos: Vector3, yaw_deg: float, pitch_deg: float, ducked: bool) -
 
 		_prev_position = pos
 		_has_prev = true
+
+
+func apply_weapon_state(weapon_idx: int, ammo_mag: int) -> void:
+	if character_model:
+		character_model.apply_weapon_state(weapon_idx, ammo_mag)

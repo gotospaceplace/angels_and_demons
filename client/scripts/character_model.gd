@@ -16,6 +16,10 @@ var anim_tree: AnimationTree = null
 var _skel_path: String = ""
 var _duck_blend: float = 0.0
 var _target_duck: float = 0.0
+var _weapon_hold_node: AnimationNodeAnimation = null
+var _weapon_action_node: AnimationNodeAnimation = null
+var _current_weapon_idx: int = -1
+var _prev_ammo: int = -1
 
 const MODEL_PATHS := {
 	"angels": "res://assets/characters/angel_templar/angel_templar.glb",
@@ -23,6 +27,16 @@ const MODEL_PATHS := {
 
 const WALK_CYCLE_TIME := 0.8
 const IDLE_CYCLE_TIME := 2.0
+
+const UPPER_BODY_BONES := [
+	"spine_01", "spine_02", "chest", "neck", "head",
+	"clavicle_l", "upper_arm_l", "forearm_l", "hand_l",
+	"clavicle_r", "upper_arm_r", "forearm_r", "hand_r",
+]
+
+const WEAPON_CATEGORY := {0: "melee", 1: "pistol", 2: "rifle", 3: "rifle", 4: "rifle"}
+const HOLD_ANIM_MAP := {"melee": &"melee_hold", "pistol": &"pistol_hold", "rifle": &"rifle_hold"}
+const FIRE_ANIM_MAP := {"melee": &"melee_slash", "pistol": &"pistol_fire", "rifle": &"rifle_fire"}
 
 
 func setup(faction: String = "angels") -> void:
@@ -42,6 +56,8 @@ func _load_model(path: String) -> void:
 	if anim_tree:
 		anim_tree.queue_free()
 		anim_tree = null
+		_weapon_hold_node = null
+		_weapon_action_node = null
 
 	var scene: PackedScene = load(path)
 	if not scene:
@@ -113,15 +129,27 @@ func _setup_animations() -> void:
 	lib.add_animation(&"walk", _create_walk_anim())
 	lib.add_animation(&"crouch_idle", _create_crouch_idle_anim())
 	lib.add_animation(&"crouch_walk", _create_crouch_walk_anim())
+	lib.add_animation(&"rifle_hold", _create_hold_anim(_rifle_hold_pose()))
+	lib.add_animation(&"rifle_fire", _create_fire_anim(_rifle_hold_pose(), 8.0))
+	lib.add_animation(&"pistol_hold", _create_hold_anim(_pistol_hold_pose()))
+	lib.add_animation(&"pistol_fire", _create_fire_anim(_pistol_hold_pose(), 6.0))
+	lib.add_animation(&"melee_hold", _create_hold_anim(_melee_hold_pose()))
+	lib.add_animation(&"melee_slash", _create_melee_slash_anim())
+	lib.add_animation(&"weapon_switch", _create_switch_anim())
 	anim_tree.add_animation_library(&"", lib)
 
-	anim_tree.tree_root = _build_blend_tree()
+	var tree := _build_blend_tree()
+	anim_tree.tree_root = tree
+	_weapon_hold_node = tree.get_node(&"weapon_hold") as AnimationNodeAnimation
+	_weapon_action_node = tree.get_node(&"weapon_action") as AnimationNodeAnimation
 	anim_tree.active = true
+	anim_tree.set(&"parameters/weapon_layer/blend_amount", 1.0)
 
 
 func _build_blend_tree() -> AnimationNodeBlendTree:
 	var tree := AnimationNodeBlendTree.new()
 
+	# --- Locomotion layer ---
 	var idle_n := AnimationNodeAnimation.new()
 	idle_n.animation = &"idle"
 	tree.add_node(&"idle", idle_n)
@@ -153,9 +181,36 @@ func _build_blend_tree() -> AnimationNodeBlendTree:
 	tree.connect_node(&"duck_blend", 0, &"stand_blend")
 	tree.connect_node(&"duck_blend", 1, &"crouch_speed")
 
-	tree.connect_node(&"output", 0, &"duck_blend")
+	# --- Weapon overlay layer ---
+	var wh_n := AnimationNodeAnimation.new()
+	wh_n.animation = &"rifle_hold"
+	tree.add_node(&"weapon_hold", wh_n)
+
+	var wa_n := AnimationNodeAnimation.new()
+	wa_n.animation = &"rifle_fire"
+	tree.add_node(&"weapon_action", wa_n)
+
+	var weapon_os := AnimationNodeOneShot.new()
+	weapon_os.fadein_time = 0.02
+	weapon_os.fadeout_time = 0.08
+	tree.add_node(&"weapon_oneshot", weapon_os)
+	tree.connect_node(&"weapon_oneshot", 0, &"weapon_hold")
+	tree.connect_node(&"weapon_oneshot", 1, &"weapon_action")
+
+	var weapon_layer := AnimationNodeBlend2.new()
+	weapon_layer.filter_enabled = true
+	for bone_name in UPPER_BODY_BONES:
+		weapon_layer.set_filter_path(NodePath(_skel_path + ":" + bone_name), true)
+	tree.add_node(&"weapon_layer", weapon_layer)
+	tree.connect_node(&"weapon_layer", 0, &"duck_blend")
+	tree.connect_node(&"weapon_layer", 1, &"weapon_oneshot")
+
+	tree.connect_node(&"output", 0, &"weapon_layer")
 
 	return tree
+
+
+# --- Animation track helper ---
 
 
 func _bone_rot(anim: Animation, bone: String, times: Array, quats: Array) -> void:
@@ -163,6 +218,9 @@ func _bone_rot(anim: Animation, bone: String, times: Array, quats: Array) -> voi
 	anim.track_set_path(idx, NodePath(_skel_path + ":" + bone))
 	for i in range(times.size()):
 		anim.rotation_track_insert_key(idx, times[i], quats[i])
+
+
+# --- Locomotion animations ---
 
 
 func _create_idle_anim() -> Animation:
@@ -245,6 +303,107 @@ func _create_crouch_walk_anim() -> Animation:
 	return anim
 
 
+# --- Combat animations ---
+
+
+func _rifle_hold_pose() -> Dictionary:
+	return {
+		"upper_arm_r": _rot_x(-80.0) * _rot_z(5.0),
+		"forearm_r": _rot_x(-45.0),
+		"upper_arm_l": _rot_x(-75.0) * _rot_z(-5.0),
+		"forearm_l": _rot_x(-50.0),
+		"chest": _rot_x(-5.0),
+	}
+
+
+func _pistol_hold_pose() -> Dictionary:
+	return {
+		"upper_arm_r": _rot_x(-85.0),
+		"forearm_r": _rot_x(-30.0),
+		"upper_arm_l": _rot_x(-25.0),
+		"forearm_l": _rot_x(-20.0),
+		"chest": _rot_x(-3.0),
+	}
+
+
+func _melee_hold_pose() -> Dictionary:
+	return {
+		"upper_arm_r": _rot_x(-40.0),
+		"forearm_r": _rot_x(-60.0),
+		"upper_arm_l": _rot_x(-15.0),
+		"forearm_l": _rot_x(-10.0),
+	}
+
+
+func _create_hold_anim(pose: Dictionary) -> Animation:
+	var anim := Animation.new()
+	anim.length = 0.1
+	anim.loop_mode = Animation.LOOP_LINEAR
+	for bone_name in pose:
+		_bone_rot(anim, bone_name, [0.0], [pose[bone_name]])
+	return anim
+
+
+func _create_fire_anim(base_pose: Dictionary, recoil_deg: float) -> Animation:
+	var anim := Animation.new()
+	anim.length = 0.1
+	anim.loop_mode = Animation.LOOP_NONE
+	var recoil := _rot_x(recoil_deg)
+	for bone_name in base_pose:
+		var base_q: Quaternion = base_pose[bone_name]
+		if bone_name.begins_with("upper_arm"):
+			var kicked := base_q * recoil
+			_bone_rot(anim, bone_name, [0.0, 0.03, 0.1], [base_q, kicked, base_q])
+		else:
+			_bone_rot(anim, bone_name, [0.0, 0.1], [base_q, base_q])
+	return anim
+
+
+func _create_melee_slash_anim() -> Animation:
+	var anim := Animation.new()
+	anim.length = 0.4
+	anim.loop_mode = Animation.LOOP_NONE
+	var arm_back := _rot_x(-30.0) * _rot_y(30.0)
+	var arm_swing := _rot_x(-50.0) * _rot_y(-40.0)
+	var arm_end := _rot_x(-40.0) * _rot_y(-20.0)
+	var fa_tight := _rot_x(-80.0)
+	var fa_ext := _rot_x(-40.0)
+	_bone_rot(anim, "upper_arm_r",
+		[0.0, 0.05, 0.15, 0.4],
+		[arm_back, arm_back, arm_swing, arm_end])
+	_bone_rot(anim, "forearm_r",
+		[0.0, 0.05, 0.15, 0.4],
+		[fa_tight, fa_tight, fa_ext, _rot_x(-60.0)])
+	_bone_rot(anim, "chest",
+		[0.0, 0.05, 0.15, 0.4],
+		[_rot_y(10.0), _rot_y(15.0), _rot_y(-15.0), Quaternion.IDENTITY])
+	return anim
+
+
+func _create_switch_anim() -> Animation:
+	var anim := Animation.new()
+	anim.length = 0.5
+	anim.loop_mode = Animation.LOOP_NONE
+	var down_r := _rot_x(-20.0)
+	var down_l := _rot_x(-15.0)
+	var down_f := _rot_x(-10.0)
+	var mid_r := _rot_x(-60.0)
+	var mid_l := _rot_x(-50.0)
+	var mid_f := _rot_x(-30.0)
+	_bone_rot(anim, "upper_arm_r",
+		[0.0, 0.2, 0.5], [mid_r, down_r, mid_r])
+	_bone_rot(anim, "forearm_r",
+		[0.0, 0.2, 0.5], [mid_f, down_f, mid_f])
+	_bone_rot(anim, "upper_arm_l",
+		[0.0, 0.2, 0.5], [mid_l, down_l, mid_l])
+	_bone_rot(anim, "forearm_l",
+		[0.0, 0.2, 0.5], [_rot_x(-25.0), down_f, _rot_x(-25.0)])
+	return anim
+
+
+# --- Static rotation helpers ---
+
+
 static func _rot_x(deg: float) -> Quaternion:
 	return Quaternion(Vector3.RIGHT, deg_to_rad(deg))
 
@@ -253,7 +412,11 @@ static func _rot_y(deg: float) -> Quaternion:
 	return Quaternion(Vector3.UP, deg_to_rad(deg))
 
 
-# --- Movement ---
+static func _rot_z(deg: float) -> Quaternion:
+	return Quaternion(Vector3.BACK, deg_to_rad(deg))
+
+
+# --- Movement and combat ---
 
 
 func update_movement(local_velocity: Vector3, _on_ground: bool) -> void:
@@ -263,6 +426,41 @@ func update_movement(local_velocity: Vector3, _on_ground: bool) -> void:
 	var speed_norm := clampf(horiz_speed / MC.GROUND_SPEED_CLAMP, 0.0, 1.0)
 	anim_tree.set(&"parameters/stand_blend/blend_amount", speed_norm)
 	anim_tree.set(&"parameters/crouch_speed/blend_amount", speed_norm)
+
+
+func apply_weapon_state(weapon_idx: int, ammo_mag: int) -> void:
+	if not anim_tree or not anim_tree.active:
+		return
+
+	var category: String = WEAPON_CATEGORY.get(weapon_idx, "rifle")
+
+	if _current_weapon_idx < 0:
+		_current_weapon_idx = weapon_idx
+		_prev_ammo = ammo_mag
+		if _weapon_hold_node:
+			_weapon_hold_node.animation = HOLD_ANIM_MAP.get(category, &"rifle_hold")
+		set_weapon_model(weapon_idx)
+		return
+
+	if weapon_idx != _current_weapon_idx:
+		_current_weapon_idx = weapon_idx
+		_prev_ammo = ammo_mag
+		if _weapon_hold_node:
+			_weapon_hold_node.animation = HOLD_ANIM_MAP.get(category, &"rifle_hold")
+		if _weapon_action_node:
+			_weapon_action_node.animation = &"weapon_switch"
+		anim_tree.set(&"parameters/weapon_oneshot/request",
+			AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		set_weapon_model(weapon_idx)
+		return
+
+	if _prev_ammo >= 0 and ammo_mag < _prev_ammo:
+		if _weapon_action_node:
+			_weapon_action_node.animation = FIRE_ANIM_MAP.get(category, &"rifle_fire")
+		anim_tree.set(&"parameters/weapon_oneshot/request",
+			AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+	_prev_ammo = ammo_mag
 
 
 func _process(delta: float) -> void:
