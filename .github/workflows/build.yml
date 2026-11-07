@@ -227,6 +227,14 @@ jobs:
             echo "Skipping — grenade model tests not merged yet"
           fi
 
+      - name: Death animation tests (Phase 7)
+        run: |
+          if [ -f tests/death_anim_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-deathanim
+          else
+            echo "Skipping — death animation tests not merged yet"
+          fi
+
       - name: Performance benchmark
         run: timeout 60 godot --headless --path . -- --bench
 

@@ -77,7 +77,7 @@ func _interpolate(rp: Dictionary, render_time: float) -> void:
 	if states.size() == 1:
 		var s: Dictionary = states[0]
 		rp["node"].apply_state(s["position"], s["yaw"], s["pitch"], s["is_ducked"])
-		rp["node"].visible = not s["is_dead"]
+		_apply_dead_state(rp, s["is_dead"])
 		return
 
 	var a: Dictionary = {}
@@ -93,7 +93,7 @@ func _interpolate(rp: Dictionary, render_time: float) -> void:
 		if render_time < states[0]["time"]:
 			var s: Dictionary = states[0]
 			rp["node"].apply_state(s["position"], s["yaw"], s["pitch"], s["is_ducked"])
-			rp["node"].visible = not s["is_dead"]
+			_apply_dead_state(rp, s["is_dead"])
 			return
 
 		a = states[states.size() - 2]
@@ -101,7 +101,7 @@ func _interpolate(rp: Dictionary, render_time: float) -> void:
 		var past: float = render_time - b["time"]
 		if past > NetConstants.INTERP_MAX_EXTRAPOLATE_MS / 1000.0:
 			rp["node"].apply_state(b["position"], b["yaw"], b["pitch"], b["is_ducked"])
-			rp["node"].visible = not b["is_dead"]
+			_apply_dead_state(rp, b["is_dead"])
 			return
 
 	var duration: float = b["time"] - a["time"]
@@ -115,7 +115,18 @@ func _interpolate(rp: Dictionary, render_time: float) -> void:
 	var ducked: bool = b["is_ducked"] if t >= 0.5 else a["is_ducked"]
 
 	rp["node"].apply_state(pos, rad_to_deg(yaw_rad), pitch_val, ducked)
-	rp["node"].visible = not b["is_dead"]
+	_apply_dead_state(rp, b["is_dead"])
+
+
+func _apply_dead_state(rp: Dictionary, is_dead: bool) -> void:
+	if is_dead and not rp["is_dead"]:
+		rp["is_dead"] = true
+		rp["node"].apply_death()
+	elif not is_dead and rp["is_dead"]:
+		rp["is_dead"] = false
+		rp["node"].visible = true
+	elif not is_dead:
+		rp["node"].visible = true
 
 
 func _spawn_remote(pid: int) -> void:
@@ -123,7 +134,7 @@ func _spawn_remote(pid: int) -> void:
 	node.set_script(RemotePlayer)
 	node.create(pid)
 	add_child(node)
-	remote_players[pid] = {"node": node, "states": [], "latest_snapshot": {}}
+	remote_players[pid] = {"node": node, "states": [], "latest_snapshot": {}, "is_dead": false}
 	print("[Interp] Spawned remote player %d" % pid)
 
 

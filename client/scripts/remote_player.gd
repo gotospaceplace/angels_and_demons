@@ -69,3 +69,10 @@ func apply_state(pos: Vector3, yaw_deg: float, pitch_deg: float, ducked: bool) -
 func apply_weapon_state(weapon_idx: int, ammo_mag: int) -> void:
 	if character_model:
 		character_model.apply_weapon_state(weapon_idx, ammo_mag)
+
+
+func apply_death() -> void:
+	if character_model:
+		character_model.play_death()
+	if name_label:
+		name_label.visible = false
