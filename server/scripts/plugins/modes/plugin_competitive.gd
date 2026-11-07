@@ -235,6 +235,8 @@ func on_console_command(cmd: String, _args: String) -> bool:
 
 
 func _on_state_changed(_old: int, _new: int) -> void:
+	if _new == ServerMatch.State.WARMUP and _old != ServerMatch.State.WARMUP:
+		objective.end_round()
 	if manager:
 		manager.plugin_event.emit(&"match_state_changed", {})
 

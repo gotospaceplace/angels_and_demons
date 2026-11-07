@@ -78,6 +78,10 @@ func apply_settings(config: MatchConfig) -> void:
 
 
 func tick(delta: float, player_count: int) -> void:
+	if state != State.WARMUP and state != State.MATCH_OVER:
+		if player_count < warmup_min_players:
+			_return_to_warmup()
+			return
 	match state:
 		State.WARMUP:
 			_tick_warmup(delta, player_count)
@@ -184,6 +188,14 @@ func _change_state(new_state: int) -> void:
 	var old := state
 	state = new_state
 	state_changed.emit(old, new_state)
+
+
+func _return_to_warmup() -> void:
+	round_timer_paused = false
+	catalyst_activated = false
+	_warmup_counting = false
+	_warmup_countdown = 0.0
+	_change_state(State.WARMUP)
 
 
 func _tick_warmup(delta: float, player_count: int) -> void:
