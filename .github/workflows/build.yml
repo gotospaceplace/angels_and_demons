@@ -195,6 +195,14 @@ jobs:
             echo "Skipping — aim_map collision tests not merged yet"
           fi
 
+      - name: Combat animation tests (Phase 7)
+        run: |
+          if [ -f tests/combat_anim_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-combatanim
+          else
+            echo "Skipping — combat animation tests not merged yet"
+          fi
+
       - name: Performance benchmark
         run: timeout 60 godot --headless --path . -- --bench
 

@@ -63,6 +63,10 @@ func _process(delta: float) -> void:
 
 	for rp in remote_players.values():
 		_interpolate(rp, render_time)
+		if not rp["latest_snapshot"].is_empty():
+			rp["node"].apply_weapon_state(
+				rp["latest_snapshot"]["weapon_idx"],
+				rp["latest_snapshot"]["ammo_mag"])
 
 
 func _interpolate(rp: Dictionary, render_time: float) -> void:
