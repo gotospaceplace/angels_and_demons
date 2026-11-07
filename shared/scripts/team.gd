@@ -56,3 +56,9 @@ static func get_opposing(team: int) -> int:
 
 static func is_playing_team(team: int) -> bool:
 	return team == Id.ANGELS or team == Id.DEMONS
+
+
+static func get_faction(team: int) -> String:
+	match team:
+		Id.DEMONS: return "demons"
+		_: return "angels"

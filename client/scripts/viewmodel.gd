@@ -6,6 +6,7 @@ const VIEWMODEL_FOV := 54.0
 
 const FP_ARMS_PATHS := {
 	"angels": "res://assets/characters/angel_templar/angel_templar_fp.glb",
+	"demons": "res://assets/characters/d1_brute/d1_brute_fp.glb",
 }
 
 const WEAPON_MODEL_PATHS := {

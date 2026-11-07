@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/d1_brute_tests.gd" id="1_tests"]
+
+[node name="D1BruteTestScene" type="Node"]
+
+[node name="D1BruteTestRunner" type="Node" parent="."]
+script = ExtResource("1_tests")

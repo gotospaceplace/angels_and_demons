@@ -235,6 +235,14 @@ jobs:
             echo "Skipping — death animation tests not merged yet"
           fi
 
+      - name: D1 Brute character tests (Phase 7)
+        run: |
+          if [ -f tests/d1_brute_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-d1brute
+          else
+            echo "Skipping — D1 Brute tests not merged yet"
+          fi
+
       - name: Performance benchmark
         run: timeout 60 godot --headless --path . -- --bench
 
