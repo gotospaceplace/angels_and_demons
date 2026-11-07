@@ -664,19 +664,11 @@ func _enter_spectator_from_player() -> void:
 	if has_node("/root/Crosshair"):
 		get_node("/root/Crosshair").visible = false
 
-	var overview_pos := Vector3(0, 40, 0)
-	var overview_pitch := -1.2
-	var world := get_node_or_null("World")
-	if world and world.get("spawn_points") and world.spawn_points.size() > 0:
-		var center := Vector3.ZERO
-		for sp: Vector3 in world.spawn_points:
-			center += sp
-		center /= world.spawn_points.size()
-		var max_spread := 0.0
-		for sp: Vector3 in world.spawn_points:
-			max_spread = maxf(max_spread, Vector2(sp.x - center.x, sp.z - center.z).length())
-		overview_pos = Vector3(center.x, maxf(max_spread, 15.0) + 20.0, center.z)
-	spectator.enter_spectator_mode(overview_pos, 0.0, overview_pitch)
+	var overview_pos := Vector3(11.1, 3.95, 15.8)
+	var overview_yaw := atan2(overview_pos.x, overview_pos.z)
+	var horiz_dist := Vector2(overview_pos.x, overview_pos.z).length()
+	var overview_pitch := -atan(overview_pos.y / horiz_dist)
+	spectator.enter_spectator_mode(overview_pos, overview_yaw, overview_pitch)
 
 
 func _exit_spectator_to_player() -> void:

@@ -1117,7 +1117,7 @@ func _handle_chat_command(peer_id: int, raw: String) -> void:
 			_cmd_chat_mode(peer_id, args)
 		"/map":
 			_cmd_chat_map(peer_id, args)
-		"/listmaps":
+		"/maplist":
 			_cmd_chat_listmaps(peer_id)
 		"/restart":
 			_cmd_chat_restart(peer_id)
@@ -1171,7 +1171,7 @@ func _cmd_chat_restart(peer_id: int) -> void:
 
 
 func _cmd_chat_help(peer_id: int) -> void:
-	_send_server_msg(peer_id, "Commands: /mode, /map, /listmaps, /restart, /help")
+	_send_server_msg(peer_id, "Commands: /mode, /map, /maplist, /restart, /help")
 
 
 func _change_mode(mode_name: String) -> void:
