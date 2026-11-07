@@ -90,6 +90,10 @@ func _ready() -> void:
 		print("EntryPoint: launching combat animation test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/combat_anim_test_scene.tscn")
 		return
+	if "--test-weaponmodel" in args:
+		print("EntryPoint: launching weapon model test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/weapon_model_test_scene.tscn")
+		return
 	if "--bench" in args:
 		print("EntryPoint: launching performance benchmark")
 		get_tree().change_scene_to_file.call_deferred("res://tests/perf_benchmark_scene.tscn")
