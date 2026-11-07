@@ -106,6 +106,10 @@ func _ready() -> void:
 		print("EntryPoint: launching death animation test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/death_anim_test_scene.tscn")
 		return
+	if "--test-d1brute" in args:
+		print("EntryPoint: launching D1 Brute character test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/d1_brute_test_scene.tscn")
+		return
 	if "--bench" in args:
 		print("EntryPoint: launching performance benchmark")
 		get_tree().change_scene_to_file.call_deferred("res://tests/perf_benchmark_scene.tscn")

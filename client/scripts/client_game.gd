@@ -726,10 +726,24 @@ func _update_team_colors(roster: Array) -> void:
 		var rp: Dictionary = interpolation.remote_players[pid]
 		var team: int = _team_map.get(pid, Team.Id.UNASSIGNED)
 		rp["node"].set_team_color(Team.get_color(team))
+		rp["node"].set_faction(Team.get_faction(team))
+	_update_local_faction()
 
 
 func _get_player_team(peer_id: int) -> int:
 	return _team_map.get(peer_id, Team.Id.UNASSIGNED)
+
+
+func _update_local_faction() -> void:
+	if not local_player or my_peer_id <= 0:
+		return
+	var my_team: int = _team_map.get(my_peer_id, Team.Id.UNASSIGNED)
+	var faction := Team.get_faction(my_team)
+	var cam := local_player.get_node_or_null("Head/Camera3D")
+	if cam:
+		var vm := cam.get_node_or_null("Viewmodel")
+		if vm and vm.has_method("setup"):
+			vm.setup(faction)
 
 
 func _setup_reconnect_overlay() -> void:

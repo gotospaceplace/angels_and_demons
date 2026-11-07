@@ -39,6 +39,11 @@ func set_team_color(color: Color) -> void:
 		character_model.set_team_color(color)
 
 
+func set_faction(faction: String) -> void:
+	if character_model:
+		character_model.set_faction(faction)
+
+
 func apply_state(pos: Vector3, yaw_deg: float, pitch_deg: float, ducked: bool) -> void:
 	global_position = pos
 	rotation.y = deg_to_rad(yaw_deg)

@@ -26,6 +26,7 @@ const DEATH_DURATION := 0.8
 
 const MODEL_PATHS := {
 	"angels": "res://assets/characters/angel_templar/angel_templar.glb",
+	"demons": "res://assets/characters/d1_brute/d1_brute.glb",
 }
 
 const WALK_CYCLE_TIME := 0.8
