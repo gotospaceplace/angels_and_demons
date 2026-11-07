@@ -26,6 +26,10 @@ func _ready() -> void:
 	cm.queue_free()
 
 	test_remote_player_apply_death()
+	test_reset_death_clears_state()
+	test_reset_death_reactivates_anim_tree()
+	test_reset_death_idempotent()
+	test_remote_player_apply_respawn()
 
 	_print_summary()
 
@@ -157,4 +161,74 @@ func test_remote_player_apply_death() -> void:
 	else:
 		_fail("test_remote_player_apply_death",
 			"dead=%s label_hidden=%s" % [dead, label_hidden])
+	rp.queue_free()
+
+
+func test_reset_death_clears_state() -> void:
+	var cm2 := CharacterModel.new()
+	cm2.name = "TestResetDeath"
+	add_child(cm2)
+	cm2.setup("angels")
+	cm2.play_death()
+	cm2.reset_death()
+	var alive: bool = not cm2._is_dead
+	var rot_reset: bool = absf(cm2.rotation_degrees.x) < 0.01
+	if alive and rot_reset:
+		_pass("test_reset_death_clears_state",
+			"reset_death() clears _is_dead and rotation")
+	else:
+		_fail("test_reset_death_clears_state",
+			"alive=%s rot_reset=%s rot=%.1f" % [alive, rot_reset, cm2.rotation_degrees.x])
+	cm2.queue_free()
+
+
+func test_reset_death_reactivates_anim_tree() -> void:
+	var cm2 := CharacterModel.new()
+	cm2.name = "TestResetAnim"
+	add_child(cm2)
+	cm2.setup("angels")
+	cm2.play_death()
+	cm2.reset_death()
+	var tree_active: bool = cm2.anim_tree != null and cm2.anim_tree.active
+	if tree_active:
+		_pass("test_reset_death_reactivates_anim_tree",
+			"AnimationTree reactivated after reset")
+	else:
+		_fail("test_reset_death_reactivates_anim_tree",
+			"AnimationTree not active after reset")
+	cm2.queue_free()
+
+
+func test_reset_death_idempotent() -> void:
+	var cm2 := CharacterModel.new()
+	cm2.name = "TestResetIdem"
+	add_child(cm2)
+	cm2.setup("angels")
+	cm2.reset_death()
+	var alive: bool = not cm2._is_dead
+	if alive:
+		_pass("test_reset_death_idempotent",
+			"reset_death() on alive model is safe")
+	else:
+		_fail("test_reset_death_idempotent",
+			"unexpected state after reset on alive model")
+	cm2.queue_free()
+
+
+func test_remote_player_apply_respawn() -> void:
+	const RemotePlayer2 = preload("res://client/scripts/remote_player.gd")
+	var rp := Node3D.new()
+	rp.set_script(RemotePlayer2)
+	rp.create(998)
+	add_child(rp)
+	rp.apply_death()
+	rp.apply_respawn()
+	var alive: bool = not rp.character_model._is_dead
+	var label_visible: bool = rp.name_label.visible
+	if alive and label_visible:
+		_pass("test_remote_player_apply_respawn",
+			"apply_respawn() resets death + shows label")
+	else:
+		_fail("test_remote_player_apply_respawn",
+			"alive=%s label_visible=%s" % [alive, label_visible])
 	rp.queue_free()

@@ -494,6 +494,8 @@ func set_team_color(color: Color) -> void:
 func _apply_color(color: Color) -> void:
 	if not mesh_instance:
 		return
+	if not _is_fallback:
+		return
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mesh_instance.material_override = mat
@@ -547,6 +549,16 @@ func play_death() -> void:
 	tween.parallel().tween_property(self, "position:y",
 		position.y - 0.4, DEATH_DURATION)\
 		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+
+
+func reset_death() -> void:
+	if not _is_dead:
+		return
+	_is_dead = false
+	rotation_degrees.x = 0.0
+	position.y = -MC.HULL_STANDING_HEIGHT * 0.5
+	if anim_tree:
+		anim_tree.active = true
 
 
 func is_dead() -> bool:

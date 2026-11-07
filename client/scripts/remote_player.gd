@@ -81,3 +81,10 @@ func apply_death() -> void:
 		character_model.play_death()
 	if name_label:
 		name_label.visible = false
+
+
+func apply_respawn() -> void:
+	if character_model:
+		character_model.reset_death()
+	if name_label:
+		name_label.visible = true
