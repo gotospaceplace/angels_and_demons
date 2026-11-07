@@ -209,6 +209,9 @@ func _fire(now: float) -> void:
 	if player.is_local_client and has_node("/root/SoundManager"):
 		SoundManager.play_fire(current_index)
 
+	if viewmodel and viewmodel.has_method("play_fire"):
+		viewmodel.play_fire()
+
 	var spread := _calc_spread()
 	var cam_xform := camera.global_transform
 	var origin := cam_xform.origin
@@ -515,6 +518,8 @@ func _switch_weapon(index: int) -> void:
 	_equip(index)
 	if player.is_local_client and has_node("/root/SoundManager"):
 		SoundManager.play_weapon_switch()
+	if viewmodel and viewmodel.has_method("play_equip"):
+		viewmodel.play_equip(total_time)
 
 
 func _equip(index: int) -> void:
@@ -546,6 +551,8 @@ func _start_reload() -> void:
 	next_action_time = _now() + current.reload_time
 	if player.is_local_client and has_node("/root/SoundManager"):
 		SoundManager.play_reload()
+	if viewmodel and viewmodel.has_method("play_reload"):
+		viewmodel.play_reload(current.reload_time)
 
 
 func _finish_reload() -> void:
@@ -578,6 +585,9 @@ func _stab() -> void:
 
 	if player.is_local_client and has_node("/root/SoundManager"):
 		SoundManager.play_fire(current_index)
+
+	if viewmodel and viewmodel.has_method("play_fire"):
+		viewmodel.play_fire()
 
 	var cam_xform := camera.global_transform
 	var origin := cam_xform.origin
