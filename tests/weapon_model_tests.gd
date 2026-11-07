@@ -84,7 +84,7 @@ func test_weapon_model_paths_format() -> void:
 			bad.append("%d: %s (not _world.glb)" % [idx, path])
 	if bad.is_empty():
 		_pass("test_weapon_model_paths_format",
-			"all paths follow res://assets/weapons/<name>/<name>_world.glb pattern")
+			"all paths follow assets/weapons/<name>/<name>_world.glb pattern")
 	else:
 		_fail("test_weapon_model_paths_format",
 			"bad paths: %s" % ", ".join(bad))
