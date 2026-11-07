@@ -203,6 +203,23 @@ func get_client_state() -> Dictionary:
 	}
 
 
+func reset_match() -> void:
+	server_match.reset()
+	spawns.reset_indices()
+	objective.end_round()
+	_round_history.clear()
+	_round_damage.clear()
+	for pid in _player_stats:
+		_player_stats[pid] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
+	for pid in _player_alive:
+		var team := server_match.get_team(pid)
+		_player_alive[pid] = Team.is_playing_team(team)
+	if manager:
+		manager.plugin_event.emit(&"match_state_changed", {})
+		manager.plugin_event.emit(&"roster_changed", {})
+	print("[Competitive] Match reset — state: WARMUP, scores: 0-0")
+
+
 func on_console_command(cmd: String, _args: String) -> bool:
 	if cmd == "match":
 		print("[Competitive] State: %s  Round: %d  Score: Angels %d - Demons %d" % [

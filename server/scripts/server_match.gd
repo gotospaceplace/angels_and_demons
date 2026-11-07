@@ -145,6 +145,21 @@ func is_buy_period() -> bool:
 	return false
 
 
+func reset() -> void:
+	state = State.WARMUP
+	round_number = 0
+	score[Team.Id.ANGELS] = 0
+	score[Team.Id.DEMONS] = 0
+	state_timer = 0.0
+	round_timer = 0.0
+	round_timer_paused = false
+	catalyst_activated = false
+	_alive_count[Team.Id.ANGELS] = 0
+	_alive_count[Team.Id.DEMONS] = 0
+	_round_winner = Team.Id.UNASSIGNED
+	economy.reset_economy()
+
+
 func get_remaining_time() -> float:
 	match state:
 		State.LIVE: return round_timer

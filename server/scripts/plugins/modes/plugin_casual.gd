@@ -115,6 +115,18 @@ func _pick_team() -> int:
 	return Team.Id.DEMONS
 
 
+func reset_match() -> void:
+	_round_damage.clear()
+	_score[Team.Id.ANGELS] = 0
+	_score[Team.Id.DEMONS] = 0
+	_round_number = 0
+	for pid in _player_stats:
+		_player_stats[pid] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
+	if manager:
+		manager.plugin_event.emit(&"roster_changed", {})
+	print("[Casual] Match reset — scores: 0-0, round: 0, all stats cleared")
+
+
 func on_round_start(round_number: int) -> void:
 	_round_number = round_number
 

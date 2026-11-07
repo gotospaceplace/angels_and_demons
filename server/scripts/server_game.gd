@@ -1186,7 +1186,11 @@ func _cmd_chat_listmaps(peer_id: int) -> void:
 
 
 func _cmd_chat_restart(peer_id: int) -> void:
-	_broadcast_server_msg("Round restarted by Player %d" % peer_id)
+	_broadcast_server_msg("Match restarted by Player %d" % peer_id)
+	for sp in players.values():
+		sp.kills = 0
+		sp.deaths = 0
+	plugin_manager.dispatch_reset_match()
 	_reset_round_players()
 	_broadcast_match_state()
 

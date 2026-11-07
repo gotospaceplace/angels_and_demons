@@ -147,6 +147,17 @@ func change_team(peer_id: int, requested_team: int) -> bool:
 	return true
 
 
+func reset_match() -> void:
+	_round_damage.clear()
+	_score[Team.Id.ANGELS] = 0
+	_score[Team.Id.DEMONS] = 0
+	for pid in _player_stats:
+		_player_stats[pid] = {"kills": 0, "deaths": 0, "assists": 0, "damage": 0}
+	if manager:
+		manager.plugin_event.emit(&"roster_changed", {})
+	print("[TDM] Match reset — scores: 0-0, all stats cleared")
+
+
 func on_round_start(_round_number: int) -> void: pass
 func on_round_end(_winner_team: int, _reason: StringName) -> void: pass
 func on_match_start() -> void: pass

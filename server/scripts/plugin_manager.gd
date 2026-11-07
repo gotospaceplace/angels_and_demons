@@ -188,6 +188,11 @@ func dispatch_deduct_money(peer_id: int, amount: int) -> bool:
 	return false
 
 
+func dispatch_reset_match() -> void:
+	for p in plugins:
+		p.reset_match()
+
+
 func dispatch_on_console_command(cmd: String, args: String) -> bool:
 	for p in plugins:
 		if p.on_console_command(cmd, args):
