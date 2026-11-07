@@ -18,6 +18,7 @@ func _ready() -> void:
 		&"test_report_empty_when_no_damage",
 		&"test_protocol_pack_unpack",
 		&"test_damage_log_round_isolation",
+		&"test_damage_log_cleared_on_death",
 	]
 
 	print("=== Death Report Tests ===")
@@ -196,6 +197,31 @@ func test_protocol_pack_unpack() -> void:
 			result["victim_id"], g[0]["dmg"], t[0]["dmg"]])
 	else:
 		_fail("round-trip data mismatch")
+
+
+func test_damage_log_cleared_on_death() -> void:
+	var log: Array = [
+		{"attacker": 1, "victim": 2, "damage": 50, "weapon": 2, "headshot": false},
+		{"attacker": 2, "victim": 1, "damage": 30, "weapon": 0, "headshot": false},
+		{"attacker": 3, "victim": 4, "damage": 20, "weapon": 1, "headshot": false},
+	]
+	var report := _build_report(log, 2)
+	log = log.filter(func(e):
+		return e["attacker"] != 2 and e["victim"] != 2)
+	var report_after := _build_report(log, 2)
+
+	if report["given"].size() == 1 and report["taken"].size() == 1:
+		if report_after["given"].size() == 0 and report_after["taken"].size() == 0:
+			if log.size() == 1 and log[0]["attacker"] == 3:
+				_pass("victim entries purged, unrelated entries kept")
+			else:
+				_fail("unrelated entries lost: remaining=%d" % log.size())
+		else:
+			_fail("post-death report not empty: given=%d taken=%d" % [
+				report_after["given"].size(), report_after["taken"].size()])
+	else:
+		_fail("pre-death report wrong: given=%d taken=%d" % [
+			report["given"].size(), report["taken"].size()])
 
 
 func test_damage_log_round_isolation() -> void:
