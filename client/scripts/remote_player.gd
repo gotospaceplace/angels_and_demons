@@ -4,49 +4,23 @@ const MC = preload("res://shared/scripts/movement_constants.gd")
 
 var peer_id: int = 0
 var head: Node3D
-var body_mesh: MeshInstance3D
 var name_label: Label3D
+var character_model: CharacterModel
 
 
 func create(p_peer_id: int) -> void:
 	peer_id = p_peer_id
 	name = "RemotePlayer_%d" % peer_id
 
-	var capsule := CapsuleMesh.new()
-	capsule.radius = 0.35
-	capsule.height = MC.HULL_STANDING_HEIGHT
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.2, 0.55, 0.85)
-	capsule.material = mat
-
-	body_mesh = MeshInstance3D.new()
-	body_mesh.mesh = capsule
-	add_child(body_mesh)
-
 	head = Node3D.new()
 	head.name = "Head"
 	head.position.y = MC.VIEW_OFFSET_STANDING
 	add_child(head)
 
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.15
-	sphere.height = 0.3
-	var head_mat := StandardMaterial3D.new()
-	head_mat.albedo_color = Color(0.85, 0.75, 0.65)
-	sphere.material = head_mat
-	var head_vis := MeshInstance3D.new()
-	head_vis.mesh = sphere
-	head.add_child(head_vis)
-
-	var box := BoxMesh.new()
-	box.size = Vector3(0.08, 0.08, 0.35)
-	var wep_mat := StandardMaterial3D.new()
-	wep_mat.albedo_color = Color(0.25, 0.25, 0.25)
-	box.material = wep_mat
-	var wep_vis := MeshInstance3D.new()
-	wep_vis.mesh = box
-	wep_vis.position = Vector3(0.25, -0.05, -0.25)
-	head.add_child(wep_vis)
+	character_model = CharacterModel.new()
+	character_model.name = "CharacterModel"
+	add_child(character_model)
+	character_model.setup("angels")
 
 	name_label = Label3D.new()
 	name_label.text = "Player %d" % peer_id
@@ -59,10 +33,8 @@ func create(p_peer_id: int) -> void:
 
 
 func set_team_color(color: Color) -> void:
-	if body_mesh and body_mesh.mesh:
-		var mat: StandardMaterial3D = body_mesh.mesh.material
-		if mat:
-			mat.albedo_color = color
+	if character_model:
+		character_model.set_team_color(color)
 
 
 func apply_state(pos: Vector3, yaw_deg: float, pitch_deg: float, ducked: bool) -> void:
@@ -74,3 +46,6 @@ func apply_state(pos: Vector3, yaw_deg: float, pitch_deg: float, ducked: bool) -
 		head.position.y = MC.VIEW_OFFSET_DUCKING
 	else:
 		head.position.y = MC.VIEW_OFFSET_STANDING
+
+	if character_model:
+		character_model.set_ducked(ducked)
