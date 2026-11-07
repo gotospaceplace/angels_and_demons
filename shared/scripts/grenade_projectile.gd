@@ -6,6 +6,12 @@ const WC := preload("res://shared/scripts/weapon_constants.gd")
 
 enum Type { HE, FLASH, SMOKE }
 
+const GRENADE_MODEL_PATHS := {
+	Type.HE: "res://assets/grenades/he/he_grenade.glb",
+	Type.FLASH: "res://assets/grenades/flash/flash_grenade.glb",
+	Type.SMOKE: "res://assets/grenades/smoke/smoke_grenade.glb",
+}
+
 var fuse_remaining: float = 0.0
 var type: int = Type.HE
 var visual_only: bool = false
@@ -33,6 +39,17 @@ func _ready() -> void:
 	col.shape = shape
 	add_child(col)
 
+
+func _create_visual() -> void:
+	var path: String = GRENADE_MODEL_PATHS.get(type, "")
+	if path != "":
+		var scene: PackedScene = load(path)
+		if scene:
+			var inst := scene.instantiate()
+			inst.name = "GrenadeVisual"
+			add_child(inst)
+			return
+	# Sphere fallback
 	var mesh := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
 	sphere.radius = 0.04
@@ -47,6 +64,7 @@ func _ready() -> void:
 func start(fuse: float, grenade_type: int = Type.HE) -> void:
 	fuse_remaining = fuse
 	type = grenade_type
+	_create_visual()
 
 
 func _physics_process(delta: float) -> void:
