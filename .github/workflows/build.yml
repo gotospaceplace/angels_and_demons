@@ -211,6 +211,14 @@ jobs:
             echo "Skipping — weapon model tests not merged yet"
           fi
 
+      - name: Viewmodel tests (Phase 7)
+        run: |
+          if [ -f tests/viewmodel_tests.gd ]; then
+            timeout 30 godot --headless --path . -- --test-viewmodel
+          else
+            echo "Skipping — viewmodel tests not merged yet"
+          fi
+
       - name: Performance benchmark
         run: timeout 60 godot --headless --path . -- --bench
 

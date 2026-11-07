@@ -94,6 +94,10 @@ func _ready() -> void:
 		print("EntryPoint: launching weapon model test runner")
 		get_tree().change_scene_to_file.call_deferred("res://tests/weapon_model_test_scene.tscn")
 		return
+	if "--test-viewmodel" in args:
+		print("EntryPoint: launching viewmodel test runner")
+		get_tree().change_scene_to_file.call_deferred("res://tests/viewmodel_test_scene.tscn")
+		return
 	if "--bench" in args:
 		print("EntryPoint: launching performance benchmark")
 		get_tree().change_scene_to_file.call_deferred("res://tests/perf_benchmark_scene.tscn")
